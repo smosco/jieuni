@@ -1,0 +1,61 @@
+/* 디자인 토큰 — docs/DESIGN.md 1~3절과 같은 값. 값을 바꿀 때는 DESIGN.md도 같이 고친다. */
+:root {
+  /* color */
+  --color-paper: #F4F0E8;
+  --color-paper-raised: #EBE5DA;
+  --color-photo-placeholder: #D9CFBF;
+  --color-line: #D8D0C3;
+  --color-ink-tertiary: #A39B8F;   /* 2.4:1 — 10~12px 라벨과 보조 정보에만 */
+  --color-ink-secondary: #6E665C;  /* 5.0:1 */
+  --color-ink: #2A2622;            /* 13.2:1 */
+  --color-earth: #8A5A3C;          /* 5.1:1, 유일한 포인트 색 */
+  --color-on-photo: #F7F4EE;
+  --color-kakao: #FEE500;          /* 카카오 버튼 전용 예외 */
+
+  --shade-photo: linear-gradient(to bottom, rgba(23, 20, 18, 0) 0%, rgba(23, 20, 18, .35) 45%, rgba(23, 20, 18, .85) 100%);
+  --shade-tile: linear-gradient(to bottom, rgba(23, 20, 18, 0), rgba(23, 20, 18, .35));
+  --dim-sheet: rgba(42, 38, 34, .55);
+
+  /* space */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+  --space-4xl: 64px;
+
+  /* size */
+  --radius-sm: 2px;
+  --hairline: 1px;
+  --page-gutter: 24px;
+  --content-width: 327px;
+  --tabbar-height: 64px;
+  --tile-size: 124px;
+  --tile-gap: 1.5px;
+  --touch-min: 44px;
+
+  /* font */
+  --font-serif: 'Noto Serif KR', serif;
+  --font-sans: 'IBM Plex Sans KR', sans-serif;
+
+  /* motion */
+  --duration-state: 120ms;
+  --duration-sheet: 240ms;
+  --ease-out: cubic-bezier(.2, .7, .3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --duration-state: 0ms; --duration-sheet: 0ms; }
+}
+
+/* type — DESIGN.md 2절 */
+.display-xl { font-family: var(--font-serif); font-weight: 300; font-size: 30px; line-height: 1.4;  letter-spacing: -0.01em; }
+.display-lg { font-family: var(--font-serif); font-weight: 300; font-size: 24px; line-height: 1.4;  letter-spacing: -0.005em; }
+.display-md { font-family: var(--font-serif); font-weight: 400; font-size: 19px; line-height: 1.5;  letter-spacing: -0.003em; }
+.body-lg    { font-family: var(--font-sans);  font-weight: 300; font-size: 15px; line-height: 1.75; }
+.body-md    { font-family: var(--font-sans);  font-weight: 400; font-size: 14px; line-height: 1.65; }
+.body-sm    { font-family: var(--font-sans);  font-weight: 400; font-size: 12px; line-height: 1.6; }
+.label-md   { font-family: var(--font-sans);  font-weight: 500; font-size: 12px; line-height: 1.4;  letter-spacing: 0.02em; }
+.label-sm   { font-family: var(--font-sans);  font-weight: 400; font-size: 10px; line-height: 1.4;  letter-spacing: 0.025em; }

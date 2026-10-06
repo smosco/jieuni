@@ -1,0 +1,11 @@
+node_modules/
+.next/
+build/
+.gradle/
+.env*
+!.env.example
+.DS_Store
+__pycache__/
+.venv/
+docs/NOTES.md
+docs/PLAN.md
