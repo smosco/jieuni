@@ -219,7 +219,7 @@
 
 ---
 
-## 7. CSS 변수 (실제 파일: design/tokens.css)
+## 7. CSS 변수 (실제 파일: frontend/app/tokens.css)
 
 ```css
 :root {
