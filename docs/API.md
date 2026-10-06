@@ -85,9 +85,10 @@
     { "date": "2026-10-07", "weekday": "WED", "line": "에디터의 한 줄(40자)",
       "place": PlaceTile,                        // photo = 대표 사진, caption = null
       "firstMaker": { "id": 3, "slug": "…", "name": "…", "role": "architecture" } | null } ],
-  "openedCount": 3,                              // 진행 표시 "03 / 05"의 왼쪽. 공개 서비스 원칙의 "숫자"가 아니라 피드 위치다
-  "nextOpensAt": "2026-10-07T23:00:00Z" | null,  // 다음 공개 시각(UTC). 금 08:00 뒤·주말은 다음 월 08:00. 다음 편성이 없어도 시각은 준다
-  "nextWeekday": "THU" | "MON" }                 // 마지막 화면 문구용. 프론트는 시간 계산을 하지 않는다
+  "openedCount": 3,                              // 이번 주 열린 카드 수(= picks 길이). 카드의 "03 / 05"는 이 값이 아니라 각 카드의 date(월 01~금 05)로 정한다(DESIGN 5절 01)
+  "nextOpensAt": "2026-10-07T23:00:00Z",         // 다음 공개 시각(UTC). 금 08:00 뒤·주말은 다음 월 08:00. 다음 편성이 없어도 시각은 준다
+  "nextWeekday": "THU" | "MON",                  // 마지막 화면 문구용. 프론트는 시간 계산을 하지 않는다
+  "nextRelative": "today" | "tomorrow" | "later" } // 다음 공개일이 오늘(평일 08:00 전) · 내일(일요일 포함) · 그 밖. SPEC 5절 문구 셋에 1:1
 
 // GET /api/places/{slug}
 { "id": 1, "slug": "…", "name": "…", "kind": "garden", "region": "경기 양평군",

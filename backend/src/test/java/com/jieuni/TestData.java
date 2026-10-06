@@ -7,6 +7,7 @@ import com.jieuni.place.PlaceStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
@@ -59,6 +60,14 @@ public class TestData {
 				values (:placeId, :makerId, :role, true, 'https://example.com/credit', :position)""")
 				.param("placeId", placeId).param("makerId", makerId).param("role", role.value())
 				.param("position", position)
+				.update();
+	}
+
+	public void pick(LocalDate date, long placeId) {
+		jdbc.sql("""
+				insert into daily_picks (pick_date, place_id, line, created_at, updated_at)
+				values (:date, :placeId, :line, :at, :at)""")
+				.param("date", date).param("placeId", placeId).param("line", date + "의 한 줄").param("at", CREATED)
 				.update();
 	}
 
