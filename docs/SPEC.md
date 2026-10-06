@@ -124,6 +124,8 @@
 | `status` | enum | — | suggested, draft, published, paused, closed, rejected |
 | `suggested_by` | FK users | | |
 | `suggestion_reason` | varchar(300) | | 제보 때 쓴 "오래 생각나는 이유" |
+| `suggestion_link` | varchar(500) | | 제보 때 붙인 참고 링크 |
+| `suggestion_maker_hint` | varchar(100) | | 제보 때 쓴 "만든 사람을 아는지" |
 | `published_at` | timestamptz | — | 처음 공개한 시각. 둘러보기 정렬 기준 |
 | `created_at`, `updated_at` | timestamptz | — | |
 

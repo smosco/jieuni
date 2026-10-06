@@ -113,9 +113,10 @@ Spring Boot 3.x와 달라지는 것: Jackson 3(패키지 `tools.jackson`), Sprin
 
 - 써 본 조합이라 설명 비용이 없다.
 - 스키마는 Flyway 마이그레이션 파일로만 바꾼다. JPA의 `ddl-auto`는 `validate`.
-- 테이블은 SPEC 3절의 11개 + Spring Session 테이블.
+- 테이블은 SPEC 3절의 12개 + Spring Session 테이블 2개.
 - **필수 항목은 DB 제약이 아니라 공개 전환 때 서비스 계층에서 검사**한다(SPEC 3절). 제보·작성 중 상태에서는 빈칸이 정상이기 때문이다. 대신 형식(길이, enum, unique)은 DB 제약으로 둔다.
 - 개발용 시드: `dev` 프로필에서만 등록되는 `ApplicationRunner`가 서버 시작 때 `makers`가 비어 있으면 `seed/seed.json`(가짜 5곳)을 한 트랜잭션으로 적재한다. 행이 있으면 건너뛴다.
+- **2026-10-06(B1) 추가**: `created_at`·`updated_at`은 Spring Data JPA Auditing으로 채우되 `DateTimeProvider`가 `Clock` 빈을 읽는다(고정 시계 테스트와 일관). 탈퇴 규칙(SPEC 3절)은 FK 동작으로도 건다 — `saves`·`follows`는 `ON DELETE CASCADE`, `places.suggested_by`·`credit_suggestions.user_id`는 `ON DELETE SET NULL`. `Place`의 자식 목록(크레딧·출처·사진·임베드)은 **둘 이상을 `join fetch`하지 않는다**(카테시안 곱·`MultipleBagFetchException`); `hibernate.default_batch_fetch_size=100`으로 목록마다 IN 쿼리 한 번씩. `Save`·`Follow`·`DailyPick`처럼 id를 직접 넣는 엔티티는 `Persistable`을 구현해 `save()`가 SELECT 없이 INSERT한다.
 
 **채택**: PostgreSQL 18, Flyway, `ddl-auto: validate`, 공개 시 검증.
 **포기한 것**: 관리형 DB의 자동 백업(9절에서 직접 백업).
