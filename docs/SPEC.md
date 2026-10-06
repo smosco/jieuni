@@ -422,7 +422,7 @@
 
 - 구글 scope: `openid`, `email`, `profile`. OAuth 앱은 "프로덕션"으로 게시한다(테스트 모드는 동의가 7일마다 만료).
 - 제공자가 늘어도 계정은 `(provider, provider_id)`로 구분한다. 같은 이메일이라도 제공자가 다르면 별도 계정(MVP 단순화).
-- 프론트와 API는 같은 상위 도메인(`example.kr`, `api.example.kr`)을 쓰고, 세션 쿠키는 HttpOnly · Secure · SameSite=Lax.
+- 프론트와 API는 같은 출처(Next rewrites 프록시, DECISIONS 6절)이고, 세션 쿠키는 HttpOnly · Secure · SameSite=Lax.
 
 ### 서비스 이름과 검색 노출
 

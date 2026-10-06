@@ -1,0 +1,52 @@
+/* DESIGN.md 4절 TabBar */
+.bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: var(--shell-max-width);
+  height: var(--tabbar-height);
+  margin: 0 auto;
+  padding: 0 var(--tabbar-gutter);
+  background: var(--color-paper);
+  border-top: var(--hairline) solid var(--color-line);
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-min);
+  color: var(--color-ink-tertiary);
+  transition: color var(--duration-state) var(--ease-out);
+}
+
+.active {
+  color: var(--color-ink);
+}
+
+.label {
+  position: relative;
+}
+
+/* 켜진 탭: 글자 위 6px에 16×1px 선. 터치 영역(44px)이 아니라 글자 상자를 기준으로 놓는다. */
+.active .label::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + var(--tab-indicator-gap));
+  left: calc(50% - var(--tab-indicator-width) / 2);
+  width: var(--tab-indicator-width);
+  height: var(--hairline);
+  background: var(--color-ink);
+}
+
+.dot {
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-radius: 50%;
+  background: var(--color-earth);
+}

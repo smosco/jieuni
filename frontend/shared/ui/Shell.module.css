@@ -1,0 +1,6 @@
+.shell {
+  max-width: var(--shell-max-width);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding-bottom: var(--tabbar-height);
+}

@@ -38,7 +38,14 @@ services:
       retries: 10
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      # rewrites 목적지는 빌드 때 결과물에 굳으므로 빌드 인자로도 준다.
+      args:
+        API_URL: http://backend:8080
+    environment:
+      API_URL: http://backend:8080
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-}
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
     depends_on:

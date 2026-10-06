@@ -12,7 +12,7 @@
 | --- | --- |
 | 세션 | Spring Session JDBC. 쿠키 `SESSION`, HttpOnly · SameSite=Lax · 운영 Secure |
 | CSRF | 켬(Spring Security 7 `csrf.spa()`). 서버가 `XSRF-TOKEN` 쿠키(HttpOnly 아님)를 주고, 프론트는 GET 외 요청에 `X-XSRF-TOKEN` 헤더로 돌려보낸다. 없으면 403. 로그인·로그아웃 성공 시 쿠키가 지워지므로 그 뒤 `GET /api/me`로 다시 받는다 |
-| CORS | `FRONTEND_URL` 한 출처만, credentials 허용 |
+| 같은 출처 | 브라우저는 백엔드를 직접 부르지 않는다. Next rewrites가 `/api/**`·`/oauth2/**`·`/login/oauth2/**`를 백엔드로 넘긴다. CORS 없음(DECISIONS 6절) |
 | 공개 | `/api/feed`, `/api/places/**`, `/api/makers/**`, `/api/sitemap` |
 | 로그인 필요 | `/api/me/**`, `/api/suggestions/**`, `/api/auth/logout` → 비로그인 401 |
 | 관리자 | `/api/admin/**` → `role=admin` 아니면 403 |
@@ -318,7 +318,7 @@ A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일�
 
 | 이름 | 어디 | 뜻 |
 | --- | --- | --- |
-| `FRONTEND_URL` | backend | CORS 출처, 로그인 후 이동, 재생성 호출 대상 |
+| `FRONTEND_URL` | backend | 로그인 후 이동, 재생성 호출 대상 |
 | `REVALIDATE_SECRET` | backend, frontend | 재생성 호출 비밀 |
 | `AI_URL`, `AI_INTERNAL_TOKEN` | backend, ai | 내부 호출 |
 | `ADMIN_EMAILS` | backend | 쉼표 구분 |
@@ -326,5 +326,6 @@ A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일�
 | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | backend | R2. 개발은 개발용 버킷, 운영은 운영 버킷. 엔드포인트 `https://<account-id>.r2.cloudflarestorage.com`, region `auto` |
 | `PHOTO_PUBLIC_BASE_URL` | backend | 사진 URL 앞부분(개발: 개발 버킷의 r2.dev 주소 / 운영: R2 커스텀 도메인) |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | backend | OAuth(구글만) |
-| `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_NEWSLETTER_URL` | frontend | API 주소, 메타데이터 기준 URL, 메일리 구독 폼 |
+| `API_URL` | frontend(서버) | 서버 컴포넌트와 rewrites가 부르는 백엔드 주소. rewrites 목적지는 빌드 때 굳으므로 빌드에도 필요 |
+| `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_NEWSLETTER_URL` | frontend | 메타데이터 기준 URL, 메일리 구독 폼 |
 | `TAVILY_API_KEY`, `KAKAO_REST_API_KEY`, LLM 키 | ai | 웹 검색 · 지오코딩 · 모델 |

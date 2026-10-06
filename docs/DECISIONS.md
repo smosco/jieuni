@@ -149,7 +149,7 @@ Spring Boot 3.x와 달라지는 것: Jackson 3(패키지 `tools.jackson`), Sprin
 
 - **채택: C.** 세션은 Spring Session JDBC로 PostgreSQL에 저장해 재배포 후에도 유지한다.
 - **제공자(2026-10-06)**: MVP는 **구글만**. 카카오는 개인 개발자 비즈 앱 전환 없이는 이메일을 받지 못하고, 전환 심사가 MVP 일정과 무관한 대기 시간을 만든다. 공개 후 커스텀 provider 하나로 추가한다(SPEC 10절). 관리자도 구글 계정 + `ADMIN_EMAILS`.
-- **도메인**: 프론트 `example.kr`, API `api.example.kr`처럼 같은 상위 도메인을 써서 쿠키를 `SameSite=Lax`로 둔다.
+- ~~**도메인**: 프론트 `example.kr`, API `api.example.kr`처럼 같은 상위 도메인을 써서 쿠키를 `SameSite=Lax`로 둔다.~~ → 6절 2026-10-06 결정(같은 주소 프록시)으로 대체.
 - **역할**: `user`, `admin`. `/api/admin/**`은 admin만(403). 남의 저장·팔로우는 애초에 본인 것만 조회하는 쿼리로 막는다.
 - **포기한 것**: 무상태 서버. 서버를 여러 대로 늘릴 계획이 없으므로 대가가 작다.
 
@@ -191,6 +191,10 @@ v0.1은 공간을 저장소의 MDX 파일로 두는 안이었다.
 
 **채택**: Next.js 16, TypeScript, CSS Modules, TanStack Query, Zod(폼 검증).
 **포기한 것**: Tailwind·UI 라이브러리로 얻는 속도.
+
+**2026-10-06(F1) 결정 변경 — CORS 대신 같은 주소 프록시**: 브라우저는 백엔드를 직접 부르지 않는다. `next.config.ts`의 `rewrites`가 `/api/:path*` · `/oauth2/:path*` · `/login/oauth2/:path*`를 `API_URL`(서버만 아는 주소)로 넘기고, 클라이언트 `apiFetch`는 상대 경로만 쓴다. 이유: 배포에서 프론트와 백엔드 도메인이 다르면 `SameSite=Lax` 세션 쿠키가 교차 출처 fetch에 실리지 않고 `XSRF-TOKEN` 쿠키도 JS가 읽을 수 없다. 같은 출처면 둘 다 그냥 된다. 백엔드의 CORS 설정과 `NEXT_PUBLIC_API_URL`은 없앤다(4절의 "같은 상위 도메인" 요구도 사라진다). `app/api/revalidate/route.ts`는 파일 라우트라 rewrites(배열 = `afterFiles`)보다 먼저 잡힌다([rewrites](https://nextjs.org/docs/app/api-reference/config/next-config-js/rewrites) "static files … and non-dynamic pages are checked/served" 뒤에 `afterFiles`). rewrites 목적지는 `next build` 때 결과물(`routes-manifest.json`·standalone `server.js`)에 굳는다(빌드해서 확인). 그래서 `API_URL`은 실행 환경 변수이면서 빌드 인자이기도 하다(Dockerfile `ARG API_URL`). **포기한 것**: 백엔드 응답이 Next 서버를 한 번 더 거친다(Vercel에서는 함수 호출 하나).
+
+**2026-10-06(F1) 목록 페이지의 렌더 방식**: `/`, `/places`, `/makers`는 segment `revalidate = 0`(요청마다 렌더) + `fetch(next: { tags, revalidate: 3600 })` 데이터 캐시로 간다. 정적 라우트는 빌드 때 prerender되는데 그때 백엔드가 없으면 빌드가 깨지거나 빈 화면이 1시간짜리 HTML로 굳는다(`[slug]` 라우트의 빈 `generateStaticParams` 같은 장치가 정적 라우트에는 없다). 공식 문서([caching-without-cache-components](https://nextjs.org/docs/app/guides/caching-without-cache-components))가 `revalidate = 0`은 "always dynamically rendered … leaves fetch requests that use a positive revalidate as is"라고 적어 이 조합이 보장된다. `force-dynamic`은 문서가 "모든 fetch를 no-store로"라고 적어 쓰지 않는다. 상세 페이지(`[slug]`)는 그대로 빈 `generateStaticParams` + `dynamicParams`(첫 요청 때 생성, 전체 라우트 캐시). 태그 무효화는 두 캐시 모두에 듣는다.
 
 **2026-10-06 확인(즉시 반영 방법)**: Spring이 부르는 `app/api/revalidate` 라우트에서는 `revalidateTag(tag, { expire: 0 })`를 쓴다. Next 16은 두 번째 인자가 필수이고, `'max'` 같은 프로필을 주면 다음 요청이 옛 페이지를 먼저 받으므로(stale-while-revalidate) "관리자가 공개한 직후 새로고침 한 번에 보인다"가 되지 않는다. `updateTag`는 Server Action 전용이라 외부 호출 라우트에서 못 쓴다. `cacheComponents`는 켜지 않는다(빈 `generateStaticParams`가 빌드 오류가 됨). 출처는 "버전 기준" 표의 Next.js 행.
 

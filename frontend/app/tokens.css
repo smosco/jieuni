@@ -32,13 +32,16 @@
   --page-gutter: 24px;
   --content-width: 327px;
   --tabbar-height: 64px;
+  --tabbar-gutter: 40px;
+  --tab-indicator-width: 16px;
+  --tab-indicator-gap: 6px;
+  --dot-size: 5px;
+  --shell-max-width: 480px;
   --tile-size: 124px;
   --tile-gap: 1.5px;
   --touch-min: 44px;
 
-  /* font */
-  --font-serif: 'Noto Serif KR', serif;
-  --font-sans: 'IBM Plex Sans KR', sans-serif;
+  /* font: --font-serif · --font-sans는 app/layout.tsx의 next/font가 <html>에 정의한다(여기서도 선언하면 순서에 따라 뒤집힌다). */
 
   /* motion */
   --duration-state: 120ms;

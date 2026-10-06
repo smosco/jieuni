@@ -75,6 +75,11 @@
 | `--space-3xl` | 48px |
 | `--space-4xl` | 64px |
 | `--radius-sm` | 2px |
+| `--shell-max-width` | 480px (데스크톱에서 공개 화면을 가운데 두는 최대 너비, SPEC 4절) |
+| `--tabbar-gutter` | 40px (탭 바 좌우 패딩) |
+| `--tab-indicator-width` | 16px (켜진 탭 위 선) |
+| `--tab-indicator-gap` | 6px (선과 글자 사이) |
+| `--dot-size` | 5px (내 공간 옆 점) |
 
 - 기준 너비 375px, 좌우 여백 24px(본문 너비 327px).
 - 공간 상세의 섹션 사이 간격 48px.
@@ -243,9 +248,9 @@
   --radius-sm: 2px;
   --tabbar-height: 64px;
   --page-gutter: 24px;
+  --shell-max-width: 480px;
 
-  --font-serif: 'Noto Serif KR', serif;
-  --font-sans: 'IBM Plex Sans KR', sans-serif;
+  /* --font-serif · --font-sans는 app/layout.tsx의 next/font가 <html>에 정의한다(같은 이름을 여기서도 선언하면 순서에 따라 뒤집힌다). */
 }
 ```
 
