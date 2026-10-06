@@ -41,7 +41,7 @@
 - 공개 화면(피드·상세·프로필·둘러보기)은 서버 컴포넌트 + 태그 캐시. `generateStaticParams`는 빈 배열, `dynamicParams: true`, 공개·수정 시 Spring이 프론트의 재생성 라우트를 불러 태그를 무효화한다. **Next 16에서 `revalidateTag`는 두 번째 인자(cacheLife)가 필수이고 기본 권장값은 "옛 페이지를 먼저 보여주고 뒤에서 갱신"이다. 관리자가 공개한 즉시 새 내용이 보여야 하므로, 즉시 반영되는 방법을 F1에서 공식 문서로 확인하고 DECISIONS에 기록한다.** `updateTag`는 Server Actions 전용이라 이 구조에서는 못 쓴다. **빌드는 백엔드 없이 통과해야 한다.**
 - 공개 화면 위의 사용자별 값(저장·팔로우 상태)은 클라이언트 섬에서 `/api/me/state`로 따로 받는다.
 - 로그인 후 화면·관리자 화면은 클라이언트 컴포넌트 + TanStack Query. 저장·팔로우는 낙관적 업데이트 + 실패 롤백 토스트.
-- 스타일: CSS Modules + `tokens.css`의 변수와 글자 클래스만. **색·간격·글자 크기를 숫자로 직접 쓰지 않는다**(토큰에 없으면 DESIGN.md에 먼저 추가). 컴포넌트 라이브러리·Tailwind 없음.
+- 스타일: CSS Modules + `frontend/app/tokens.css`의 변수와 글자 클래스만. **색·간격·글자 크기를 숫자로 직접 쓰지 않는다**(토큰에 없으면 DESIGN.md에 먼저 추가). 컴포넌트 라이브러리·Tailwind 없음.
 - 폴더: `app/`은 라우트만(page.tsx는 조립만), `features/<기능>/`(api.ts · queries.ts · types.ts · components/), `shared/`(api · ui · lib). 두 기능 이상이 쓰면 shared.
 - 피드 세로 넘기기·사진 가로 넘기기는 CSS scroll-snap. 라이브러리 없음.
 - 관리자 사진은 브라우저에서 WebP 1600·800으로 변환 후 서명 URL로 직접 업로드.
@@ -58,7 +58,7 @@
 ## 디자인 판단 (DESIGN.md 기준)
 
 - 고요하고 섬세하게: 종이색 바탕, 먹색 글자, 포인트는 흙색(`--color-earth`) 하나. 헤어라인 1px, 모서리 2px, 그림자·그라데이션 버튼 없음(사진 위 그림자만 예외).
-- 제목 Noto Serif KR, 본문·라벨 IBM Plex Sans KR. 글자 단계는 `tokens.css`의 8개 클래스만.
+- 제목 Noto Serif KR, 본문·라벨 IBM Plex Sans KR. 글자 단계는 `frontend/app/tokens.css`의 8개 클래스만.
 - `--color-ink-tertiary`(대비 2.4:1)는 10~12px 라벨과 보조 정보에만. 읽어야 하는 문장에는 쓰지 않는다.
 - 하단 탭: 오늘 · 둘러보기 · 내 공간. 아이콘 없음. 내 공간 옆 점은 팔로우한 사람의 새 공간이 있을 때만.
 - 사진 자리가 비면 `--color-photo-placeholder`. 격자 캡션 아래에는 옅은 그림자.

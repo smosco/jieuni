@@ -18,11 +18,11 @@
 
 | 파일 | 내용 |
 | --- | --- |
-| [design/tokens.css](design/tokens.css) | CSS 변수와 글꼴 클래스. 프론트엔드에 그대로 가져다 쓴다 |
+| [frontend/app/tokens.css](frontend/app/tokens.css) | CSS 변수와 글꼴 클래스. 원본은 이 파일 하나 |
 | [design/tokens.json](design/tokens.json) | 같은 값의 JSON |
 | [피그마 원본](https://www.figma.com/design/d3wAmslKf6WOFoA8rr50Hc) | Foundations, 화면 01~07 |
 
-토큰을 바꿀 때는 `docs/DESIGN.md`, `tokens.css`, `tokens.json`을 함께 고친다.
+토큰을 바꿀 때는 `docs/DESIGN.md`, `frontend/app/tokens.css`, `design/tokens.json`을 함께 고친다.
 
 ## 상태
 
