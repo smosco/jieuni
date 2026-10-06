@@ -1,6 +1,10 @@
 package com.jieuni.place;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.EnumeratedValue;
+
+import java.util.Arrays;
+import java.util.Optional;
 
 public enum PlaceKind {
 
@@ -22,6 +26,16 @@ public enum PlaceKind {
 
 	PlaceKind(String value) {
 		this.value = value;
+	}
+
+	// DB 값과 JSON 값을 같게 둔다(소문자).
+	@JsonValue
+	public String value() {
+		return value;
+	}
+
+	public static Optional<PlaceKind> fromValue(String value) {
+		return Arrays.stream(values()).filter(kind -> kind.value.equals(value)).findFirst();
 	}
 
 }

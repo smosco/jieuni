@@ -17,3 +17,6 @@ management:
     web:
       exposure:
         include: health
+
+jieuni:
+  photo-public-base-url: ${PHOTO_PUBLIC_BASE_URL:}

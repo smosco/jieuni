@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Clock;
@@ -25,9 +26,23 @@ class DevProfileTest {
 	@Autowired
 	Clock clock;
 
+	@Autowired
+	JdbcClient jdbc;
+
 	@Test
 	void hasDevSeedRunner() {
 		assertThat(context.containsBean("devSeedRunner")).isTrue();
+	}
+
+	// 시드가 V3의 크레딧 CHECK(확인됨이면 출처 필수) 같은 제약을 어기면 컨텍스트가 뜨지 않는다.
+	// 여기서는 확인된 크레딧이 실제로 들어갔는지까지 본다.
+	@Test
+	void seedLoadsVerifiedCreditsWithSources() {
+		int verified = jdbc.sql("select count(*) from place_credits where verified").query(Integer.class).single();
+		int verifiedWithoutSource = jdbc.sql("select count(*) from place_credits where verified and source_url is null")
+				.query(Integer.class).single();
+		assertThat(verified).isPositive();
+		assertThat(verifiedWithoutSource).isZero();
 	}
 
 	@Test

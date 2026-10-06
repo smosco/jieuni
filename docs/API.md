@@ -113,6 +113,24 @@
   "places": [ PlaceTile ] }                      // 최근 공개순, caption = 그 사람의 역할, 폐업 포함(status로 흐리게)
 ```
 
+**B4에서 정한 것**
+
+| 항목 | 규칙 |
+| --- | --- |
+| 공개 페이지가 있는 공간 | `published`·`paused`·`closed`이고 slug가 있는 공간. 상세·프로필 격자·sitemap이 이 기준 |
+| 목록에 나오는 공간 | `published`·`paused`만. 둘러보기, `relatedPlaces`, 만든 사람 목록이 이 기준(폐업은 빠짐) |
+| `relatedPlaces` | 이 공간의 크레딧에 있는 만든 사람 중 누구든 크레딧에 있는 다른 공간. 같은 공간은 한 번, `published_at desc, id desc`, 최대 6 |
+| 만든 사람 프로필 404 | slug가 없거나, 공개 페이지가 있는 공간의 크레딧에 한 번도 없으면 404 |
+| 프로필 격자 | 같은 공간에 크레딧이 둘 이상이면 한 칸, 캡션은 `position`이 가장 앞선 역할 |
+| `caption`(역할) | 한국어 이름. planning 기획 · branding 브랜딩 · architecture 건축 · interior 인테리어 · landscape 조경 · lighting 조명 · furniture 가구 · scent 향 · photography 사진 · owner 주인 · other 그 밖 (문구 가정) |
+| 만든 사람 목록의 `photo` | 사진이 있는 공간 중 가장 최근에 공개된 공간의 대표 사진. 없으면 null |
+| 사진 URL | `{PHOTO_PUBLIC_BASE_URL}/{objectKey}-1600.webp`, `-800.webp` |
+| `mapLinks.kakao` | 좌표가 있으면 `https://map.kakao.com/link/map/{이름},{위도},{경도}`, 없으면 `https://map.kakao.com/link/search/{이름}` ([카카오맵 API 가이드](https://apis.map.kakao.com/web/guide/)) |
+| `mapLinks.naver` | `https://map.naver.com/p/search/{이름 지역}`. 네이버는 웹 URL 형식의 공식 문서가 없다(앱용 `nmap://`만 있음) **(가정)** |
+| 목록 요청 오류 | 모르는 `kind`, 읽을 수 없는 `cursor`, 1~60 밖의 `size`는 400 |
+| sitemap 만든 사람 | 프로필이 404가 아닌 사람 |
+| slug가 null인 만든 사람 | `credits[].maker.slug`, `affiliation.slug`가 null이면 링크를 걸지 않는다(프로필이 없다) |
+
 피드의 `place`가 `paused`여도 그대로 보여준다. `closed`가 된 공간이 편성에 남아 있으면 카드에 "이제는 만날 수 없는 공간이에요" 띠(가정, 편성 뒤 폐업은 드물다).
 
 ---

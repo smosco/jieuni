@@ -104,6 +104,16 @@ Spring Boot 3.x와 달라지는 것: Jackson 3(패키지 `tools.jackson`), Sprin
 ### 채택 / 포기한 것
 
 - **채택: B. JPA.** 단, 공개 목록 조회(피드, 둘러보기, 프로필 격자, 내 공간)는 엔티티 그래프 대신 **DTO 프로젝션 쿼리**로 쓰고, 목록 API마다 실행되는 쿼리 수를 테스트로 고정한다. 인덱스는 `EXPLAIN ANALYZE` 전후를 README에 남긴다.
+- **2026-10-06(B4) 둘러보기 인덱스와 커서**: B1의 `places(status, published_at desc, id desc)`는 쓰이지 않았다. 조건이 `status in ('published','paused')` 두 값이라 이 인덱스 순서로는 전체 `published_at desc` 순서를 만들 수 없어서, 조건에 맞는 행을 모두 읽고 정렬했다. **채택: 부분 인덱스 `(published_at desc, id desc) where status in ('published','paused') and slug is not null`(V3), 커서 조건은 행 비교 `(published_at, id) < (?, ?)`.** `or`로 쓴 커서 조건(`a < ? or (a = ? and id < ?)`)은 인덱스 범위 조건이 되지 못하고 필터로 걸려 앞쪽 행을 전부 읽고 버린다. 측정(공간 2만 곳 중 목록 대상 1만 6천, 25개씩, 같은 쿼리 3번 중 마지막):
+
+  | 경우 | 전: 옛 인덱스 | 후: 부분 인덱스 |
+  | --- | --- | --- |
+  | 첫 페이지 | 7.673 ms (Seq Scan + 정렬) | 0.044 ms (Index Scan, 25행에서 멈춤) |
+  | 8,000번째 뒤 페이지, `or` 조건 | 4.724 ms (Bitmap Heap Scan) | 0.846 ms (Index Scan, 필터로 8,001행 버림) |
+  | 8,000번째 뒤 페이지, 행 비교 | 4.376 ms (Bitmap Heap Scan) | 0.061 ms (Index Scan, 범위 조건) |
+
+  **포기한 것**: 상태 값이 바뀌면(예: 목록에 새 상태 추가) 인덱스 조건도 마이그레이션으로 같이 바꿔야 한다.
+  상태가 바인드 파라미터라 generic 계획에서는 부분 인덱스를 못 쓴다(기본 `auto`에서는 custom 계획 유지, 확인함: 준비된 문장 8번 실행 뒤 generic 0 · custom 9, 0.008 ms / `force_generic_plan`이면 Seq Scan + 정렬 3.209 ms).
 - `open-in-view`는 끈다. 트랜잭션 경계는 서비스 계층에서만 연다.
 - **포기한 것**: SQL이 전부 눈에 보이는 투명함. 일정이 밀리면 A로 되돌리고, 그 판단을 이 파일 끝에 한 줄 남긴다.
 
@@ -117,6 +127,8 @@ Spring Boot 3.x와 달라지는 것: Jackson 3(패키지 `tools.jackson`), Sprin
 - **필수 항목은 DB 제약이 아니라 공개 전환 때 서비스 계층에서 검사**한다(SPEC 3절). 제보·작성 중 상태에서는 빈칸이 정상이기 때문이다. 대신 형식(길이, enum, unique)은 DB 제약으로 둔다.
 - 개발용 시드: `dev` 프로필에서만 등록되는 `ApplicationRunner`가 서버 시작 때 `makers`가 비어 있으면 `seed/seed.json`(가짜 5곳)을 한 트랜잭션으로 적재한다. 행이 있으면 건너뛴다.
 - **2026-10-06(B1) 추가**: `created_at`·`updated_at`은 Spring Data JPA Auditing으로 채우되 `DateTimeProvider`가 `Clock` 빈을 읽는다(고정 시계 테스트와 일관). 탈퇴 규칙(SPEC 3절)은 FK 동작으로도 건다 — `saves`·`follows`는 `ON DELETE CASCADE`, `places.suggested_by`·`credit_suggestions.user_id`는 `ON DELETE SET NULL`. `Place`의 자식 목록(크레딧·출처·사진·임베드)은 **둘 이상을 `join fetch`하지 않는다**(카테시안 곱·`MultipleBagFetchException`); `hibernate.default_batch_fetch_size=100`으로 목록마다 IN 쿼리 한 번씩. `Save`·`Follow`·`DailyPick`처럼 id를 직접 넣는 엔티티는 `Persistable`을 구현해 `save()`가 SELECT 없이 INSERT한다.
+- **2026-10-06(B4 리뷰) 추가**: "확인된 크레딧은 출처가 있다"(`place_credits`: `NOT verified OR source_url IS NOT NULL`)는 공개 여부와 상관없이 항상 참이어야 하는 형식 규칙이라 DB `CHECK`로도 둔다(V3). 공개할 때만 따지는 규칙(출처 있는 크레딧 1개 이상, 사진 출처 등)은 계속 `PublishRules` 한 곳에만 둔다. 관리자 API는 DB 오류가 나기 전에 400으로 먼저 막는다(B10).
+- **2026-10-06(B4 리뷰) 추가**: `place_photos`에만 `UNIQUE (place_id, position) DEFERRABLE INITIALLY DEFERRED`를 건다(V3). 목록 쿼리가 position 0을 대표 사진으로 읽어서, 같은 position이 둘이면 대표 사진이 하나로 정해지지 않기 때문이다. 순서를 맞바꿀 때 UPDATE 중간에 같은 position이 잠깐 겹치므로 커밋 때 검사한다. 크레딧·출처·임베드는 position을 순서로만 쓰므로 걸지 않는다.
 
 **채택**: PostgreSQL 18, Flyway, `ddl-auto: validate`, 공개 시 검증.
 **포기한 것**: 관리형 DB의 자동 백업(9절에서 직접 백업).
