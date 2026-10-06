@@ -22,6 +22,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-jieuni}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       SEED_PATH: /seed/seed.json
+      FIXED_NOW: ${FIXED_NOW:-}
     volumes:
       - ./seed:/seed:ro
     ports:
