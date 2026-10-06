@@ -1,0 +1,101 @@
+{
+  "makers": [
+    { "slug": "atelier-on", "name": "아틀리에 온", "kind": "studio", "region": "서울 성동구",
+      "intro": "(가짜) 오래 머무는 실내를 짓는 작은 건축 스튜디오.", "website": "https://example.com/atelier-on", "instagram": "atelier.on.example" },
+    { "slug": "seojin-yoon", "name": "윤서진", "kind": "person", "region": "서울 종로구",
+      "intro": "(가짜) 빛이 들어오는 순서를 먼저 그리는 건축가.", "affiliation": "atelier-on" },
+    { "slug": "garden-dal", "name": "정원 달", "kind": "studio", "region": "경기 양평군",
+      "intro": "(가짜) 계절이 바뀌는 속도로 정원을 가꾸는 조경 스튜디오." },
+    { "slug": "bitgyeol", "name": "빛결", "kind": "studio", "region": "서울 마포구",
+      "intro": "(가짜) 낮은 조도를 다루는 조명 디자인 팀." },
+    { "slug": "sopung-keepers", "name": "소풍 책방을 가꾸는 사람들", "kind": "owner", "region": "강원 강릉시",
+      "intro": "(가짜) 이름을 밝히지 않은 책방 주인들." }
+  ],
+  "places": [
+    {
+      "slug": "quiet-hill-garden", "name": "고요언덕 정원", "kind": "garden", "region": "경기 양평군",
+      "address": "경기도 양평군 양동면 고요길 1 (가짜)", "lat": 37.428100, "lng": 127.745300,
+      "access": "ticket", "visitNote": "(가짜) 입장권은 온라인 예약만. 외부 음식 반입 금지",
+      "summary": "(가짜) 언덕을 따라 천천히 걷게 되는 정원",
+      "impression": "(자리 표시) 에디터의 감상이 들어갈 자리. 크레딧이 여럿이고 감각 네 줄과 에세이가 모두 있는 공간이다.",
+      "senses": { "light": "(가짜) 오후 네 시의 낮은 빛", "sound": "(가짜) 자갈 밟는 소리", "scent": "(가짜) 비 온 뒤 흙냄새", "touch": "(가짜) 차가운 돌 난간" },
+      "essay": "## (가짜) 에세이\n\n에세이 영역 확인용 마크다운 문단이다.\n\n- 목록 하나\n- 목록 둘",
+      "visitedByEditorOn": "2026-05-17", "status": "published", "publishedDaysAgo": 30,
+      "credits": [
+        { "maker": "seojin-yoon", "role": "architecture", "verified": true, "sourceUrl": "https://example.com/articles/quiet-hill" },
+        { "maker": "garden-dal", "role": "landscape", "verified": true, "sourceUrl": "https://example.com/articles/quiet-hill" },
+        { "maker": "bitgyeol", "role": "lighting", "verified": false }
+      ],
+      "sources": [
+        { "title": "(가짜) 언덕을 걷는 정원 이야기", "url": "https://example.com/articles/quiet-hill", "type": "article" }
+      ]
+    },
+    {
+      "slug": "ondo-coffee", "name": "온도 커피", "kind": "cafe", "region": "서울 성동구",
+      "address": "서울특별시 성동구 성수이로 1 (가짜)", "lat": 37.544200, "lng": 127.055900,
+      "access": "walk_in", "visitNote": "(가짜) 주말 오후는 대기가 길다",
+      "summary": "(가짜) 오래된 공장 안의 조용한 카페",
+      "impression": "(자리 표시) 에디터의 감상이 들어갈 자리. 감각 일부만 있고 머물러 보지 않은 공간이라 출처로 만났다.",
+      "senses": { "light": "(가짜) 높은 창으로 떨어지는 빛", "touch": "(가짜) 거친 콘크리트 벽" },
+      "status": "published", "publishedDaysAgo": 20,
+      "credits": [
+        { "maker": "atelier-on", "role": "interior", "verified": true, "sourceUrl": "https://example.com/articles/ondo" },
+        { "maker": "seojin-yoon", "role": "planning", "verified": true, "sourceUrl": "https://example.com/articles/ondo" }
+      ],
+      "sources": [
+        { "title": "(가짜) 공장이 카페가 되기까지", "url": "https://example.com/articles/ondo", "type": "article" },
+        { "title": "(가짜) 온도 커피 공간 영상", "url": "https://example.com/videos/ondo", "type": "video" }
+      ]
+    },
+    {
+      "slug": "stone-library-stay", "name": "돌담 서재 스테이", "kind": "stay", "region": "제주 제주시",
+      "address": "제주특별자치도 제주시 애월읍 돌담길 1 (가짜)", "lat": 33.462500, "lng": 126.330100,
+      "access": "guests_only", "visitNote": "(가짜) 투숙객만 들어갈 수 있다",
+      "summary": "(가짜) 돌담 안쪽에 책장이 있는 독채",
+      "impression": "(자리 표시) 에디터의 감상이 들어갈 자리. 만든 사람 한 명의 크레딧만 있는 공간이다.",
+      "senses": { "light": "(가짜) 아침 창호지 빛", "sound": "(가짜) 담 너머 바람", "scent": "(가짜) 오래된 종이 냄새" },
+      "visitedByEditorOn": "2026-08-02", "status": "published", "publishedDaysAgo": 10,
+      "credits": [
+        { "maker": "seojin-yoon", "role": "architecture", "verified": true, "sourceUrl": "https://example.com/official/stone-library" }
+      ],
+      "sources": []
+    },
+    {
+      "slug": "sopung-bookstore", "name": "소풍 책방", "kind": "bookstore", "region": "강원 강릉시",
+      "address": "강원특별자치도 강릉시 소풍로 1 (가짜)", "lat": 37.763800, "lng": 128.899400,
+      "access": "walk_in", "visitNote": "(가짜) 지금은 쉬는 중. 다시 열 날은 공지로",
+      "summary": "(가짜) 바다 가까운 골목의 작은 책방",
+      "impression": "(자리 표시) 에디터의 감상이 들어갈 자리. 감각이 모두 비어 있고 휴업 중인 공간이다.",
+      "senses": {},
+      "status": "paused", "publishedDaysAgo": 40,
+      "credits": [
+        { "maker": "sopung-keepers", "role": "owner", "verified": true, "sourceUrl": "https://example.com/official/sopung" }
+      ],
+      "sources": [
+        { "title": "(가짜) 소풍 책방 공식 계정", "url": "https://example.com/official/sopung", "type": "official" }
+      ]
+    },
+    {
+      "slug": "old-tile-bar", "name": "옛 타일 바", "kind": "bar", "region": "부산 중구",
+      "address": "부산광역시 중구 타일로 1 (가짜)", "lat": 35.101600, "lng": 129.032800,
+      "access": "reservation", "visitNote": "(가짜) 폐업했다",
+      "summary": "(가짜) 옛 목욕탕 타일을 그대로 둔 바",
+      "impression": "(자리 표시) 에디터의 감상이 들어갈 자리. 폐업해서 상세와 프로필 격자에만 남는 공간이다.",
+      "senses": { "sound": "(가짜) 낮게 깔린 재즈" },
+      "status": "closed", "publishedDaysAgo": 60,
+      "credits": [
+        { "maker": "seojin-yoon", "role": "interior", "verified": true, "sourceUrl": "https://example.com/articles/old-tile" }
+      ],
+      "sources": [
+        { "title": "(가짜) 목욕탕이 바가 된 이야기", "url": "https://example.com/articles/old-tile", "type": "article" }
+      ]
+    }
+  ],
+  "picks": [
+    { "weeksAgo": 0, "weekday": "MONDAY", "place": "ondo-coffee", "line": "(자리 표시) 월요일의 한 줄" },
+    { "weeksAgo": 0, "weekday": "TUESDAY", "place": "stone-library-stay", "line": "(자리 표시) 화요일의 한 줄" },
+    { "weeksAgo": 0, "weekday": "WEDNESDAY", "place": "quiet-hill-garden", "line": "(자리 표시) 수요일의 한 줄" },
+    { "weeksAgo": 1, "weekday": "THURSDAY", "place": "sopung-bookstore", "line": "(자리 표시) 지난주 목요일의 한 줄" },
+    { "weeksAgo": 1, "weekday": "FRIDAY", "place": "old-tile-bar", "line": "(자리 표시) 지난주 금요일의 한 줄" }
+  ]
+}

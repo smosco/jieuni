@@ -3,3 +3,6 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/jieuni}
     username: ${POSTGRES_USER:jieuni}
     password: ${POSTGRES_PASSWORD:jieuni}
+
+jieuni:
+  seed-path: ${SEED_PATH:../seed/seed.json}

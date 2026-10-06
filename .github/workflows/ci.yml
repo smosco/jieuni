@@ -33,13 +33,12 @@ jobs:
             exit 0
           fi
           changed=$(git diff --name-only "$BASE" "$GITHUB_SHA")
-          for dir in frontend backend; do
-            if grep -qE "^($dir/|\.github/workflows/)" <<< "$changed"; then
-              echo "$dir=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "$dir=false" >> "$GITHUB_OUTPUT"
-            fi
-          done
+          filter() {
+            if grep -qE "^($2|\.github/workflows/)" <<< "$changed"; then echo "$1=true"; else echo "$1=false"; fi >> "$GITHUB_OUTPUT"
+          }
+          filter frontend 'frontend/'
+          # dev 프로필 테스트가 seed/seed.json을 실제로 적재한다.
+          filter backend 'backend/|seed/'
 
   frontend:
     needs: changes
