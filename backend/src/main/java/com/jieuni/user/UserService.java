@@ -1,6 +1,7 @@
 package com.jieuni.user;
 
 import com.jieuni.common.ApiException;
+import com.jieuni.follow.FollowService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -18,10 +19,14 @@ public class UserService {
 
 	private final UserRepository users;
 
+	private final FollowService followService;
+
 	private final Set<String> adminEmails;
 
-	UserService(UserRepository users, @Value("${jieuni.admin-emails:}") String adminEmails) {
+	UserService(UserRepository users, FollowService followService,
+			@Value("${jieuni.admin-emails:}") String adminEmails) {
 		this.users = users;
+		this.followService = followService;
 		this.adminEmails = Arrays.stream(adminEmails.split(","))
 				.map(email -> email.strip().toLowerCase(Locale.ROOT))
 				.filter(email -> !email.isEmpty())
@@ -85,9 +90,9 @@ public class UserService {
 				.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
 	}
 
-	private static MeResponse toResponse(User user) {
-		// hasNewFromFollowing은 팔로우 API와 함께 채운다.
-		return new MeResponse(user.getId(), user.getNickname(), user.getProfileImageUrl(), user.getRole(), false);
+	private MeResponse toResponse(User user) {
+		return new MeResponse(user.getId(), user.getNickname(), user.getProfileImageUrl(), user.getRole(),
+				followService.hasNew(user.getId(), user.getFollowingSeenAt()));
 	}
 
 }

@@ -1,9 +1,10 @@
 package com.jieuni;
 
-import com.jieuni.follow.Follow;
-import com.jieuni.follow.FollowRepository;
+import com.jieuni.feed.DailyPick;
+import com.jieuni.feed.DailyPickRepository;
 import com.jieuni.maker.Maker;
 import com.jieuni.maker.MakerKind;
+import com.jieuni.place.Place;
 import jakarta.persistence.EntityManager;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
@@ -16,6 +17,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
@@ -34,7 +36,7 @@ class SchemaTest {
 	EntityManager em;
 
 	@Autowired
-	FollowRepository followRepository;
+	DailyPickRepository dailyPickRepository;
 
 	@Test
 	void flywayMadeTwelveTablesPlusTwoSessionTables() {
@@ -96,15 +98,14 @@ class SchemaTest {
 	}
 
 	@Test
-	void savingNewFollowInsertsWithoutSelect() {
+	void savingNewDailyPickInsertsWithoutSelect() {
 		OffsetDateTime now = OffsetDateTime.of(2026, 10, 6, 0, 0, 0, 0, ZoneOffset.UTC); // pgjdbc는 Instant 파라미터를 못 받는다
-		jdbc.update("insert into users (id, provider, provider_id, nickname, role, created_at, updated_at) values (1, 'dev', 'u1', '지은이', 'user', ?, ?)", now, now);
-		jdbc.update("insert into makers (id, name, kind, created_at, updated_at) values (1, '이로재', 'studio', ?, ?)", now, now);
+		jdbc.update("insert into places (id, slug, name, kind, status, published_at, created_at, updated_at) values (1, 'p', '공간', 'garden', 'published', ?, ?, ?)", now, now, now);
 
 		Statistics stats = em.getEntityManagerFactory().unwrap(SessionFactory.class).getStatistics();
 		stats.clear();
 
-		followRepository.save(new Follow(1L, 1L));
+		dailyPickRepository.save(new DailyPick(LocalDate.of(2026, 10, 7), em.getReference(Place.class, 1L), "한 줄"));
 		em.flush();
 
 		assertThat(stats.getEntityLoadCount()).isZero();

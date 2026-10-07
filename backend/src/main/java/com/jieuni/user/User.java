@@ -65,6 +65,10 @@ public class User extends BaseTimeEntity {
 		this.profileImageUrl = profileImageUrl;
 	}
 
+	public void markFollowingSeen(Instant at) {
+		this.followingSeenAt = at;
+	}
+
 	public void changeRole(UserRole role) {
 		this.role = role;
 	}

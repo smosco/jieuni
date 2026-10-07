@@ -158,14 +158,14 @@
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `GET /api/me/state?places=1,2&makers=3` | `{ saves: { "1": "want" }, follows: [3] }` | 공개 화면 위 사용자별 값. 최대 60개씩 |
-| `PUT /api/me/saves/{placeId}` | `{ status: "want" \| "been" }` → 200 `{ placeId, status }` | 같은 행 하나를 갱신(want↔been). 폐업 공간 409 |
+| `GET /api/me/state?places=1,2&makers=3` | `{ saves: { "1": "want" }, follows: [3] }` | 공개 화면 위 사용자별 값. 최대 100개씩(넘거나 숫자가 아니면 400). 저장·팔로우하지 않은 id는 빠진다 |
+| `PUT /api/me/saves/{placeId}` | `{ status: "want" \| "been" }` → 200 `{ placeId, status }` | 같은 행 하나를 갱신(want↔been). 폐업 공간 409, 공개되지 않은·없는 공간 404 |
 | `DELETE /api/me/saves/{placeId}` | 204 | 켜진 버튼을 다시 누름 = 삭제. 없어도 204 |
-| `GET /api/me/saves?status=want&cursor=` | `{ items: PlaceTile[], nextCursor }` | `updated_at desc`. caption = null |
-| `PUT /api/me/follows/{makerId}` | 204 | 이미 있어도 204 |
+| `GET /api/me/saves?status=want&cursor=` | `{ items: PlaceTile[], nextCursor }` | `status` 필수. `updated_at desc`(상태를 바꾸면 그 목록의 맨 앞). caption = null. 저장한 뒤 폐업한 공간도 보인다(`status: closed`) |
+| `PUT /api/me/follows/{makerId}` | 204 | 이미 있어도 204. 없는 만든 사람 404 |
 | `DELETE /api/me/follows/{makerId}` | 204 | |
-| `GET /api/me/following/places?cursor=` | `{ items: (PlaceTile & { isNew: boolean })[], nextCursor }` | 팔로우한 사람들의 공개 공간, 중복 제거, `published_at desc`. caption = 만든 사람 이름(여럿이면 첫 번째). `isNew = published_at > following_seen_at` |
-| `GET /api/me/following/makers` | `{ items: MakerSummary[] }` | 팔로우순. 커서 없음(수가 작다) |
+| `GET /api/me/following/places?cursor=` | `{ items: (PlaceTile & { isNew: boolean })[], nextCursor }` | 팔로우한 사람들의 공개 공간, 중복 제거, `published_at desc`. caption = 만든 사람 이름(여럿이면 첫 번째). `isNew = published_at > max(following_seen_at, 그 공간의 팔로우한 사람을 팔로우한 시각)`. 늦게 팔로우한 사람의 지난 공간은 새롭지 않다. 공간에 팔로우한 사람이 여럿이면 그중 한 명 기준으로라도 새로우면 true. 팔로잉 탭을 연 적이 없으면 팔로우 시각만 본다 |
+| `GET /api/me/following/makers` | `{ items: MakerSummary[] }` | 최근 팔로우순. 커서 없음(수가 작다) |
 | `POST /api/me/following/seen` | 204 | `following_seen_at = now`. 호출 전 응답의 `isNew`는 프론트가 화면을 떠날 때까지 유지 |
 
 `hasNewFromFollowing`(`/api/me`)은 `GET /api/me/following/places`의 `isNew`가 하나라도 있는가와 같은 식이다.

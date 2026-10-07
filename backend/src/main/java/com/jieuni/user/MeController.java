@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -16,8 +17,11 @@ class MeController {
 
 	private final UserService userService;
 
-	MeController(UserService userService) {
+	private final MeStateService meStateService;
+
+	MeController(UserService userService, MeStateService meStateService) {
 		this.userService = userService;
+		this.meStateService = meStateService;
 	}
 
 	record NicknameRequest(
@@ -28,6 +32,12 @@ class MeController {
 	@GetMapping
 	MeResponse me(@AuthenticationPrincipal LoginUser user) {
 		return userService.me(user.id());
+	}
+
+	@GetMapping("/state")
+	MeStateService.MeState state(@AuthenticationPrincipal LoginUser user,
+			@RequestParam(required = false) String places, @RequestParam(required = false) String makers) {
+		return meStateService.state(user.id(), places, makers);
 	}
 
 	@PatchMapping

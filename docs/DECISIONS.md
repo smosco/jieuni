@@ -129,6 +129,7 @@ Spring Boot 3.x와 달라지는 것: Jackson 3(패키지 `tools.jackson`), Sprin
 - **2026-10-06(B1) 추가**: `created_at`·`updated_at`은 Spring Data JPA Auditing으로 채우되 `DateTimeProvider`가 `Clock` 빈을 읽는다(고정 시계 테스트와 일관). 탈퇴 규칙(SPEC 3절)은 FK 동작으로도 건다 — `saves`·`follows`는 `ON DELETE CASCADE`, `places.suggested_by`·`credit_suggestions.user_id`는 `ON DELETE SET NULL`. `Place`의 자식 목록(크레딧·출처·사진·임베드)은 **둘 이상을 `join fetch`하지 않는다**(카테시안 곱·`MultipleBagFetchException`); `hibernate.default_batch_fetch_size=100`으로 목록마다 IN 쿼리 한 번씩. `Save`·`Follow`·`DailyPick`처럼 id를 직접 넣는 엔티티는 `Persistable`을 구현해 `save()`가 SELECT 없이 INSERT한다.
 - **2026-10-06(B4 리뷰) 추가**: "확인된 크레딧은 출처가 있다"(`place_credits`: `NOT verified OR source_url IS NOT NULL`)는 공개 여부와 상관없이 항상 참이어야 하는 형식 규칙이라 DB `CHECK`로도 둔다(V3). 공개할 때만 따지는 규칙(출처 있는 크레딧 1개 이상, 사진 출처 등)은 계속 `PublishRules` 한 곳에만 둔다. 관리자 API는 DB 오류가 나기 전에 400으로 먼저 막는다(B10).
 - **2026-10-06(B4 리뷰) 추가**: `place_photos`에만 `UNIQUE (place_id, position) DEFERRABLE INITIALLY DEFERRED`를 건다(V3). 목록 쿼리가 position 0을 대표 사진으로 읽어서, 같은 position이 둘이면 대표 사진이 하나로 정해지지 않기 때문이다. 순서를 맞바꿀 때 UPDATE 중간에 같은 position이 잠깐 겹치므로 커밋 때 검사한다. 크레딧·출처·임베드는 position을 순서로만 쓰므로 걸지 않는다.
+- **2026-10-07(B7 리뷰) 추가**: 저장·팔로우는 PostgreSQL 네이티브 upsert(`INSERT … ON CONFLICT`)로 쓴다. "있으면 갱신, 없으면 저장"을 엔티티로 하면 같은 요청이 동시에 오면 둘 다 "없음"을 보고 INSERT해 중복 키 오류가 난다. `saves`는 상태가 바뀔 때만 `updated_at`을 바꾸고, `follows`는 `DO NOTHING`. 시각은 `Clock` 값을 넘긴다. id를 직접 넣는 다른 엔티티(`DailyPick`)는 `Persistable` 방식을 유지한다.
 
 **채택**: PostgreSQL 18, Flyway, `ddl-auto: validate`, 공개 시 검증.
 **포기한 것**: 관리형 DB의 자동 백업(9절에서 직접 백업).

@@ -45,6 +45,9 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
 	List<PlaceTileRow> findRelated(long placeId, Collection<Long> makerIds, Collection<PlaceStatus> statuses,
 			Limit limit);
 
+	@Query("select p.status from Place p where p.id = :id")
+	Optional<PlaceStatus> findStatusById(long id);
+
 	@Query("""
 			select new com.jieuni.common.SitemapEntry(p.slug, p.updatedAt)
 			from Place p where p.status in :statuses and p.slug is not null
