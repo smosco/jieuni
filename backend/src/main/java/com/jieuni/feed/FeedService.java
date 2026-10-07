@@ -78,7 +78,7 @@ public class FeedService {
 				: FeedResponse.NextRelative.LATER;
 	}
 
-	// 지금보다 뒤인 가장 가까운 평일 08:00 KST. 편성이 없는 날이어도 시각은 준다(API.md 1절).
+	// 지금보다 뒤인 가장 가까운 평일 08:00 KST. 편성이 없는 날이어도 시각은 준다(마지막 화면이 "언제 열리는지"를 늘 말할 수 있게).
 	private static ZonedDateTime nextOpening(ZonedDateTime now) {
 		ZonedDateTime candidate = now.toLocalDate().atTime(OPENS_AT).atZone(KST);
 		while (!candidate.isAfter(now) || candidate.getDayOfWeek().getValue() > DayOfWeek.FRIDAY.getValue()) {

@@ -4,7 +4,7 @@ import { track } from "@/shared/lib/track";
 import { useToast } from "@/shared/ui/Toast";
 import styles from "./PlaceDetailView.module.css";
 
-// Web Share API가 있으면 시스템 공유, 없으면 링크 복사(PLAN F2).
+// Web Share API가 있으면 시스템 공유(모바일), 없으면 링크 복사(대부분의 데스크톱).
 export function ShareButton({ title }: { title: string }) {
   const toast = useToast();
 

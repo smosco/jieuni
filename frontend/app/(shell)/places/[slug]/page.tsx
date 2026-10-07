@@ -4,7 +4,7 @@ import { PlaceDetailView } from "@/features/place/components/PlaceDetailView";
 import { ApiError } from "@/shared/api/client";
 import { assertSlug } from "@/shared/lib/slug";
 
-// 빌드 때는 아무 공간도 만들지 않고, 첫 요청 때 만들어 태그 place:{slug}로 캐시한다(DECISIONS 6절).
+// 빌드 때는 아무 공간도 만들지 않고(백엔드 없이 빌드), 첫 요청 때 만들어 태그 place:{slug}로 캐시한다.
 export const dynamicParams = true;
 
 export function generateStaticParams() {

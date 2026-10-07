@@ -23,7 +23,7 @@ const STATUS_BAND = {
   closed: "이제는 만날 수 없는 공간이에요",
 } as const;
 
-// DESIGN 5절 04. 관리자 미리보기(M2b)도 이 컴포넌트에 같은 응답을 넣는다.
+// 관리자 미리보기도 이 컴포넌트에 같은 응답을 넣어 공개 화면과 똑같이 보이게 한다.
 export function PlaceDetailView({ place }: { place: PlaceDetail }) {
   const senses = SENSES.filter((sense) => place.senses[sense.key]);
   const meta = [place.region, KIND_LABEL[place.kind], place.access && ACCESS_LABEL[place.access]].filter(Boolean);
@@ -83,12 +83,12 @@ export function PlaceDetailView({ place }: { place: PlaceDetail }) {
                   )}
                   <CreditStatus verified={credit.verified} sourceUrl={credit.sourceUrl} />
                 </span>
-                {/* 프로필이 없는 만든 사람은 팔로우할 수 없다(SPEC 5절) */}
+                {/* 프로필이 없는 만든 사람은 팔로우해도 볼 곳이 없다 */}
                 {credit.maker.slug && <FollowButton makerName={credit.maker.name} />}
               </li>
             ))}
           </ul>
-          {/* 누르면 크레딧 알려주기 시트(F8) */}
+          {/* 누르면 크레딧 알려주기 시트(제보 기능을 붙일 때 연결) */}
           <button type="button" className={`body-sm ${styles.suggest}`}>
             이 공간을 만드셨나요? 크레딧을 알려주세요 →
           </button>
@@ -163,7 +163,7 @@ function CreditStatus({ verified, sourceUrl }: { verified: boolean; sourceUrl: s
   );
 }
 
-// 머물러 봄 배지, 아니면 첫 출처로 "○○으로 만남"(SPEC 2절, DESIGN 5절 04 문구 표)
+// 에디터가 다녀왔으면 머물러 봄 배지, 아니면 이 공간을 알게 된 첫 출처로 "○○으로 만남"
 function Encounter({ place }: { place: PlaceDetail }) {
   if (place.visitedByEditorOn) {
     return (

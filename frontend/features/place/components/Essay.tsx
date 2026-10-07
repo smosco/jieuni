@@ -1,7 +1,7 @@
 import Markdown, { type Components } from "react-markdown";
 import styles from "./Essay.module.css";
 
-// DESIGN 5절 04 에세이. raw HTML은 그리지 않고(skipHtml, rehype-raw 없음), 허용 밖 요소는 글자만 남긴다.
+// 관리자가 쓴 마크다운이라도 raw HTML은 그리지 않고(skipHtml, rehype-raw 없음), 허용 밖 요소는 글자만 남긴다.
 // h1은 페이지 제목(공간 이름)과 겹치지 않게 h2로 그린다.
 const ALLOWED = ["h1", "h2", "h3", "p", "ul", "ol", "li", "strong", "em", "a", "blockquote"];
 

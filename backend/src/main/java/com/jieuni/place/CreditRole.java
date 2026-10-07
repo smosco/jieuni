@@ -20,7 +20,7 @@ public enum CreditRole {
 	@EnumeratedValue
 	private final String value;
 
-	// 프로필 격자 캡션에 쓰는 화면 문구(API.md 1절).
+	// 프로필 격자 캡션에 쓰는 화면 문구.
 	private final String label;
 
 	CreditRole(String value, String label) {

@@ -1,4 +1,3 @@
-/* DESIGN 5절 04 공간 상세 */
 .band {
   margin: 0;
   padding: var(--space-md) var(--page-gutter);
@@ -42,7 +41,7 @@
   gap: var(--space-sm);
 }
 
-/* DESIGN 4절 Badge — 머물러 봄 */
+/* 머물러 봄 배지 */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -89,7 +88,7 @@
   white-space: pre-line;
 }
 
-/* 감각 한 줄 · 방문 정보 한 줄(DESIGN 4절) */
+/* 감각 한 줄 · 방문 정보 한 줄 */
 .rows {
   margin: 0;
 }
@@ -146,7 +145,7 @@
   inset: calc((var(--touch-min) - 100%) / -2) calc((var(--touch-min) - 100%) / -2);
 }
 
-/* DESIGN 4절 CreditRow */
+/* 크레딧 한 줄 */
 .credits {
   margin: 0;
   padding: 0;

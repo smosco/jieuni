@@ -1,6 +1,6 @@
 import { readCookie } from "./cookie";
 
-// API.md 0절 오류 본문 { message, fieldErrors? }
+// 백엔드 오류 본문 { message, fieldErrors? }
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -12,7 +12,7 @@ export class ApiError extends Error {
   }
 }
 
-// 브라우저는 상대 경로(/api/…)를 쓰고 next.config.ts의 rewrites가 백엔드로 넘긴다(같은 출처, DECISIONS 6절).
+// 브라우저는 상대 경로(/api/…)를 쓰고 next.config.ts의 rewrites가 백엔드로 넘긴다(같은 출처라 세션 쿠키가 실리고 XSRF-TOKEN을 읽을 수 있다).
 // 서버 컴포넌트는 API_URL로 백엔드를 직접 부른다.
 function baseUrl(): string {
   if (typeof window !== "undefined") {
@@ -27,7 +27,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   if (init.body !== undefined && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
-  // CSRF: GET 외 요청은 XSRF-TOKEN 쿠키를 헤더로 돌려보낸다(API.md 0절).
+  // CSRF: GET 외 요청은 XSRF-TOKEN 쿠키를 헤더로 돌려보낸다(Spring Security가 둘을 비교한다).
   if (typeof document !== "undefined" && method !== "GET" && method !== "HEAD") {
     const token = readCookie(document.cookie, "XSRF-TOKEN");
     if (token) {

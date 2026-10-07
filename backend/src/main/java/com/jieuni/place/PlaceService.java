@@ -89,7 +89,7 @@ public class PlaceService {
 		return kinds;
 	}
 
-	// 카카오는 공식 URL 형식(link/map, link/search), 네이버는 웹 검색 주소(공식 문서 없음, API.md 1절).
+	// 카카오는 공식 URL 형식(link/map, link/search), 네이버는 웹 형식 공식 문서가 없어 검색 주소로 둔다.
 	private PlaceDetailResponse.MapLinks mapLinks(Place place) {
 		// 카카오 link/map은 쉼표로 이름·위도·경도를 나누므로 이름 안의 쉼표도 인코딩한다.
 		String name = encode(place.getName()).replace(",", "%2C");

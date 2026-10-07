@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-// 브라우저는 백엔드를 직접 부르지 않는다. 같은 출처로 받아 백엔드로 넘긴다(DECISIONS 6절).
+// 브라우저는 백엔드를 직접 부르지 않는다. 같은 출처로 받아 백엔드로 넘긴다(세션 쿠키·CSRF 쿠키가 도메인과 상관없이 동작하게).
 // 배열로 주면 afterFiles: 파일 라우트(app/api/revalidate)가 먼저 잡힌다.
 const nextConfig: NextConfig = {
   output: "standalone",

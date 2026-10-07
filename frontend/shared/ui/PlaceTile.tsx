@@ -3,7 +3,7 @@ import type { PlaceTile as PlaceTileData } from "@/shared/api/types";
 import { PhotoImage } from "./PhotoImage";
 import styles from "./PlaceTile.module.css";
 
-// DESIGN 4절 PlaceTile. 캡션은 API의 caption, 없으면 공간 이름.
+// 캡션은 API의 caption(화면마다 다름), 없으면 공간 이름.
 export function PlaceTile({ place, sizes }: { place: PlaceTileData; sizes: string }) {
   const closed = place.status === "closed";
   const caption = place.caption ?? place.name;

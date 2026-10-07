@@ -1,4 +1,4 @@
-/* DESIGN 4절 SectionLabel: 글자 + 12px + 남은 너비를 채우는 선 */
+/* 글자 + 12px + 남은 너비를 채우는 선 */
 .label {
   display: flex;
   align-items: center;

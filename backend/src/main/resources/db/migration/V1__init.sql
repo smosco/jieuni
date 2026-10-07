@@ -1,4 +1,4 @@
--- SPEC 3절의 12개 테이블. enum은 varchar + CHECK, 시각은 timestamptz(UTC).
+-- 서비스 테이블 12개. enum은 varchar + CHECK, 시각은 timestamptz(UTC).
 -- 공개 시 필수 항목은 NOT NULL이 아니라 PublishRules(서비스)가 검사한다.
 
 CREATE TABLE users (

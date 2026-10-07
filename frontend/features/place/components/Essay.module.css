@@ -1,4 +1,4 @@
-/* DESIGN 5절 04 에세이: 요소 사이 16px, 제목 위 24px, 목록 왼쪽 16px */
+/* 요소 사이 16px, 제목 위 24px, 목록 왼쪽 16px */
 .essay {
   display: flex;
   flex-direction: column;

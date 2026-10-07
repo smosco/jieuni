@@ -1,8 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
 import { revalidateTag } from "next/cache";
 
-// Spring이 공개·수정 커밋 뒤에 부른다(API.md 6절). 파일 라우트라 next.config.ts의 /api rewrites보다 먼저 잡힌다.
-// { expire: 0 }: 다음 요청이 옛 페이지 없이 새로 만든다. 'max'는 옛 페이지를 먼저 보여준다(DECISIONS 6절).
+// Spring이 공개·수정 커밋 뒤에 부른다. 파일 라우트라 next.config.ts의 /api rewrites보다 먼저 잡힌다.
+// { expire: 0 }: 다음 요청이 옛 페이지 없이 새로 만든다. 'max'는 옛 페이지를 먼저 보여줘 공개 직후 새로고침에 반영되지 않는다.
 export async function POST(request: Request) {
   if (!isValidSecret(request.headers.get("x-revalidate-secret"))) {
     return Response.json({ message: "재생성 비밀이 맞지 않아요" }, { status: 401 });

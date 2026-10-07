@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface PlaceRepository extends JpaRepository<Place, Long> {
 
-	// 크레딧 목록만 join fetch한다. 나머지 자식 목록은 배치 페치로 하나씩(DECISIONS 3절).
+	// 크레딧 목록만 join fetch한다. 나머지 자식 목록은 배치 페치로 하나씩(둘 이상 join fetch하면 행이 곱으로 불어난다).
 	@Query("""
 			select p from Place p
 			left join fetch p.credits c left join fetch c.maker

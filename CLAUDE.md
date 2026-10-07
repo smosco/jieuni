@@ -78,6 +78,7 @@
 - 파일 편집·테스트·빌드·curl은 자유. **새 의존성 추가와 이 파일에 없는 설계 판단은 하기 전에 묻는다.** 커밋·푸시는 하지 않는다(내가 한다).
 - 확인은 실제로 실행해서 한다. `./gradlew test`, `npm test`, `uv run pytest`, curl, `docker compose up --build`.
 - 설명 못 할 추상화·유틸·주석 금지. 장황한 doc 주석 금지. 코드는 읽는 사람이 이해할 만큼만.
+- 주석은 이유를 그 자리에서 한 줄로 설명한다. 문서 절 번호(SPEC 3절, DESIGN 5절 04 등)와 PLAN·단위 번호(B4, 확정 10 등)는 코드에 쓰지 않는다. 꼭 필요하면 문서 이름만 쓴다.
 - 새 파일·새 의존성에는 이유를 한 줄 말한다.
 - Spring Boot 4.1(Jackson 3, Spring Security 7, 모듈화된 스타터) · Spring Session · Next.js 16(캐시 API 변경) · MCP SDK · 외부 API(Tavily·카카오·구글·LLM)처럼 버전이나 약관에 따라 달라지는 것은 추측하지 말고 공식 문서를 확인한 뒤 출처를 말한다.
 - 한 단위에서 2시간 넘게 막히면 더 단순한 안을 제안하고, 그 판단을 `docs/DECISIONS.md` 끝에 한 줄 추가한다.

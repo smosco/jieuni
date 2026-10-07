@@ -1,4 +1,4 @@
-/* DESIGN 5절 04: 사진 375×440, 아래 32px에 "사진: ○○"과 "1 / 4" */
+/* 사진 375×440, 아래 32px에 "사진: ○○"과 "1 / 4" */
 .gallery {
   position: relative;
   height: var(--detail-photo-height);
@@ -25,7 +25,7 @@
   scroll-snap-align: start;
 }
 
-/* 아래쪽 글자가 밝은 사진에서도 읽히도록(사진 위 그림자만 예외로 허용, DESIGN 0절) */
+/* 아래쪽 글자가 밝은 사진에서도 읽히도록(그림자는 사진 위에서만 쓴다) */
 .slide::after {
   content: "";
   position: absolute;

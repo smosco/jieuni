@@ -1,4 +1,4 @@
-/* DESIGN 4절 FollowButton. 작은 버튼이라 터치 영역은 바깥 여백으로 늘린다. */
+/* 작은 버튼이라 글자는 그대로 두고 터치 영역만 바깥으로 44px까지 늘린다. */
 .button {
   position: relative;
   padding: var(--follow-button-padding);

@@ -1,4 +1,4 @@
-/* 디자인 토큰 — docs/DESIGN.md 1~3절과 같은 값. 값을 바꿀 때는 DESIGN.md도 같이 고친다. */
+/* 디자인 토큰 — DESIGN.md와 같은 값. 값을 바꿀 때는 DESIGN.md도 같이 고친다. */
 :root {
   /* color */
   --color-paper: #F4F0E8;
@@ -65,7 +65,7 @@
   :root { --duration-state: 0ms; --duration-sheet: 0ms; }
 }
 
-/* type — DESIGN.md 2절 */
+/* type: 글자 단계는 이 8개만 쓴다 */
 .display-xl { font-family: var(--font-serif); font-weight: 300; font-size: 30px; line-height: 1.4;  letter-spacing: -0.01em; }
 .display-lg { font-family: var(--font-serif); font-weight: 300; font-size: 24px; line-height: 1.4;  letter-spacing: -0.005em; }
 .display-md { font-family: var(--font-serif); font-weight: 400; font-size: 19px; line-height: 1.5;  letter-spacing: -0.003em; }

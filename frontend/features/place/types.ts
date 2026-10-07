@@ -1,6 +1,6 @@
 import type { CreditRole, MakerKind, Photo, PlaceKind, PlaceTile } from "@/shared/api/types";
 
-// API.md 1절 GET /api/places/{slug}
+// GET /api/places/{slug}
 export type Access = "walk_in" | "reservation" | "ticket" | "guests_only";
 export type SourceType = "article" | "video" | "instagram" | "official";
 export type EmbedType = "youtube" | "instagram";

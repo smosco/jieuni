@@ -22,7 +22,7 @@
   background: var(--color-photo-placeholder);
 }
 
-/* 밝은 사진에서도 캡션이 읽히도록 아래 48px에 옅은 그림자(DESIGN 4절) */
+/* 밝은 사진에서도 캡션이 읽히도록 아래 48px에 옅은 그림자 */
 .tile::after {
   content: "";
   position: absolute;
@@ -47,7 +47,7 @@
   color: var(--color-on-photo);
 }
 
-/* 폐업 40%(DESIGN 4절) */
+/* 폐업 공간도 작업 이력이라 격자에 남기되 흐리게 */
 .closed {
   opacity: 0.4;
 }

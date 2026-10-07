@@ -2,8 +2,7 @@
 
 import styles from "./FollowButton.module.css";
 
-// DESIGN 4절 FollowButton. 이 조각에서는 비로그인 상태("팔로우")만 그린다.
-// 누르면 로그인 시트(F6), 팔로우 상태는 F7에서 붙인다.
+// 아직 로그인이 없어 비로그인 상태("팔로우")만 그린다. 누르면 로그인 시트, 팔로우 상태는 로그인을 붙일 때 연결한다.
 export function FollowButton({ following = false, makerName }: { following?: boolean; makerName: string }) {
   return (
     <button

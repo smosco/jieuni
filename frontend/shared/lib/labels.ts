@@ -1,6 +1,6 @@
 import type { CreditRole, PlaceKind } from "@/shared/api/types";
 
-// 코드 값 → 화면 문구. DESIGN.md 5절 04 문구 표, 역할은 API.md 1절(B4)과 같다.
+// 코드 값 → 화면 문구. 역할 문구는 백엔드 CreditRole과 같아야 한다.
 export const KIND_LABEL: Record<PlaceKind, string> = {
   cafe: "카페",
   bar: "바",

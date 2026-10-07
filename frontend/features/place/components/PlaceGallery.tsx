@@ -8,7 +8,7 @@ import { embedSource } from "../embed";
 import type { Embed } from "../types";
 import styles from "./PlaceGallery.module.css";
 
-// DESIGN 5절 04 사진: 가로 넘기기(scroll-snap). 사진 뒤에 임베드가 이어진다.
+// 가로 넘기기는 라이브러리 없이 scroll-snap. 사진 뒤에 임베드가 이어진다.
 export function PlaceGallery({ photos, embeds, placeName }: { photos: Photo[]; embeds: Embed[]; placeName: string }) {
   const frames = embeds.flatMap((embed) => {
     const source = embedSource(embed);
@@ -58,7 +58,7 @@ export function PlaceGallery({ photos, embeds, placeName }: { photos: Photo[]; e
   );
 }
 
-// 처음에는 썸네일만, 누르면 iframe을 불러온다(SPEC 8절 성능: 임베드는 누를 때만).
+// 처음에는 썸네일만, 누르면 iframe을 불러온다(외부 iframe이 첫 화면 로딩을 늦추지 않게).
 function EmbedSlide({ type, frameUrl, thumbnailUrl }: { type: Embed["type"]; frameUrl: string; thumbnailUrl: string | null }) {
   const [open, setOpen] = useState(false);
   const label = type === "youtube" ? "영상 보기" : "인스타그램 게시물 보기";
@@ -77,7 +77,7 @@ function EmbedSlide({ type, frameUrl, thumbnailUrl }: { type: Embed["type"]; fra
   return (
     <button type="button" className={styles.embedButton} onClick={() => setOpen(true)}>
       {thumbnailUrl && (
-        // eslint-disable-next-line @next/next/no-img-element -- 외부 썸네일, 이미지 최적화를 쓰지 않는다(DECISIONS 7절)
+        // eslint-disable-next-line @next/next/no-img-element -- 외부 썸네일이라 변환 한도를 쓰는 Next 이미지 최적화를 거치지 않는다
         <img className={styles.photo} src={thumbnailUrl} alt="" loading="lazy" />
       )}
       <span className={`label-md ${styles.embedLabel}`}>{label}</span>

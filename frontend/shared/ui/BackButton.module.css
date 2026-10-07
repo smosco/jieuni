@@ -1,4 +1,4 @@
-/* DESIGN 5절 04: 왼쪽 위 (16, 52)에 24px 화살표, 선 1.25px. 터치 영역은 44px로 늘린다. */
+/* 화살표는 왼쪽 위 (16, 52)에 24px로 보이고, 터치 영역은 그 둘레로 44px까지 늘린다. */
 .button {
   position: absolute;
   top: calc(var(--top-offset) - (var(--touch-min) - var(--icon-size)) / 2);

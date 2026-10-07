@@ -13,7 +13,7 @@ import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// 피드 공개 경계(CLAUDE.md 테스트 목록): 수 07:59 / 08:00, 금 08:00 뒤 다음 공개 시각, 토, 월 07:59 지난주, 편성 빈 날.
+// 피드 공개 경계: 수 07:59 / 08:00, 금 08:00 뒤 다음 공개 시각, 토, 월 07:59 지난주, 편성 빈 날.
 // nextRelative(마지막 화면 문구): 평일 08:00 전 today, 다음 공개일이 내일이면 tomorrow(일요일 포함), 그 밖 later.
 class FeedApiTest extends IntegrationTest {
 

@@ -1,6 +1,6 @@
 import type { Access, SourceType } from "./types";
 
-// DESIGN.md 5절 04 문구 표
+// 코드 값 → 상세 화면 문구
 export const ACCESS_LABEL: Record<Access, string> = {
   walk_in: "바로 방문",
   reservation: "예약",

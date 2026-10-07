@@ -8,11 +8,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
-// API.md 1절 GET /api/feed. 시간 계산은 전부 서버가 하고 프론트는 이 값을 그린다.
+// GET /api/feed. 시간 계산은 전부 서버가 하고 프론트는 이 값을 그린다.
 public record FeedResponse(LocalDate weekLabel, List<Pick> picks, int openedCount, Instant nextOpensAt,
 		String nextWeekday, NextRelative nextRelative) {
 
-	// 마지막 화면 문구를 고르는 값(SPEC 5절). 다음 공개일이 오늘이면 today, 내일이면 tomorrow, 그 밖은 later.
+	// 피드 마지막 화면 문구를 고르는 값. 다음 공개일이 오늘이면 today, 내일이면 tomorrow, 그 밖은 later.
 	public enum NextRelative {
 
 		TODAY("today"), TOMORROW("tomorrow"), LATER("later");

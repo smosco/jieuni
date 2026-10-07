@@ -84,7 +84,7 @@ public class Place extends BaseTimeEntity {
 
 	private Instant publishedAt;
 
-	// 자식 목록 넷은 Place가 통째로 소유한다(관리자 API의 "통째 교체"). 둘 이상을 join fetch하지 않는다(DECISIONS 3절).
+	// 자식 목록 넷은 Place가 통째로 소유한다(관리자 API의 "통째 교체"). 둘 이상을 join fetch하지 않는다(카테시안 곱·MultipleBagFetchException).
 	@OneToMany(mappedBy = "place", cascade = CascadeType.ALL, orphanRemoval = true)
 	@OrderBy("position")
 	private List<PlaceCredit> credits = new ArrayList<>();

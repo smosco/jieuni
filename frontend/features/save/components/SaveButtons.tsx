@@ -9,8 +9,7 @@ const BUTTONS: { status: SaveStatus; label: string }[] = [
   { status: "been", label: "다녀왔어요" },
 ];
 
-// DESIGN 4절 SaveButton. 이 조각에서는 비로그인 상태(둘 다 off)만 그린다.
-// 누르면 로그인 시트(F6), 저장 상태와 낙관적 업데이트는 F7에서 붙인다.
+// 아직 로그인이 없어 비로그인 상태(둘 다 off)만 그린다. 누르면 로그인 시트, 저장 상태와 낙관적 업데이트는 로그인을 붙일 때 연결한다.
 export function SaveButtons({ status = null }: { status?: SaveStatus | null }) {
   return (
     <div className={styles.group}>

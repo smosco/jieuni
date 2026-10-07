@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
 
-// 커서 목록의 위치: 정렬 키 (시각, id)를 불투명 문자열로 감싼다(API.md 0절).
+// 커서 목록의 위치: 정렬 키 (시각, id)를 불투명 문자열로 감싸 클라이언트가 내부 정렬에 기대지 않게 한다.
 public record Cursor(Instant at, long id) {
 
 	private static final int DEFAULT_SIZE = 24;

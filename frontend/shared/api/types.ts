@@ -1,4 +1,4 @@
-// API.md 0절 공통 모양. 두 기능 이상이 쓴다. 값은 백엔드 enum과 같다.
+// 여러 API가 같이 쓰는 응답 모양. 값은 백엔드 enum과 같다.
 
 export type PlaceKind =
   | "cafe"

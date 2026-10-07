@@ -1,11 +1,11 @@
 -- 둘러보기(published·paused, published_at desc, id desc)용 인덱스를 부분 인덱스로 바꾼다.
--- status가 두 값이라 (status, published_at, id) 인덱스로는 전체 순서를 만들 수 없어 쓰이지 않았다(EXPLAIN은 DECISIONS 2절).
+-- status가 두 값이라 (status, published_at, id) 인덱스로는 전체 순서를 만들 수 없어 쓰이지 않았다.
 DROP INDEX idx_places_status_published;
 
 CREATE INDEX idx_places_listed_published ON places (published_at DESC, id DESC)
     WHERE status IN ('published', 'paused') AND slug IS NOT NULL;
 
--- 확인된(verified) 크레딧은 출처가 있어야 한다. 상태와 상관없이 항상 참인 형식 규칙이라 DB에도 둔다(DECISIONS 3절).
+-- 확인된(verified) 크레딧은 출처가 있어야 한다. 상태와 상관없이 항상 참인 형식 규칙이라 DB에도 둔다.
 ALTER TABLE place_credits
     ADD CONSTRAINT ck_place_credits_verified_source CHECK (NOT verified OR source_url IS NOT NULL);
 

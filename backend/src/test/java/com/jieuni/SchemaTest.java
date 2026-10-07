@@ -41,7 +41,7 @@ class SchemaTest {
 		Integer tables = jdbc.queryForObject(
 				"select count(*) from information_schema.tables where table_schema = 'public' and table_name <> 'flyway_schema_history'",
 				Integer.class);
-		assertThat(tables).isEqualTo(14); // SPEC 3절 12개 + Spring Session 2개
+		assertThat(tables).isEqualTo(14); // 서비스 테이블 12개 + Spring Session 2개
 	}
 
 	@Test
