@@ -44,6 +44,14 @@
   object-fit: cover;
 }
 
+/* 화살표는 왼쪽 위 (16, 52) */
+.back {
+  position: absolute;
+  top: var(--top-offset);
+  left: var(--space-lg);
+  z-index: 1;
+}
+
 .credit,
 .counter {
   position: absolute;

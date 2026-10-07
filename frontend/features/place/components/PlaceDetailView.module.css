@@ -164,10 +164,12 @@
   color: var(--color-ink-tertiary);
 }
 
+/* 이름과 출처 링크가 줄 전체로 늘어나면 이름 근처를 누르다 외부 출처로 나간다. 글자 너비만 누르게 한다. */
 .who {
   display: flex;
   flex: 1;
   flex-direction: column;
+  align-items: flex-start;
 }
 
 .verified {

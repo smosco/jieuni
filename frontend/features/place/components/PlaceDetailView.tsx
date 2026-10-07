@@ -151,14 +151,14 @@ export function PlaceDetailView({ place }: { place: PlaceDetail }) {
   );
 }
 
-// verified면 "출처 확인됨"(출처가 있을 때만 링크), 아니면 "확인 중"
+// verified면 "출처 확인됨"(출처가 있으면 외부 링크라 ↗를 붙인다), 아니면 "확인 중"
 function CreditStatus({ verified, sourceUrl }: { verified: boolean; sourceUrl: string | null }) {
   const className = `body-sm ${styles.verified}`;
   if (!verified) return <span className={className}>확인 중</span>;
   if (!sourceUrl) return <span className={className}>출처 확인됨</span>;
   return (
-    <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className={className}>
-      출처 확인됨
+    <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className={className} aria-label="출처 확인됨, 출처를 새 창으로 열기">
+      출처 확인됨 <span aria-hidden="true">↗</span>
     </a>
   );
 }

@@ -48,7 +48,9 @@ export function PlaceGallery({ photos, embeds, placeName }: { photos: Photo[]; e
           ))}
         </div>
       )}
-      <BackButton onPhoto={total > 0} />
+      <div className={styles.back}>
+        <BackButton onPhoto={total > 0} />
+      </div>
       {total > 1 && (
         <p className={`label-sm ${styles.counter}`} aria-hidden="true">
           {index + 1} / {total}

@@ -1,0 +1,39 @@
+/* 머리: 좌우 24px, 위 52px, 항목 사이 12px, 아래 28px */
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--top-offset) var(--page-gutter) var(--detail-body-top);
+}
+
+/* 화살표에서 영문 라벨까지 36px = 사이 12px + 24px */
+.back {
+  margin-bottom: var(--space-xl);
+}
+
+.label,
+.name,
+.intro,
+.links {
+  margin: 0;
+}
+
+.label,
+.links {
+  color: var(--color-ink-tertiary);
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.intro {
+  color: var(--color-ink-secondary);
+}
+
+.sectionLabel {
+  padding: 0 var(--page-gutter) var(--space-md);
+}
