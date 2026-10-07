@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FollowButton } from "@/features/follow/components/FollowButton";
 import { subjectParticle } from "@/shared/lib/josa";
+import { makerLabel } from "@/shared/lib/labels";
 import { BackButton } from "@/shared/ui/BackButton";
 import { PlaceGrid } from "@/shared/ui/PlaceTile";
 import { SectionLabel } from "@/shared/ui/SectionLabel";
@@ -8,7 +9,7 @@ import type { MakerProfile } from "../types";
 import styles from "./MakerProfileView.module.css";
 
 export function MakerProfileView({ maker }: { maker: MakerProfile }) {
-  const label = [maker.kind.toUpperCase(), maker.region].filter(Boolean).join(" · ");
+  const label = makerLabel(maker.kind, maker.region);
 
   return (
     <article>

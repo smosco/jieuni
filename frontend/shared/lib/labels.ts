@@ -1,4 +1,4 @@
-import type { CreditRole, PlaceKind } from "@/shared/api/types";
+import type { CreditRole, MakerKind, PlaceKind } from "@/shared/api/types";
 
 // 코드 값 → 화면 문구. 역할 문구는 백엔드 CreditRole과 같아야 한다.
 export const KIND_LABEL: Record<PlaceKind, string> = {
@@ -29,3 +29,8 @@ export const ROLE_LABEL: Record<CreditRole, string> = {
   owner: "주인",
   other: "그 밖",
 };
+
+// 만든 사람 영문 라벨: "STUDIO · 서울 종로구". 지역이 없으면 종류만.
+export function makerLabel(kind: MakerKind, region: string | null): string {
+  return [kind.toUpperCase(), region].filter(Boolean).join(" · ");
+}

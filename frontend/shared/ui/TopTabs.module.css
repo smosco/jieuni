@@ -1,0 +1,37 @@
+.tabs {
+  display: flex;
+  gap: var(--space-xl);
+  padding: 0 var(--page-gutter);
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+/* 켜진 탭은 글자 아래 10px에 글자 너비만큼 선 */
+.tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--top-tab-indicator-gap);
+  padding-top: var(--space-xs);
+  color: var(--color-ink-tertiary);
+}
+
+/* 보이는 탭은 그대로 두고 터치 영역만 위아래로 44px까지 늘린다. 선은 ::after라 겹치지 않는다. */
+.tab::before {
+  content: "";
+  position: absolute;
+  inset: calc((var(--touch-min) - 100%) / -2) 0;
+}
+
+.tab::after {
+  content: "";
+  height: var(--hairline);
+  background: transparent;
+}
+
+.active {
+  color: var(--color-ink);
+}
+
+.active::after {
+  background: var(--color-ink);
+}

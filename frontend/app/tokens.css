@@ -49,6 +49,10 @@
   --follow-button-padding: 5px 10px;
   --badge-padding: 4px 8px;
   --badge-dot-size: 4px;
+  --chip-padding: 6px 12px;
+  --chip-gap: 6px;
+  --top-tab-indicator-gap: 10px;
+  --head-bottom: 20px;
   --tile-size: 124px;
   --tile-gap: 1.5px;
   --touch-min: 44px;

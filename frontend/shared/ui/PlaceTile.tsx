@@ -13,6 +13,7 @@ export function PlaceTile({ place, sizes }: { place: PlaceTileData; sizes: strin
       <span className={`label-sm ${styles.caption}`}>
         {caption}
         {closed && " · 폐업"}
+        {place.status === "paused" && " · 휴업 중"}
       </span>
     </Link>
   );
