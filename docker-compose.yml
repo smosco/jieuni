@@ -43,6 +43,7 @@ services:
       # rewrites 목적지는 빌드 때 결과물에 굳으므로 빌드 인자로도 준다.
       args:
         API_URL: http://backend:8080
+        NEXT_PUBLIC_NEWSLETTER_URL: ${NEXT_PUBLIC_NEWSLETTER_URL:-}
     environment:
       API_URL: http://backend:8080
       REVALIDATE_SECRET: ${REVALIDATE_SECRET:-}

@@ -20,3 +20,9 @@
   border-color: transparent;
   color: var(--color-ink-tertiary);
 }
+
+/* 피드 카드처럼 사진 위에 놓일 때 */
+.onPhoto {
+  border-color: var(--on-photo-70);
+  color: var(--color-on-photo);
+}

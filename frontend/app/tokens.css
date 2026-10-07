@@ -10,9 +10,16 @@
   --color-ink: #2A2622;            /* 13.2:1 */
   --color-earth: #8A5A3C;          /* 5.1:1, 유일한 포인트 색 */
   --color-on-photo: #F7F4EE;
+  --on-photo-80: color-mix(in srgb, var(--color-on-photo) 80%, transparent);
+  --on-photo-75: color-mix(in srgb, var(--color-on-photo) 75%, transparent);
+  --on-photo-70: color-mix(in srgb, var(--color-on-photo) 70%, transparent);
+  --on-photo-60: color-mix(in srgb, var(--color-on-photo) 60%, transparent);
+  --on-photo-55: color-mix(in srgb, var(--color-on-photo) 55%, transparent);
+  --on-photo-20: color-mix(in srgb, var(--color-on-photo) 20%, transparent);
   --color-kakao: #FEE500;          /* 카카오 버튼 전용 예외 */
 
   --shade-photo: linear-gradient(to bottom, rgba(23, 20, 18, 0) 0%, rgba(23, 20, 18, .35) 45%, rgba(23, 20, 18, .85) 100%);
+  --shade-photo-top: linear-gradient(to bottom, rgba(23, 20, 18, .55) 0%, rgba(23, 20, 18, .55) 40%, rgba(23, 20, 18, 0) 100%);
   --shade-tile: linear-gradient(to bottom, rgba(23, 20, 18, 0), rgba(23, 20, 18, .35));
   --dim-sheet: rgba(42, 38, 34, .55);
 
@@ -53,6 +60,15 @@
   --chip-gap: 6px;
   --top-tab-indicator-gap: 10px;
   --head-bottom: 20px;
+  --feed-top-height: 56px;
+  --progress-bar-width: 14px;
+  --feed-block-gap: 14px;
+  --feed-line-width: 300px;
+  --shade-photo-height: 520px;
+  --shade-top-height: 140px;
+  --end-block-top: 260px;
+  --end-rule-width: 32px;
+  --big-button-padding: 14px 16px;
   --tile-size: 124px;
   --tile-gap: 1.5px;
   --touch-min: 44px;

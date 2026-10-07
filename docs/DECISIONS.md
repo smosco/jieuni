@@ -245,7 +245,7 @@ v0.1은 공간을 저장소의 MDX 파일로 두는 안이었다.
 - 프론트: Vercel Hobby(비상업). 수익화하면 Pro.
 - 백엔드, PostgreSQL, AI 초안 서비스는 **Docker Compose로 서버 한 대**에 올린다. 로컬의 `docker compose up` 구성을 그대로 운영으로 가져간다.
 - HTTPS는 리버스 프록시의 자동 인증서. DB는 매일 `pg_dump` → R2로 백업하고, 복원을 한 번 실제로 해 본다.
-- 서버 후보: AWS EC2(가장 널리 쓰임, 무료 기간 이후 월 2~3만 원 추정), AWS Lightsail(정액), 무료 PaaS + 무료 Postgres. **결정 마감: PLAN M4(AI 국면 끝, 10/20).** D1이 이 결정에 의존한다.
+- 서버 후보: AWS EC2(가장 널리 쓰임, 무료 기간 이후 월 2~3만 원 추정), AWS Lightsail(정액), 무료 PaaS + 무료 Postgres. **결정 마감: PLAN M4(AI 국면 끝, 10/13 — 2026-10-07 체크포인트로 10/20에서 앞당김).** D1이 이 결정에 의존한다.
 
 ---
 
