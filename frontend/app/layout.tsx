@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans_KR, Noto_Serif_KR } from "next/font/google";
+import { LoginProvider } from "@/features/auth/components/LoginProvider";
 import { QueryProvider } from "@/shared/api/QueryProvider";
 import { EntryPathRecorder } from "@/shared/lib/entry";
 import { ToastProvider } from "@/shared/ui/Toast";
@@ -32,7 +33,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="ko" className={`${serif.variable} ${sans.variable}`}>
       <body>
         <QueryProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <LoginProvider>{children}</LoginProvider>
+          </ToastProvider>
           <EntryPathRecorder />
         </QueryProvider>
       </body>

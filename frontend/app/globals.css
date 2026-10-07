@@ -31,3 +31,8 @@ button {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* 시트가 열려 있으면 뒤 화면이 스크롤되지 않게 */
+html:has(dialog[open]) {
+  overflow: hidden;
+}

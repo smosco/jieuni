@@ -72,6 +72,11 @@
   --tile-size: 124px;
   --tile-gap: 1.5px;
   --touch-min: 44px;
+  --sheet-padding: 12px 24px 40px;
+  --sheet-gap: 20px;
+  --sheet-handle-width: 32px;
+  --sheet-handle-height: 2px;
+  --login-button-padding: 15px;
 
   /* font: --font-serif · --font-sans는 app/layout.tsx의 next/font가 <html>에 정의한다(여기서도 선언하면 순서에 따라 뒤집힌다). */
 

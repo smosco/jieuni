@@ -20,7 +20,7 @@ export function MakerProfileView({ maker }: { maker: MakerProfile }) {
         <p className={`label-sm ${styles.label}`}>{label}</p>
         <div className={styles.nameRow}>
           <h1 className={`display-xl ${styles.name}`}>{maker.name}</h1>
-          <FollowButton makerName={maker.name} />
+          <FollowButton makerId={maker.id} makerName={maker.name} />
         </div>
         {maker.intro && <p className={`body-md ${styles.intro}`}>{maker.intro}</p>}
         <MakerLinks maker={maker} />

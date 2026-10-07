@@ -76,14 +76,14 @@ export function FeedCard({
             {/* 피드에서는 아직 팔로우하지 않은 사람에게만 보인다. 로그인 전에는 모두 해당한다. */}
             {firstMaker.slug && (
               <span className={styles.interactive}>
-                <FollowButton makerName={firstMaker.name} onPhoto />
+                <FollowButton makerId={firstMaker.id} makerName={firstMaker.name} onPhoto onLeave={onLeave} />
               </span>
             )}
           </div>
         )}
         {!closed && (
           <div className={styles.interactive}>
-            <SaveButtons onPhoto />
+            <SaveButtons placeId={place.id} onPhoto onLeave={onLeave} />
           </div>
         )}
       </div>

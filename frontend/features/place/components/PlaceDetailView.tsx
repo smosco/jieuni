@@ -41,7 +41,7 @@ export function PlaceDetailView({ place }: { place: PlaceDetail }) {
           <h1 className={`display-xl ${styles.name}`}>{place.name}</h1>
           <p className={`body-sm ${styles.meta}`}>{meta.join(" · ")}</p>
           <div className={styles.actions}>
-            {place.status !== "closed" && <SaveButtons />}
+            {place.status !== "closed" && <SaveButtons placeId={place.id} />}
             <ShareButton title={place.name} />
           </div>
         </header>
@@ -84,7 +84,7 @@ export function PlaceDetailView({ place }: { place: PlaceDetail }) {
                   <CreditStatus verified={credit.verified} sourceUrl={credit.sourceUrl} />
                 </span>
                 {/* 프로필이 없는 만든 사람은 팔로우해도 볼 곳이 없다 */}
-                {credit.maker.slug && <FollowButton makerName={credit.maker.name} />}
+                {credit.maker.slug && <FollowButton makerId={credit.maker.id} makerName={credit.maker.name} />}
               </li>
             ))}
           </ul>
