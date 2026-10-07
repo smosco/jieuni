@@ -196,6 +196,8 @@ v0.1은 공간을 저장소의 MDX 파일로 두는 안이었다.
 
 **2026-10-06(F1) 목록 페이지의 렌더 방식**: `/`, `/places`, `/makers`는 segment `revalidate = 0`(요청마다 렌더) + `fetch(next: { tags, revalidate: 3600 })` 데이터 캐시로 간다. 정적 라우트는 빌드 때 prerender되는데 그때 백엔드가 없으면 빌드가 깨지거나 빈 화면이 1시간짜리 HTML로 굳는다(`[slug]` 라우트의 빈 `generateStaticParams` 같은 장치가 정적 라우트에는 없다). 공식 문서([caching-without-cache-components](https://nextjs.org/docs/app/guides/caching-without-cache-components))가 `revalidate = 0`은 "always dynamically rendered … leaves fetch requests that use a positive revalidate as is"라고 적어 이 조합이 보장된다. `force-dynamic`은 문서가 "모든 fetch를 no-store로"라고 적어 쓰지 않는다. 상세 페이지(`[slug]`)는 그대로 빈 `generateStaticParams` + `dynamicParams`(첫 요청 때 생성, 전체 라우트 캐시). 태그 무효화는 두 캐시 모두에 듣는다.
 
+**2026-10-07(F2) 에세이 마크다운 — react-markdown**: 공간 에세이(SPEC 3절 `essay`, 마크다운)는 `react-markdown` 10을 **서버 컴포넌트에서만** 써서 그린다(클라이언트 번들에 들어가지 않는다). `allowedElements`로 h2·h3·p·ul·ol·li·strong·em·a·blockquote만(h1은 h2로 그린다, 이미지 금지), `skipHtml`로 raw HTML을 버리고 HTML 허용 플러그인(`rehype-raw`)은 쓰지 않는다. 링크는 기본 `urlTransform`이 위험한 주소를 비우고 새 창 + `noopener noreferrer`. 확인 결과는 NOTES F2. **포기한 것**: 의존성 없는 직접 파서(제목·문단·목록만이면 짧지만, 링크·인용·강조와 이스케이프를 손으로 맞추는 쪽이 더 위험하다).
+
 **2026-10-06 확인(즉시 반영 방법)**: Spring이 부르는 `app/api/revalidate` 라우트에서는 `revalidateTag(tag, { expire: 0 })`를 쓴다. Next 16은 두 번째 인자가 필수이고, `'max'` 같은 프로필을 주면 다음 요청이 옛 페이지를 먼저 받으므로(stale-while-revalidate) "관리자가 공개한 직후 새로고침 한 번에 보인다"가 되지 않는다. `updateTag`는 Server Action 전용이라 외부 호출 라우트에서 못 쓴다. `cacheComponents`는 켜지 않는다(빈 `generateStaticParams`가 빌드 오류가 됨). 출처는 "버전 기준" 표의 Next.js 행.
 
 ---

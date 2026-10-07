@@ -1,0 +1,42 @@
+/* DESIGN 5절 04 에세이: 요소 사이 16px, 제목 위 24px, 목록 왼쪽 16px */
+.essay {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.essay > * {
+  margin: 0;
+}
+
+/* 이미지만 있던 문단은 이미지가 빠지면 비어서 간격만 남는다 */
+.essay > p:empty {
+  display: none;
+}
+
+.essay > :is(h2, h3):not(:first-child) {
+  margin-top: calc(var(--space-xl) - var(--space-lg));
+}
+
+.essay :is(ul, ol) {
+  padding-left: var(--space-lg);
+}
+
+.essay strong {
+  font-weight: 500;
+}
+
+.essay blockquote {
+  padding-left: var(--space-lg);
+  border-left: var(--hairline) solid var(--color-line);
+  color: var(--color-ink-secondary);
+}
+
+.essay blockquote p {
+  margin: 0;
+}
+
+.essay a {
+  text-decoration: underline;
+  text-underline-offset: var(--space-xs);
+}

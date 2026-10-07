@@ -1,0 +1,18 @@
+.region {
+  position: fixed;
+  right: 0;
+  bottom: calc(var(--tabbar-height) + var(--space-lg));
+  left: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.toast {
+  max-width: var(--content-width);
+  margin: 0;
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-sm);
+  background: var(--color-ink);
+  color: var(--color-paper);
+}

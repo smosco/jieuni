@@ -37,6 +37,18 @@
   --tab-indicator-gap: 6px;
   --dot-size: 5px;
   --shell-max-width: 480px;
+  --row-padding: 14px;
+  --row-label-width: 40px;
+  --credit-role-width: 56px;
+  --top-offset: 52px;
+  --icon-size: 24px;
+  --icon-stroke: 1.25px;
+  --detail-photo-height: 440px;
+  --detail-body-top: 28px;
+  --save-button-padding: 10px 16px;
+  --follow-button-padding: 5px 10px;
+  --badge-padding: 4px 8px;
+  --badge-dot-size: 4px;
   --tile-size: 124px;
   --tile-gap: 1.5px;
   --touch-min: 44px;

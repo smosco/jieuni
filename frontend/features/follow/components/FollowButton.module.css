@@ -1,0 +1,22 @@
+/* DESIGN 4절 FollowButton. 작은 버튼이라 터치 영역은 바깥 여백으로 늘린다. */
+.button {
+  position: relative;
+  padding: var(--follow-button-padding);
+  border: var(--hairline) solid var(--color-ink);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: color var(--duration-state) var(--ease-out), border-color var(--duration-state) var(--ease-out);
+}
+
+.button::before {
+  content: "";
+  position: absolute;
+  inset: calc((var(--touch-min) - 100%) / -2) 0;
+}
+
+.following {
+  border-color: transparent;
+  color: var(--color-ink-tertiary);
+}

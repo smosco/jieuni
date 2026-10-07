@@ -80,6 +80,18 @@
 | `--tab-indicator-width` | 16px (켜진 탭 위 선) |
 | `--tab-indicator-gap` | 6px (선과 글자 사이) |
 | `--dot-size` | 5px (내 공간 옆 점) |
+| `--row-padding` | 14px (CreditRow·감각 한 줄의 위아래 패딩) |
+| `--row-label-width` | 40px (감각·방문 정보 한 줄의 왼쪽 라벨) |
+| `--credit-role-width` | 56px (CreditRow의 역할 칸) |
+| `--top-offset` | 52px (상세·프로필에서 뒤로 가기가 놓이는 위쪽 거리) |
+| `--icon-size` | 24px (뒤로 가기 화살표) |
+| `--icon-stroke` | 1.25px (아이콘 선 굵기) |
+| `--detail-photo-height` | 440px (공간 상세 사진 높이) |
+| `--detail-body-top` | 28px (상세 사진 아래 본문 위 여백) |
+| `--save-button-padding` | 10px 16px |
+| `--follow-button-padding` | 5px 10px |
+| `--badge-padding` | 4px 8px |
+| `--badge-dot-size` | 4px (머물러 봄 앞 원) |
 
 - 기준 너비 375px, 좌우 여백 24px(본문 너비 327px).
 - 공간 상세의 섹션 사이 간격 48px.
@@ -143,6 +155,18 @@
 - 왼쪽 라벨 40px 고정: 감각은 `label-sm` **`earth`**(빛·소리·향·촉감), 방문 정보는 `label-sm` `ink-tertiary`.
 - 오른쪽 내용 `body-md` `ink`.
 
+### Toast (안내 한 줄) — F2에서 정함 (가정)
+
+- 탭 바 위 16px, 가로 가운데, 최대 너비는 본문 너비(327px).
+- 바탕 `ink`, 글자 `paper` `label-md`, 패딩 12px 16px, 모서리 2px. 그림자 없음.
+- 2초 뒤 사라진다. 한 번에 하나만(새 안내가 이전 것을 바꾼다). 스크린 리더에 `aria-live="polite"`로 읽힌다.
+- 문구 예: "링크를 복사했어요", "주소를 복사했어요".
+
+### 상태 띠 (휴업·폐업) — F2에서 정함 (가정)
+
+- 상세 사진 바로 아래, 화면 너비 전체. 바탕 `paper-raised`, 아래만 1px `line`, 위아래 12px · 좌우 24px.
+- 글자 `body-sm` `ink-secondary`. 휴업 "지금은 쉬고 있어요", 폐업 "이제는 만날 수 없는 공간이에요"(SPEC 5절).
+
 ### 큰 버튼 (피드 마지막 화면 등)
 
 - 너비 327px, 패딩 14px 16px, 모서리 2px, 글자 `label-md`, 오른쪽 끝에 "→".
@@ -198,8 +222,29 @@
   2. 에디터의 감상: SectionLabel + 감상(`body-lg`)
   3. 감각: SectionLabel + 감각 한 줄 ×4
   4. 만든 사람들: SectionLabel + CreditRow 목록 + "이 공간을 만드셨나요? 크레딧을 알려주세요 →"(`body-sm` `ink-secondary`)
-  5. 방문 정보: SectionLabel + 방문 정보 한 줄(주소, 방문, 메모, 지도)
-  6. "○○의 다른 공간": SectionLabel + 3열 격자(본문 너비 안, 106×106px, 사이 4px)
+  5. 에세이(있을 때만, SPEC 5절 7번): SectionLabel "에세이" + 본문. 만든 사람들과 방문 정보 사이. (F2에서 정함)
+     - 마크다운 중 `h2` · `h3` · `p` · `ul` · `ol` · `li` · `strong` · `em` · `a` · `blockquote`만 그린다. `h1`은 `h2`로 그린다(에세이 안의 가장 큰 제목이 페이지 제목 `h1`과 겹치지 않게). 이미지·raw HTML은 그리지 않는다(허용 밖 요소는 안의 글자만 남김).
+     - 글자: 문단·목록 `body-lg` `ink`, `h2` `display-md`, `h3` `label-md`, 인용 `body-lg` `ink-secondary` + 왼쪽 1px `line` 선과 16px 안쪽 여백. `strong`은 Medium(500).
+     - 간격: 요소 사이 16px, 제목 위 24px, 목록 왼쪽 16px.
+     - 링크: 밑줄(글자 아래 4px), 새 창(`noopener noreferrer`).
+  6. 방문 정보: SectionLabel + 방문 정보 한 줄(주소, 방문, 메모, 지도)
+  7. "○○의 다른 공간": SectionLabel + 3열 격자(본문 너비 안, 106×106px, 사이 4px)
+
+**04의 문구 (가정, F2에서 정함)** — 코드 값은 SPEC 3절, 역할 문구는 API.md 1절(B4)을 따른다.
+
+| 코드 | 화면 문구 |
+| --- | --- |
+| `kind` | cafe 카페 · bar 바 · restaurant 식당 · stay 스테이 · garden 정원 · museum 미술관 · gallery 갤러리 · bookstore 서점 · shop 숍 · religious 종교 공간 · public 공공 공간 · other 그 밖 |
+| `access` | walk_in 바로 방문 · reservation 예약 · ticket 입장권 · guests_only 투숙객만 |
+| 만남의 출처(`sources[0].type`) | article "기사로 만남" · video "영상으로 만남" · instagram "인스타그램으로 만남" · official "공식 소개로 만남". 첫 출처에 링크 |
+| 머물러 봄 | `visitedByEditorOn`이 있으면 배지 "머물러 봄"(년·월은 배지 옆 `body-sm` `ink-tertiary`로 "2026년 5월") |
+| 방문 정보 라벨 | 주소(오른쪽 "복사") · 방문 · 메모 · 지도("네이버지도 · 카카오맵") |
+| 크레딧 확인 상태 | verified "출처 확인됨"(출처 링크) · 아니면 "확인 중" |
+| 같은 만든 사람의 다른 공간 | 크레딧이 한 명이면 "○○의 다른 공간", 둘 이상이면 "만든 사람들의 다른 공간" |
+
+- 사진이 없고 임베드만 있으면 사진 자리에 임베드를 같은 크기로 넣는다. 둘 다 있으면 사진 뒤에 임베드가 이어진다(같은 가로 넘기기, "1 / n"에 포함).
+- 임베드는 처음에 썸네일만(유튜브는 `i.ytimg.com` 썸네일, 인스타그램은 placeholder 색 + "인스타그램 게시물 보기"), 누르면 iframe을 불러온다.
+- 사진이 하나도 없으면 placeholder 색만 두고 "사진: ○○"과 "1 / n"은 숨긴다. 뒤로 가기는 이때 `ink` 색.
 
 ### 05 만든 사람 프로필 (검수 완료)
 

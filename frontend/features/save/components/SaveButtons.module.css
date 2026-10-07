@@ -1,0 +1,23 @@
+.group {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* DESIGN 4절 SaveButton. 높이 = 패딩 10 + 글자 + 10 → 터치 44px는 min-height로 맞춘다. */
+.button {
+  min-height: var(--touch-min);
+  padding: var(--save-button-padding);
+  border: var(--hairline) solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: background-color var(--duration-state) var(--ease-out), color var(--duration-state) var(--ease-out),
+    border-color var(--duration-state) var(--ease-out);
+}
+
+.on {
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-paper);
+}

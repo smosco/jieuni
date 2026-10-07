@@ -1,0 +1,187 @@
+/* DESIGN 5절 04 공간 상세 */
+.band {
+  margin: 0;
+  padding: var(--space-md) var(--page-gutter);
+  border-bottom: var(--hairline) solid var(--color-line);
+  background: var(--color-paper-raised);
+  color: var(--color-ink-secondary);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+  padding: var(--detail-body-top) var(--page-gutter) var(--space-3xl);
+}
+
+.body section > h2 {
+  margin-bottom: var(--space-lg);
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.name,
+.meta,
+.encounter,
+.impression {
+  margin: 0;
+}
+
+.meta {
+  color: var(--color-ink-secondary);
+}
+
+.encounter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* DESIGN 4절 Badge — 머물러 봄 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--badge-padding);
+  border: var(--hairline) solid var(--color-earth);
+  border-radius: var(--radius-sm);
+  color: var(--color-earth);
+}
+
+.badge::before {
+  content: "";
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  border-radius: 50%;
+  background: var(--color-earth);
+}
+
+.visitedOn {
+  color: var(--color-ink-tertiary);
+}
+
+.encounterLink {
+  color: var(--color-ink-secondary);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+}
+
+.textButton {
+  min-height: var(--touch-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+}
+
+.impression {
+  white-space: pre-line;
+}
+
+/* 감각 한 줄 · 방문 정보 한 줄(DESIGN 4절) */
+.rows {
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  padding: var(--row-padding) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+.row dt {
+  flex: 0 0 var(--row-label-width);
+}
+
+.row dd {
+  flex: 1;
+  margin: 0;
+}
+
+.senseLabel {
+  color: var(--color-earth);
+}
+
+.visitRow {
+  padding: var(--space-md) 0;
+}
+
+.visitLabel {
+  color: var(--color-ink-tertiary);
+}
+
+.address {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.copyButton {
+  position: relative;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+}
+
+/* 글자는 작게 두고 터치 영역만 44px로 늘린다(FollowButton과 같은 방식) */
+.copyButton::before {
+  content: "";
+  position: absolute;
+  inset: calc((var(--touch-min) - 100%) / -2) calc((var(--touch-min) - 100%) / -2);
+}
+
+/* DESIGN 4절 CreditRow */
+.credits {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.credit {
+  display: flex;
+  align-items: center;
+  padding: var(--row-padding) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+.role {
+  flex: 0 0 var(--credit-role-width);
+  color: var(--color-ink-tertiary);
+}
+
+.who {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.verified {
+  color: var(--color-ink-tertiary);
+}
+
+.suggest {
+  margin-top: var(--space-lg);
+  min-height: var(--touch-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink-secondary);
+  text-align: left;
+  cursor: pointer;
+}
