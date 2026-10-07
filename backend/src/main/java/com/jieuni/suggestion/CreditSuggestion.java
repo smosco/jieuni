@@ -62,6 +62,17 @@ public class CreditSuggestion {
 	protected CreditSuggestion() {
 	}
 
+	public CreditSuggestion(User user, Place place, CreditRole role, String makerName, String sourceUrl,
+			boolean isSelf) {
+		this.user = user;
+		this.place = place;
+		this.role = role;
+		this.makerName = makerName;
+		this.sourceUrl = sourceUrl;
+		this.isSelf = isSelf;
+		this.status = SuggestionStatus.PENDING;
+	}
+
 	public Long getId() {
 		return id;
 	}

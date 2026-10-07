@@ -176,11 +176,11 @@
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `POST /api/suggestions/places` | `{ name, region, link?, reason, makerHint? }` → 201 `{ id, status: "suggested" }` | 같은 이름의 공개 공간이 있으면 409 `{ message, slug }` |
-| `POST /api/suggestions/credits` | `{ placeId, role, makerName, sourceUrl?, isSelf }` → 201 `{ id, status: "pending" }` | |
+| `POST /api/suggestions/places` | `{ name, region, link?, reason, makerHint? }` → 201 `{ id, status: "suggested" }` | 같은 이름(앞뒤 공백·대소문자 무시)의 공개 공간(공개·휴업·폐업)이 있으면 409 `{ message, slug }`. 이름 100자 · 지역 50자 · 이유 300자 · 만든 사람 100자. `link`는 http·https만(빈 값은 없음) |
+| `POST /api/suggestions/credits` | `{ placeId, role, makerName, sourceUrl?, isSelf? }` → 201 `{ id, status: "pending" }` | 공개 페이지가 없는 공간 404. `sourceUrl`은 http·https만. `isSelf`가 빠지면 false |
 | `GET /api/me/suggestions` | `{ places: [{ id, name, region, status, createdAt }], credits: [{ id, placeName, role, makerName, status }] }` | 내 것만. 화면 문구: suggested·pending=검토 중, published=소개됨, rejected·declined=보류 |
 
-두 제보 합산 사용자당 하루(KST) 10건, 11번째 429.
+두 제보 합산 사용자당 하루(KST 자정 기준) 10건, 11번째 429 `{ message }`. 동시에 보내도 10건을 넘지 않는다(사용자 행을 잠근 뒤 센다).
 
 ---
 

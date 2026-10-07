@@ -130,6 +130,7 @@ Spring Boot 3.x와 달라지는 것: Jackson 3(패키지 `tools.jackson`), Sprin
 - **2026-10-06(B4 리뷰) 추가**: "확인된 크레딧은 출처가 있다"(`place_credits`: `NOT verified OR source_url IS NOT NULL`)는 공개 여부와 상관없이 항상 참이어야 하는 형식 규칙이라 DB `CHECK`로도 둔다(V3). 공개할 때만 따지는 규칙(출처 있는 크레딧 1개 이상, 사진 출처 등)은 계속 `PublishRules` 한 곳에만 둔다. 관리자 API는 DB 오류가 나기 전에 400으로 먼저 막는다(B10).
 - **2026-10-06(B4 리뷰) 추가**: `place_photos`에만 `UNIQUE (place_id, position) DEFERRABLE INITIALLY DEFERRED`를 건다(V3). 목록 쿼리가 position 0을 대표 사진으로 읽어서, 같은 position이 둘이면 대표 사진이 하나로 정해지지 않기 때문이다. 순서를 맞바꿀 때 UPDATE 중간에 같은 position이 잠깐 겹치므로 커밋 때 검사한다. 크레딧·출처·임베드는 position을 순서로만 쓰므로 걸지 않는다.
 - **2026-10-07(B7 리뷰) 추가**: 저장·팔로우는 PostgreSQL 네이티브 upsert(`INSERT … ON CONFLICT`)로 쓴다. "있으면 갱신, 없으면 저장"을 엔티티로 하면 같은 요청이 동시에 오면 둘 다 "없음"을 보고 INSERT해 중복 키 오류가 난다. `saves`는 상태가 바뀔 때만 `updated_at`을 바꾸고, `follows`는 `DO NOTHING`. 시각은 `Clock` 값을 넘긴다. id를 직접 넣는 다른 엔티티(`DailyPick`)는 `Persistable` 방식을 유지한다.
+- **2026-10-07(B8) 추가**: 제보 하루 한도는 `users` 행을 `PESSIMISTIC_WRITE`로 잠근 뒤 센다(Hibernate 7.4.5 PostgreSQL 방언은 `SELECT … FOR NO KEY UPDATE`를 낸다). 세고 나서 넣는 사이에 같은 사용자의 다른 요청이 끼면 둘 다 통과한다(잠금 없이 한도 직전 동시 요청 20개 중 10개 통과를 테스트로 확인). 사용자 한 명의 제보만 줄 세우므로 다른 사용자에게는 영향이 없다.
 
 **채택**: PostgreSQL 18, Flyway, `ddl-auto: validate`, 공개 시 검증.
 **포기한 것**: 관리형 DB의 자동 백업(9절에서 직접 백업).
