@@ -200,6 +200,10 @@ v0.1은 공간을 저장소의 MDX 파일로 두는 안이었다.
 
 **2026-10-06 확인(즉시 반영 방법)**: Spring이 부르는 `app/api/revalidate` 라우트에서는 `revalidateTag(tag, { expire: 0 })`를 쓴다. Next 16은 두 번째 인자가 필수이고, `'max'` 같은 프로필을 주면 다음 요청이 옛 페이지를 먼저 받으므로(stale-while-revalidate) "관리자가 공개한 직후 새로고침 한 번에 보인다"가 되지 않는다. `updateTag`는 Server Action 전용이라 외부 호출 라우트에서 못 쓴다. `cacheComponents`는 켜지 않는다(빈 `generateStaticParams`가 빌드 오류가 됨). 출처는 "버전 기준" 표의 Next.js 행.
 
+**2026-10-07(B6b) 프록시 뒤 OAuth `redirect_uri`**: Next 16.3.8 rewrites 프록시는 Host를 백엔드 주소로 바꾸고 `X-Forwarded-Host`만 덧붙인다(`next/dist/server/lib/router-utils/proxy-request.js`, `X-Forwarded-Proto` 없음). 그래서 구글 `redirect_uri`를 요청에서 만들지 않고 `FRONTEND_URL/login/oauth2/code/google`로 고정한다. Security 7.1.1은 토큰 요청에 처음 저장한 `redirect_uri`를 쓰고 콜백 URL과 비교하지 않아(jar 확인) 고정값으로 충분하다. `server.forward-headers-strategy`는 켜지 않는다. 로컬 8080이 열려 있어 헤더를 믿을 수 없고, Security 문서도 신뢰할 프록시가 헤더를 덮어쓸 때만 쓰라고 한다([Proxy Server Configuration](https://docs.spring.io/spring-security/reference/features/exploits/http.html)). 운영 호스팅이 정해지면(D1) 다시 본다. 로그인 뒤 이동은 상대 경로 `Location`이라 브라우저가 있는 프론트 주소로 간다. Tomcat은 `sendRedirect`의 상대 경로를 Host로 절대 주소화해 `http://backend:8080/…`이 되므로 `server.tomcat.use-relative-redirects: true`를 켠다(curl로 확인, MockMvc에서는 드러나지 않는다). 돌아갈 경로는 ASCII로 퍼센트 인코딩해 보낸다. Tomcat은 ASCII 밖의 `Location`을 내보내지 않아 한글 경로에서 빈 화면이 됐다. fragment(`#` 뒤)는 잘라낸다. 남으면 뒤에 붙이는 `?login=error`가 fragment 안으로 들어갔다.
+
+**2026-10-07(B6b) 구글 토큰은 저장하지 않는다**: `oauth2Login`의 기본 인가 클라이언트 저장소는 받은 액세스 토큰을 프로세스 메모리 맵에 로그인마다 쌓는다. 우리는 구글 API를 부르지 않으므로 아무것도 저장하지 않는 `NoStoreAuthorizedClientRepository`를 넣는다. 쓰지 않는 남의 서비스 토큰은 서버가 뚫렸을 때 노출될 정보만 늘린다. 구글 API가 필요해지면 그때 저장소를 정한다.
+
 ---
 
 ## 7. 사진 — Cloudflare R2 + 서명된 URL 직접 업로드

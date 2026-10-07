@@ -5,6 +5,10 @@ spring:
       hibernate:
         generate_statistics: true
 
+GOOGLE_CLIENT_ID: test-client
+GOOGLE_CLIENT_SECRET: test-secret
+FRONTEND_URL: http://localhost:3000
+
 jieuni:
   photo-public-base-url: https://photos.test
   admin-emails: admin@test.jieuni

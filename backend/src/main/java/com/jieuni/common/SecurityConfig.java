@@ -1,6 +1,9 @@
 package com.jieuni.common;
 
 import com.jieuni.user.AdminAuthorizationManager;
+import com.jieuni.user.NoStoreAuthorizedClientRepository;
+import com.jieuni.user.OAuthLoginHandler;
+import com.jieuni.user.ReturnPathAuthorizationRequestResolver;
 import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -23,7 +26,8 @@ public class SecurityConfig {
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityContextRepository contextRepository,
-			AdminAuthorizationManager adminAuthorization,
+			AdminAuthorizationManager adminAuthorization, ReturnPathAuthorizationRequestResolver returnPathResolver,
+			OAuthLoginHandler oauthLoginHandler,
 			@Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) throws Exception {
 		http
 				.csrf(csrf -> csrf.spa())
@@ -35,6 +39,11 @@ public class SecurityConfig {
 				.exceptionHandling(exceptions -> exceptions
 						.authenticationEntryPoint((request, response, e) -> exceptionResolver.resolveException(request, response, null, e))
 						.accessDeniedHandler((request, response, e) -> exceptionResolver.resolveException(request, response, null, e)))
+				.oauth2Login(oauth -> oauth
+						.authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(returnPathResolver))
+						.authorizedClientRepository(new NoStoreAuthorizedClientRepository())
+						.successHandler(oauthLoginHandler)
+						.failureHandler(oauthLoginHandler))
 				.logout(logout -> logout
 						.logoutUrl("/api/auth/logout")
 						.logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)))

@@ -26,6 +26,7 @@ public class User extends BaseTimeEntity {
 	@Column(nullable = false)
 	private String providerId;
 
+	// 마지막으로 제공자가 검증한 이메일. 검증되지 않은 로그인에서는 이전 값을 유지한다.
 	private String email;
 
 	@Column(nullable = false)
@@ -54,6 +55,14 @@ public class User extends BaseTimeEntity {
 
 	public void changeNickname(String nickname) {
 		this.nickname = nickname;
+	}
+
+	// 다시 로그인할 때 제공자 쪽에서 바뀌는 값. 닉네임은 사용자가 바꿨을 수 있어 건드리지 않는다.
+	public void updateProfile(String email, String profileImageUrl) {
+		if (email != null) {
+			this.email = email;
+		}
+		this.profileImageUrl = profileImageUrl;
 	}
 
 	public void changeRole(UserRole role) {

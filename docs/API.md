@@ -141,8 +141,9 @@
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `GET /oauth2/authorization/google?redirect=/places/x` | 302 → 구글 | Spring Security 기본 진입점. MVP 제공자는 구글만. `redirect`는 `/`로 시작하는 경로만 허용, 세션에 저장 |
-| `GET /login/oauth2/code/google` | 302 → `FRONTEND_URL + redirect` | 콜백. `users` upsert(`(provider, providerId)` 기준). 이메일이 `ADMIN_EMAILS`에 있으면 `role=admin` |
+| `GET /oauth2/authorization/google?redirect=/places/x` | 302 → 구글 | Spring Security 기본 진입점. MVP 제공자는 구글만. `redirect`는 `/`로 시작하는 사이트 안 경로만 허용(`//`, 역슬래시, 제어 문자가 있으면 `/`), 세션에 저장. 구글에 주는 `redirect_uri`는 `FRONTEND_URL/login/oauth2/code/google` 고정 |
+| `GET /login/oauth2/code/google` | 302 → `redirect`(상대 경로) | 콜백. `users` upsert(`(provider, providerId)` 기준). 새 사용자 닉네임은 구글 이름(없으면 이메일 앞부분, 그것도 없으면 "방문자")을 20자로 자른 값, 다시 로그인하면 닉네임은 그대로 두고 사진·이메일만 갱신. 이메일은 `email_verified=true`일 때만 저장하고 `ADMIN_EMAILS`와 비교 |
+| (같은 콜백, 실패·취소) | 302 → `redirect?login=error` | 구글에서 취소(`error=access_denied`)하거나 검증이 실패하면. 원인은 서버 로그에만 |
 | `GET /api/me` | `{ id, nickname, profileImageUrl, role, hasNewFromFollowing }` | 비로그인 401. 응답에 `XSRF-TOKEN` 쿠키가 실린다(프론트가 처음 부르는 요청) |
 | `PATCH /api/me` | `{ nickname }` → 200 `/api/me`와 같음 | 1~20자 |
 | `DELETE /api/me` | 204 | SPEC 3절 탈퇴 순서. 세션 무효화 |
@@ -319,7 +320,7 @@ A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일�
 
 | 이름 | 어디 | 뜻 |
 | --- | --- | --- |
-| `FRONTEND_URL` | backend | 로그인 후 이동, 재생성 호출 대상 |
+| `FRONTEND_URL` | backend | 구글 `redirect_uri`의 바탕, 재생성 호출 대상 |
 | `REVALIDATE_SECRET` | backend, frontend | 재생성 호출 비밀 |
 | `AI_URL`, `AI_INTERNAL_TOKEN` | backend, ai | 내부 호출 |
 | `ADMIN_EMAILS` | backend | 쉼표 구분 |

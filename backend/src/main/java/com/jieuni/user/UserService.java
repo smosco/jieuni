@@ -28,11 +28,16 @@ public class UserService {
 				.collect(Collectors.toUnmodifiableSet());
 	}
 
-	// 제공자 계정으로 사용자를 찾거나 만든다. 관리자 여부는 매 로그인마다 ADMIN_EMAILS로 다시 정한다.
+	// 제공자 계정으로 사용자를 찾거나 만든다. email은 제공자가 검증한 값만 넘긴다(아니면 null).
+	// 관리자 여부는 매 로그인마다 ADMIN_EMAILS로 다시 정한다.
 	@Transactional
 	public LoginUser login(String provider, String providerId, String email, String nickname, String profileImageUrl) {
 		UserRole role = isAdminEmail(email) ? UserRole.ADMIN : UserRole.USER;
 		User user = users.findByProviderAndProviderId(provider, providerId)
+				.map(existing -> {
+					existing.updateProfile(email, profileImageUrl);
+					return existing;
+				})
 				.orElseGet(() -> users.save(new User(provider, providerId, email, truncate(nickname), profileImageUrl, role)));
 		user.changeRole(role);
 		return new LoginUser(user.getId());

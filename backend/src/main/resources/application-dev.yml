@@ -4,5 +4,10 @@ spring:
     username: ${POSTGRES_USER:jieuni}
     password: ${POSTGRES_PASSWORD:jieuni}
 
+# 구글 키가 없어도 compose가 뜨게 한다(실제 구글 로그인만 실패).
+GOOGLE_CLIENT_ID: unset
+GOOGLE_CLIENT_SECRET: unset
+FRONTEND_URL: http://localhost:3000
+
 jieuni:
   seed-path: ${SEED_PATH:../seed/seed.json}
