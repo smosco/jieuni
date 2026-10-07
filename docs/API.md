@@ -12,7 +12,7 @@
 | --- | --- |
 | 세션 | Spring Session JDBC. 쿠키 `SESSION`, HttpOnly · SameSite=Lax · 운영 Secure |
 | CSRF | 켬(Spring Security 7 `csrf.spa()`). 서버가 `XSRF-TOKEN` 쿠키(HttpOnly 아님)를 주고, 프론트는 GET 외 요청에 `X-XSRF-TOKEN` 헤더로 돌려보낸다. 없으면 403. 로그인·로그아웃 성공 시 쿠키가 지워지므로 그 뒤 `GET /api/me`로 다시 받는다 |
-| CORS | `FRONTEND_URL` 한 출처만, credentials 허용 |
+| 같은 출처 | 브라우저는 백엔드를 직접 부르지 않는다. Next rewrites가 `/api/**`·`/oauth2/**`·`/login/oauth2/**`를 백엔드로 넘긴다. CORS 없음(DECISIONS 6절) |
 | 공개 | `/api/feed`, `/api/places/**`, `/api/makers/**`, `/api/sitemap` |
 | 로그인 필요 | `/api/me/**`, `/api/suggestions/**`, `/api/auth/logout` → 비로그인 401 |
 | 관리자 | `/api/admin/**` → `role=admin` 아니면 403 |
@@ -85,9 +85,10 @@
     { "date": "2026-10-07", "weekday": "WED", "line": "에디터의 한 줄(40자)",
       "place": PlaceTile,                        // photo = 대표 사진, caption = null
       "firstMaker": { "id": 3, "slug": "…", "name": "…", "role": "architecture" } | null } ],
-  "openedCount": 3,                              // 진행 표시 "03 / 05"의 왼쪽. 공개 서비스 원칙의 "숫자"가 아니라 피드 위치다
-  "nextOpensAt": "2026-10-07T23:00:00Z" | null,  // 다음 공개 시각(UTC). 금 08:00 뒤·주말은 다음 월 08:00. 다음 편성이 없어도 시각은 준다
-  "nextWeekday": "THU" | "MON" }                 // 마지막 화면 문구용. 프론트는 시간 계산을 하지 않는다
+  "openedCount": 3,                              // 이번 주 열린 카드 수(= picks 길이). 카드의 "03 / 05"는 이 값이 아니라 각 카드의 date(월 01~금 05)로 정한다(DESIGN 5절 01)
+  "nextOpensAt": "2026-10-07T23:00:00Z",         // 다음 공개 시각(UTC). 금 08:00 뒤·주말은 다음 월 08:00. 다음 편성이 없어도 시각은 준다
+  "nextWeekday": "THU" | "MON",                  // 마지막 화면 문구용. 프론트는 시간 계산을 하지 않는다
+  "nextRelative": "today" | "tomorrow" | "later" } // 다음 공개일이 오늘(평일 08:00 전) · 내일(일요일 포함) · 그 밖. SPEC 5절 문구 셋에 1:1
 
 // GET /api/places/{slug}
 { "id": 1, "slug": "…", "name": "…", "kind": "garden", "region": "경기 양평군",
@@ -112,6 +113,24 @@
   "affiliation": { "id": 4, "slug": "…", "name": "…" } | null,
   "places": [ PlaceTile ] }                      // 최근 공개순, caption = 그 사람의 역할, 폐업 포함(status로 흐리게)
 ```
+
+**B4에서 정한 것**
+
+| 항목 | 규칙 |
+| --- | --- |
+| 공개 페이지가 있는 공간 | `published`·`paused`·`closed`이고 slug가 있는 공간. 상세·프로필 격자·sitemap이 이 기준 |
+| 목록에 나오는 공간 | `published`·`paused`만. 둘러보기, `relatedPlaces`, 만든 사람 목록이 이 기준(폐업은 빠짐) |
+| `relatedPlaces` | 이 공간의 크레딧에 있는 만든 사람 중 누구든 크레딧에 있는 다른 공간. 같은 공간은 한 번, `published_at desc, id desc`, 최대 6 |
+| 만든 사람 프로필 404 | slug가 없거나, 공개 페이지가 있는 공간의 크레딧에 한 번도 없으면 404 |
+| 프로필 격자 | 같은 공간에 크레딧이 둘 이상이면 한 칸, 캡션은 `position`이 가장 앞선 역할 |
+| `caption`(역할) | 한국어 이름. planning 기획 · branding 브랜딩 · architecture 건축 · interior 인테리어 · landscape 조경 · lighting 조명 · furniture 가구 · scent 향 · photography 사진 · owner 주인 · other 그 밖 (문구 가정) |
+| 만든 사람 목록의 `photo` | 사진이 있는 공간 중 가장 최근에 공개된 공간의 대표 사진. 없으면 null |
+| 사진 URL | `{PHOTO_PUBLIC_BASE_URL}/{objectKey}-1600.webp`, `-800.webp` |
+| `mapLinks.kakao` | 좌표가 있으면 `https://map.kakao.com/link/map/{이름},{위도},{경도}`, 없으면 `https://map.kakao.com/link/search/{이름}` ([카카오맵 API 가이드](https://apis.map.kakao.com/web/guide/)) |
+| `mapLinks.naver` | `https://map.naver.com/p/search/{이름 지역}`. 네이버는 웹 URL 형식의 공식 문서가 없다(앱용 `nmap://`만 있음) **(가정)** |
+| 목록 요청 오류 | 모르는 `kind`, 읽을 수 없는 `cursor`, 1~60 밖의 `size`는 400 |
+| sitemap 만든 사람 | 프로필이 404가 아닌 사람 |
+| slug가 null인 만든 사람 | `credits[].maker.slug`, `affiliation.slug`가 null이면 링크를 걸지 않는다(프로필이 없다) |
 
 피드의 `place`가 `paused`여도 그대로 보여준다. `closed`가 된 공간이 편성에 남아 있으면 카드에 "이제는 만날 수 없는 공간이에요" 띠(가정, 편성 뒤 폐업은 드물다).
 
@@ -299,7 +318,7 @@ A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일�
 
 | 이름 | 어디 | 뜻 |
 | --- | --- | --- |
-| `FRONTEND_URL` | backend | CORS 출처, 로그인 후 이동, 재생성 호출 대상 |
+| `FRONTEND_URL` | backend | 로그인 후 이동, 재생성 호출 대상 |
 | `REVALIDATE_SECRET` | backend, frontend | 재생성 호출 비밀 |
 | `AI_URL`, `AI_INTERNAL_TOKEN` | backend, ai | 내부 호출 |
 | `ADMIN_EMAILS` | backend | 쉼표 구분 |
@@ -307,5 +326,6 @@ A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일�
 | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | backend | R2. 개발은 개발용 버킷, 운영은 운영 버킷. 엔드포인트 `https://<account-id>.r2.cloudflarestorage.com`, region `auto` |
 | `PHOTO_PUBLIC_BASE_URL` | backend | 사진 URL 앞부분(개발: 개발 버킷의 r2.dev 주소 / 운영: R2 커스텀 도메인) |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | backend | OAuth(구글만) |
-| `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_NEWSLETTER_URL` | frontend | API 주소, 메타데이터 기준 URL, 메일리 구독 폼 |
+| `API_URL` | frontend(서버) | 서버 컴포넌트와 rewrites가 부르는 백엔드 주소. rewrites 목적지는 빌드 때 굳으므로 빌드에도 필요 |
+| `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_NEWSLETTER_URL` | frontend | 메타데이터 기준 URL, 메일리 구독 폼 |
 | `TAVILY_API_KEY`, `KAKAO_REST_API_KEY`, LLM 키 | ai | 웹 검색 · 지오코딩 · 모델 |

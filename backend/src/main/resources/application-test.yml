@@ -1,0 +1,9 @@
+# 목록 API의 실행 쿼리 수를 테스트로 고정하려고 Hibernate 통계를 켠다.
+spring:
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: true
+
+jieuni:
+  photo-public-base-url: https://photos.test

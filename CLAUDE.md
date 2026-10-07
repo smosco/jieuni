@@ -28,7 +28,7 @@
 
 - Spring Data JPA. **공개 목록 조회(피드, 둘러보기, 프로필 격자, 내 공간)는 DTO 프로젝션 쿼리**, 목록 API마다 실행 쿼리 수를 테스트로 고정한다. `open-in-view: false`, 트랜잭션은 서비스 계층에서만.
 - Flyway로만 스키마를 바꾼다. `ddl-auto: validate`. enum은 `varchar` + `CHECK`.
-- 인증: Spring Security `oauth2Login`(MVP는 구글만, 카카오는 공개 후) + Spring Session JDBC. 쿠키 HttpOnly · SameSite=Lax · 운영 Secure. CSRF 켬(쿠키 → 헤더 방식). CORS는 `FRONTEND_URL`만.
+- 인증: Spring Security `oauth2Login`(MVP는 구글만, 카카오는 공개 후) + Spring Session JDBC. 쿠키 HttpOnly · SameSite=Lax · 운영 Secure. CSRF 켬(쿠키 → 헤더 방식). **브라우저는 백엔드를 직접 부르지 않는다**: Next rewrites가 `/api/**`·`/oauth2/**`·`/login/oauth2/**`를 백엔드로 프록시해 프론트와 API가 같은 출처다(CORS 없음, DECISIONS 6절).
 - 오류 본문 `{ "message" }`, 공개 검증 실패는 `{ "message", "fieldErrors" }`. 상태 코드: 검증 400 · 비로그인 401 · 권한 403 · 없음 404 · 규칙 위반(전환표 밖, slug 잠금, 중복 편성, 폐업 저장) 409 · 제보 한도 429 · AI 시간 초과 504.
 - 시간은 `Clock` 빈으로만 읽는다(`LocalDateTime.now()` 직접 호출 금지). 테스트는 고정 시계.
 - 사진: S3 호환 API만 쓴다(개발·운영 모두 R2, 버킷만 다름). 모든 사진에 `credit`, `own`이 아니면 `source_url` 필수. 허락 절차 없음. 서버는 서명 URL만 발급하고 파일을 받지 않는다. `image/webp`만.
@@ -78,6 +78,7 @@
 - 파일 편집·테스트·빌드·curl은 자유. **새 의존성 추가와 이 파일에 없는 설계 판단은 하기 전에 묻는다.** 커밋·푸시는 하지 않는다(내가 한다).
 - 확인은 실제로 실행해서 한다. `./gradlew test`, `npm test`, `uv run pytest`, curl, `docker compose up --build`.
 - 설명 못 할 추상화·유틸·주석 금지. 장황한 doc 주석 금지. 코드는 읽는 사람이 이해할 만큼만.
+- 주석은 이유를 그 자리에서 한 줄로 설명한다. 문서 절 번호(SPEC 3절, DESIGN 5절 04 등)와 PLAN·단위 번호(B4, 확정 10 등)는 코드에 쓰지 않는다. 꼭 필요하면 문서 이름만 쓴다.
 - 새 파일·새 의존성에는 이유를 한 줄 말한다.
 - Spring Boot 4.1(Jackson 3, Spring Security 7, 모듈화된 스타터) · Spring Session · Next.js 16(캐시 API 변경) · MCP SDK · 외부 API(Tavily·카카오·구글·LLM)처럼 버전이나 약관에 따라 달라지는 것은 추측하지 말고 공식 문서를 확인한 뒤 출처를 말한다.
 - 한 단위에서 2시간 넘게 막히면 더 단순한 안을 제안하고, 그 판단을 `docs/DECISIONS.md` 끝에 한 줄 추가한다.

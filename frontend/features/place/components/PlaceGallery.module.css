@@ -1,0 +1,99 @@
+/* 사진 375×440, 아래 32px에 "사진: ○○"과 "1 / 4" */
+.gallery {
+  position: relative;
+  height: var(--detail-photo-height);
+  background: var(--color-photo-placeholder);
+}
+
+.track {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.track::-webkit-scrollbar {
+  display: none;
+}
+
+.slide {
+  position: relative;
+  flex: 0 0 100%;
+  height: 100%;
+  margin: 0;
+  scroll-snap-align: start;
+}
+
+/* 아래쪽 글자가 밝은 사진에서도 읽히도록(그림자는 사진 위에서만 쓴다) */
+.slide::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: var(--space-4xl);
+  background: var(--shade-tile);
+  pointer-events: none;
+}
+
+.photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 화살표는 왼쪽 위 (16, 52) */
+.back {
+  position: absolute;
+  top: var(--top-offset);
+  left: var(--space-lg);
+  z-index: 1;
+}
+
+.credit,
+.counter {
+  position: absolute;
+  bottom: var(--space-2xl);
+  z-index: 1;
+  margin: 0;
+  color: var(--color-on-photo);
+}
+
+.credit {
+  left: var(--page-gutter);
+}
+
+.credit a {
+  text-decoration: underline;
+  text-underline-offset: var(--space-xs);
+}
+
+.counter {
+  right: var(--page-gutter);
+}
+
+.frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.embedButton {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: var(--color-photo-placeholder);
+  cursor: pointer;
+}
+
+.embedLabel {
+  position: absolute;
+  bottom: var(--space-2xl);
+  left: var(--page-gutter);
+  z-index: 1;
+  color: var(--color-on-photo);
+}

@@ -3,6 +3,12 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+# next.config.ts의 rewrites 목적지. 빌드 결과물(routes-manifest)에 굳는다.
+ARG API_URL=http://localhost:8080
+ENV API_URL=$API_URL
+# NEXT_PUBLIC_ 값은 빌드 때 브라우저 코드에 들어가므로 빌드 인자로 받는다.
+ARG NEXT_PUBLIC_NEWSLETTER_URL=
+ENV NEXT_PUBLIC_NEWSLETTER_URL=$NEXT_PUBLIC_NEWSLETTER_URL
 RUN npm run build
 
 FROM node:24-alpine

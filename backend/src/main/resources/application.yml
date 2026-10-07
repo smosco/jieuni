@@ -5,9 +5,18 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
+  session:
+    jdbc:
+      initialize-schema: never
 
 management:
   endpoints:
     web:
       exposure:
         include: health
+
+jieuni:
+  photo-public-base-url: ${PHOTO_PUBLIC_BASE_URL:}

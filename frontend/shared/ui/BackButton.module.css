@@ -1,0 +1,25 @@
+/* 터치 영역은 44px이지만 음수 여백으로 자리는 화살표 크기(24px)만 차지한다. 위치는 감싸는 쪽이 정한다. */
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  margin: calc((var(--icon-size) - var(--touch-min)) / 2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.onPhoto {
+  color: var(--color-on-photo);
+}
+
+.icon {
+  flex: none;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  stroke-width: var(--icon-stroke);
+}

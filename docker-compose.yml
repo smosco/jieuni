@@ -21,6 +21,11 @@ services:
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jieuni}
       POSTGRES_USER: ${POSTGRES_USER:-jieuni}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SEED_PATH: /seed/seed.json
+      FIXED_NOW: ${FIXED_NOW:-}
+      PHOTO_PUBLIC_BASE_URL: ${PHOTO_PUBLIC_BASE_URL:-}
+    volumes:
+      - ./seed:/seed:ro
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8080}:8080"
     depends_on:
@@ -33,7 +38,15 @@ services:
       retries: 10
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      # rewrites 목적지는 빌드 때 결과물에 굳으므로 빌드 인자로도 준다.
+      args:
+        API_URL: http://backend:8080
+        NEXT_PUBLIC_NEWSLETTER_URL: ${NEXT_PUBLIC_NEWSLETTER_URL:-}
+    environment:
+      API_URL: http://backend:8080
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-}
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
     depends_on:

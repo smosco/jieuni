@@ -1,0 +1,16 @@
+/* 글자 + 12px + 남은 너비를 채우는 선 */
+.label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin: 0;
+  color: var(--color-ink-tertiary);
+  font-weight: inherit;
+}
+
+.label::after {
+  content: "";
+  flex: 1;
+  height: var(--hairline);
+  background: var(--color-line);
+}

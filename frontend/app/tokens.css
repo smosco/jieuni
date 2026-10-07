@@ -1,4 +1,4 @@
-/* 디자인 토큰 — docs/DESIGN.md 1~3절과 같은 값. 값을 바꿀 때는 DESIGN.md도 같이 고친다. */
+/* 디자인 토큰 — DESIGN.md와 같은 값. 값을 바꿀 때는 DESIGN.md도 같이 고친다. */
 :root {
   /* color */
   --color-paper: #F4F0E8;
@@ -10,9 +10,16 @@
   --color-ink: #2A2622;            /* 13.2:1 */
   --color-earth: #8A5A3C;          /* 5.1:1, 유일한 포인트 색 */
   --color-on-photo: #F7F4EE;
+  --on-photo-80: color-mix(in srgb, var(--color-on-photo) 80%, transparent);
+  --on-photo-75: color-mix(in srgb, var(--color-on-photo) 75%, transparent);
+  --on-photo-70: color-mix(in srgb, var(--color-on-photo) 70%, transparent);
+  --on-photo-60: color-mix(in srgb, var(--color-on-photo) 60%, transparent);
+  --on-photo-55: color-mix(in srgb, var(--color-on-photo) 55%, transparent);
+  --on-photo-20: color-mix(in srgb, var(--color-on-photo) 20%, transparent);
   --color-kakao: #FEE500;          /* 카카오 버튼 전용 예외 */
 
   --shade-photo: linear-gradient(to bottom, rgba(23, 20, 18, 0) 0%, rgba(23, 20, 18, .35) 45%, rgba(23, 20, 18, .85) 100%);
+  --shade-photo-top: linear-gradient(to bottom, rgba(23, 20, 18, .55) 0%, rgba(23, 20, 18, .55) 40%, rgba(23, 20, 18, 0) 100%);
   --shade-tile: linear-gradient(to bottom, rgba(23, 20, 18, 0), rgba(23, 20, 18, .35));
   --dim-sheet: rgba(42, 38, 34, .55);
 
@@ -32,13 +39,41 @@
   --page-gutter: 24px;
   --content-width: 327px;
   --tabbar-height: 64px;
+  --tabbar-gutter: 40px;
+  --tab-indicator-width: 16px;
+  --tab-indicator-gap: 6px;
+  --dot-size: 5px;
+  --shell-max-width: 480px;
+  --row-padding: 14px;
+  --row-label-width: 40px;
+  --credit-role-width: 56px;
+  --top-offset: 52px;
+  --icon-size: 24px;
+  --icon-stroke: 1.25px;
+  --detail-photo-height: 440px;
+  --detail-body-top: 28px;
+  --save-button-padding: 10px 16px;
+  --follow-button-padding: 5px 10px;
+  --badge-padding: 4px 8px;
+  --badge-dot-size: 4px;
+  --chip-padding: 6px 12px;
+  --chip-gap: 6px;
+  --top-tab-indicator-gap: 10px;
+  --head-bottom: 20px;
+  --feed-top-height: 56px;
+  --progress-bar-width: 14px;
+  --feed-block-gap: 14px;
+  --feed-line-width: 300px;
+  --shade-photo-height: 520px;
+  --shade-top-height: 140px;
+  --end-block-top: 260px;
+  --end-rule-width: 32px;
+  --big-button-padding: 14px 16px;
   --tile-size: 124px;
   --tile-gap: 1.5px;
   --touch-min: 44px;
 
-  /* font */
-  --font-serif: 'Noto Serif KR', serif;
-  --font-sans: 'IBM Plex Sans KR', sans-serif;
+  /* font: --font-serif · --font-sans는 app/layout.tsx의 next/font가 <html>에 정의한다(여기서도 선언하면 순서에 따라 뒤집힌다). */
 
   /* motion */
   --duration-state: 120ms;
@@ -50,7 +85,7 @@
   :root { --duration-state: 0ms; --duration-sheet: 0ms; }
 }
 
-/* type — DESIGN.md 2절 */
+/* type: 글자 단계는 이 8개만 쓴다 */
 .display-xl { font-family: var(--font-serif); font-weight: 300; font-size: 30px; line-height: 1.4;  letter-spacing: -0.01em; }
 .display-lg { font-family: var(--font-serif); font-weight: 300; font-size: 24px; line-height: 1.4;  letter-spacing: -0.005em; }
 .display-md { font-family: var(--font-serif); font-weight: 400; font-size: 19px; line-height: 1.5;  letter-spacing: -0.003em; }

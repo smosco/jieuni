@@ -104,6 +104,16 @@ Spring Boot 3.x와 달라지는 것: Jackson 3(패키지 `tools.jackson`), Sprin
 ### 채택 / 포기한 것
 
 - **채택: B. JPA.** 단, 공개 목록 조회(피드, 둘러보기, 프로필 격자, 내 공간)는 엔티티 그래프 대신 **DTO 프로젝션 쿼리**로 쓰고, 목록 API마다 실행되는 쿼리 수를 테스트로 고정한다. 인덱스는 `EXPLAIN ANALYZE` 전후를 README에 남긴다.
+- **2026-10-06(B4) 둘러보기 인덱스와 커서**: B1의 `places(status, published_at desc, id desc)`는 쓰이지 않았다. 조건이 `status in ('published','paused')` 두 값이라 이 인덱스 순서로는 전체 `published_at desc` 순서를 만들 수 없어서, 조건에 맞는 행을 모두 읽고 정렬했다. **채택: 부분 인덱스 `(published_at desc, id desc) where status in ('published','paused') and slug is not null`(V3), 커서 조건은 행 비교 `(published_at, id) < (?, ?)`.** `or`로 쓴 커서 조건(`a < ? or (a = ? and id < ?)`)은 인덱스 범위 조건이 되지 못하고 필터로 걸려 앞쪽 행을 전부 읽고 버린다. 측정(공간 2만 곳 중 목록 대상 1만 6천, 25개씩, 같은 쿼리 3번 중 마지막):
+
+  | 경우 | 전: 옛 인덱스 | 후: 부분 인덱스 |
+  | --- | --- | --- |
+  | 첫 페이지 | 7.673 ms (Seq Scan + 정렬) | 0.044 ms (Index Scan, 25행에서 멈춤) |
+  | 8,000번째 뒤 페이지, `or` 조건 | 4.724 ms (Bitmap Heap Scan) | 0.846 ms (Index Scan, 필터로 8,001행 버림) |
+  | 8,000번째 뒤 페이지, 행 비교 | 4.376 ms (Bitmap Heap Scan) | 0.061 ms (Index Scan, 범위 조건) |
+
+  **포기한 것**: 상태 값이 바뀌면(예: 목록에 새 상태 추가) 인덱스 조건도 마이그레이션으로 같이 바꿔야 한다.
+  상태가 바인드 파라미터라 generic 계획에서는 부분 인덱스를 못 쓴다(기본 `auto`에서는 custom 계획 유지, 확인함: 준비된 문장 8번 실행 뒤 generic 0 · custom 9, 0.008 ms / `force_generic_plan`이면 Seq Scan + 정렬 3.209 ms).
 - `open-in-view`는 끈다. 트랜잭션 경계는 서비스 계층에서만 연다.
 - **포기한 것**: SQL이 전부 눈에 보이는 투명함. 일정이 밀리면 A로 되돌리고, 그 판단을 이 파일 끝에 한 줄 남긴다.
 
@@ -113,9 +123,12 @@ Spring Boot 3.x와 달라지는 것: Jackson 3(패키지 `tools.jackson`), Sprin
 
 - 써 본 조합이라 설명 비용이 없다.
 - 스키마는 Flyway 마이그레이션 파일로만 바꾼다. JPA의 `ddl-auto`는 `validate`.
-- 테이블은 SPEC 3절의 11개 + Spring Session 테이블.
+- 테이블은 SPEC 3절의 12개 + Spring Session 테이블 2개.
 - **필수 항목은 DB 제약이 아니라 공개 전환 때 서비스 계층에서 검사**한다(SPEC 3절). 제보·작성 중 상태에서는 빈칸이 정상이기 때문이다. 대신 형식(길이, enum, unique)은 DB 제약으로 둔다.
 - 개발용 시드: `dev` 프로필에서만 등록되는 `ApplicationRunner`가 서버 시작 때 `makers`가 비어 있으면 `seed/seed.json`(가짜 5곳)을 한 트랜잭션으로 적재한다. 행이 있으면 건너뛴다.
+- **2026-10-06(B1) 추가**: `created_at`·`updated_at`은 Spring Data JPA Auditing으로 채우되 `DateTimeProvider`가 `Clock` 빈을 읽는다(고정 시계 테스트와 일관). 탈퇴 규칙(SPEC 3절)은 FK 동작으로도 건다 — `saves`·`follows`는 `ON DELETE CASCADE`, `places.suggested_by`·`credit_suggestions.user_id`는 `ON DELETE SET NULL`. `Place`의 자식 목록(크레딧·출처·사진·임베드)은 **둘 이상을 `join fetch`하지 않는다**(카테시안 곱·`MultipleBagFetchException`); `hibernate.default_batch_fetch_size=100`으로 목록마다 IN 쿼리 한 번씩. `Save`·`Follow`·`DailyPick`처럼 id를 직접 넣는 엔티티는 `Persistable`을 구현해 `save()`가 SELECT 없이 INSERT한다.
+- **2026-10-06(B4 리뷰) 추가**: "확인된 크레딧은 출처가 있다"(`place_credits`: `NOT verified OR source_url IS NOT NULL`)는 공개 여부와 상관없이 항상 참이어야 하는 형식 규칙이라 DB `CHECK`로도 둔다(V3). 공개할 때만 따지는 규칙(출처 있는 크레딧 1개 이상, 사진 출처 등)은 계속 `PublishRules` 한 곳에만 둔다. 관리자 API는 DB 오류가 나기 전에 400으로 먼저 막는다(B10).
+- **2026-10-06(B4 리뷰) 추가**: `place_photos`에만 `UNIQUE (place_id, position) DEFERRABLE INITIALLY DEFERRED`를 건다(V3). 목록 쿼리가 position 0을 대표 사진으로 읽어서, 같은 position이 둘이면 대표 사진이 하나로 정해지지 않기 때문이다. 순서를 맞바꿀 때 UPDATE 중간에 같은 position이 잠깐 겹치므로 커밋 때 검사한다. 크레딧·출처·임베드는 position을 순서로만 쓰므로 걸지 않는다.
 
 **채택**: PostgreSQL 18, Flyway, `ddl-auto: validate`, 공개 시 검증.
 **포기한 것**: 관리형 DB의 자동 백업(9절에서 직접 백업).
@@ -136,7 +149,7 @@ Spring Boot 3.x와 달라지는 것: Jackson 3(패키지 `tools.jackson`), Sprin
 
 - **채택: C.** 세션은 Spring Session JDBC로 PostgreSQL에 저장해 재배포 후에도 유지한다.
 - **제공자(2026-10-06)**: MVP는 **구글만**. 카카오는 개인 개발자 비즈 앱 전환 없이는 이메일을 받지 못하고, 전환 심사가 MVP 일정과 무관한 대기 시간을 만든다. 공개 후 커스텀 provider 하나로 추가한다(SPEC 10절). 관리자도 구글 계정 + `ADMIN_EMAILS`.
-- **도메인**: 프론트 `example.kr`, API `api.example.kr`처럼 같은 상위 도메인을 써서 쿠키를 `SameSite=Lax`로 둔다.
+- ~~**도메인**: 프론트 `example.kr`, API `api.example.kr`처럼 같은 상위 도메인을 써서 쿠키를 `SameSite=Lax`로 둔다.~~ → 6절 2026-10-06 결정(같은 주소 프록시)으로 대체.
 - **역할**: `user`, `admin`. `/api/admin/**`은 admin만(403). 남의 저장·팔로우는 애초에 본인 것만 조회하는 쿼리로 막는다.
 - **포기한 것**: 무상태 서버. 서버를 여러 대로 늘릴 계획이 없으므로 대가가 작다.
 
@@ -178,6 +191,12 @@ v0.1은 공간을 저장소의 MDX 파일로 두는 안이었다.
 
 **채택**: Next.js 16, TypeScript, CSS Modules, TanStack Query, Zod(폼 검증).
 **포기한 것**: Tailwind·UI 라이브러리로 얻는 속도.
+
+**2026-10-06(F1) 결정 변경 — CORS 대신 같은 주소 프록시**: 브라우저는 백엔드를 직접 부르지 않는다. `next.config.ts`의 `rewrites`가 `/api/:path*` · `/oauth2/:path*` · `/login/oauth2/:path*`를 `API_URL`(서버만 아는 주소)로 넘기고, 클라이언트 `apiFetch`는 상대 경로만 쓴다. 이유: 배포에서 프론트와 백엔드 도메인이 다르면 `SameSite=Lax` 세션 쿠키가 교차 출처 fetch에 실리지 않고 `XSRF-TOKEN` 쿠키도 JS가 읽을 수 없다. 같은 출처면 둘 다 그냥 된다. 백엔드의 CORS 설정과 `NEXT_PUBLIC_API_URL`은 없앤다(4절의 "같은 상위 도메인" 요구도 사라진다). `app/api/revalidate/route.ts`는 파일 라우트라 rewrites(배열 = `afterFiles`)보다 먼저 잡힌다([rewrites](https://nextjs.org/docs/app/api-reference/config/next-config-js/rewrites) "static files … and non-dynamic pages are checked/served" 뒤에 `afterFiles`). rewrites 목적지는 `next build` 때 결과물(`routes-manifest.json`·standalone `server.js`)에 굳는다(빌드해서 확인). 그래서 `API_URL`은 실행 환경 변수이면서 빌드 인자이기도 하다(Dockerfile `ARG API_URL`). **포기한 것**: 백엔드 응답이 Next 서버를 한 번 더 거친다(Vercel에서는 함수 호출 하나).
+
+**2026-10-06(F1) 목록 페이지의 렌더 방식**: `/`, `/places`, `/makers`는 segment `revalidate = 0`(요청마다 렌더) + `fetch(next: { tags, revalidate: 3600 })` 데이터 캐시로 간다. 정적 라우트는 빌드 때 prerender되는데 그때 백엔드가 없으면 빌드가 깨지거나 빈 화면이 1시간짜리 HTML로 굳는다(`[slug]` 라우트의 빈 `generateStaticParams` 같은 장치가 정적 라우트에는 없다). 공식 문서([caching-without-cache-components](https://nextjs.org/docs/app/guides/caching-without-cache-components))가 `revalidate = 0`은 "always dynamically rendered … leaves fetch requests that use a positive revalidate as is"라고 적어 이 조합이 보장된다. `force-dynamic`은 문서가 "모든 fetch를 no-store로"라고 적어 쓰지 않는다. 상세 페이지(`[slug]`)는 그대로 빈 `generateStaticParams` + `dynamicParams`(첫 요청 때 생성, 전체 라우트 캐시). 태그 무효화는 두 캐시 모두에 듣는다.
+
+**2026-10-07(F2) 에세이 마크다운 — react-markdown**: 공간 에세이(SPEC 3절 `essay`, 마크다운)는 `react-markdown` 10을 **서버 컴포넌트에서만** 써서 그린다(클라이언트 번들에 들어가지 않는다). `allowedElements`로 h2·h3·p·ul·ol·li·strong·em·a·blockquote만(h1은 h2로 그린다, 이미지 금지), `skipHtml`로 raw HTML을 버리고 HTML 허용 플러그인(`rehype-raw`)은 쓰지 않는다. 링크는 기본 `urlTransform`이 위험한 주소를 비우고 새 창 + `noopener noreferrer`. 확인 결과는 NOTES F2. **포기한 것**: 의존성 없는 직접 파서(제목·문단·목록만이면 짧지만, 링크·인용·강조와 이스케이프를 손으로 맞추는 쪽이 더 위험하다).
 
 **2026-10-06 확인(즉시 반영 방법)**: Spring이 부르는 `app/api/revalidate` 라우트에서는 `revalidateTag(tag, { expire: 0 })`를 쓴다. Next 16은 두 번째 인자가 필수이고, `'max'` 같은 프로필을 주면 다음 요청이 옛 페이지를 먼저 받으므로(stale-while-revalidate) "관리자가 공개한 직후 새로고침 한 번에 보인다"가 되지 않는다. `updateTag`는 Server Action 전용이라 외부 호출 라우트에서 못 쓴다. `cacheComponents`는 켜지 않는다(빈 `generateStaticParams`가 빌드 오류가 됨). 출처는 "버전 기준" 표의 Next.js 행.
 
@@ -226,7 +245,7 @@ v0.1은 공간을 저장소의 MDX 파일로 두는 안이었다.
 - 프론트: Vercel Hobby(비상업). 수익화하면 Pro.
 - 백엔드, PostgreSQL, AI 초안 서비스는 **Docker Compose로 서버 한 대**에 올린다. 로컬의 `docker compose up` 구성을 그대로 운영으로 가져간다.
 - HTTPS는 리버스 프록시의 자동 인증서. DB는 매일 `pg_dump` → R2로 백업하고, 복원을 한 번 실제로 해 본다.
-- 서버 후보: AWS EC2(가장 널리 쓰임, 무료 기간 이후 월 2~3만 원 추정), AWS Lightsail(정액), 무료 PaaS + 무료 Postgres. **결정 마감: PLAN M4(AI 국면 끝, 10/20).** D1이 이 결정에 의존한다.
+- 서버 후보: AWS EC2(가장 널리 쓰임, 무료 기간 이후 월 2~3만 원 추정), AWS Lightsail(정액), 무료 PaaS + 무료 Postgres. **결정 마감: PLAN M4(AI 국면 끝, 10/13 — 2026-10-07 체크포인트로 10/20에서 앞당김).** D1이 이 결정에 의존한다.
 
 ---
 

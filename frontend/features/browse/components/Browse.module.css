@@ -1,0 +1,106 @@
+/* 머리: 좌우 24px, 위 64px, 사이 8px, 아래 20px */
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-4xl) var(--page-gutter) var(--head-bottom);
+}
+
+.eyebrow,
+.title {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--color-ink-tertiary);
+}
+
+/* 칩이 넘치면 가로로 넘긴다 */
+.chips {
+  display: flex;
+  gap: var(--chip-gap);
+  padding: var(--space-lg) var(--page-gutter);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+/* 보이는 칩은 26px로 두고 터치 영역만 위아래로 44px까지 늘린다(줄의 위아래 16px 여백 안에 들어간다) */
+.chip {
+  position: relative;
+  flex: none;
+  padding: var(--chip-padding);
+  border: var(--hairline) solid var(--color-line);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-secondary);
+  white-space: nowrap;
+  transition: background-color var(--duration-state) var(--ease-out), color var(--duration-state) var(--ease-out);
+}
+
+.chip::before {
+  content: "";
+  position: absolute;
+  inset: calc((var(--touch-min) - 100%) / -2) 0;
+}
+
+.chipOn {
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+.empty {
+  padding: var(--space-3xl) var(--page-gutter);
+}
+
+.emptyText {
+  margin: 0 0 var(--space-lg);
+  color: var(--color-ink-secondary);
+}
+
+.emptyActions {
+  display: flex;
+  gap: var(--space-xl);
+}
+
+/* 만든 사람 탭: 사진 · 이름과 영문 라벨, 줄 전체가 프로필 링크 */
+.makers {
+  margin: 0;
+  padding: 0 var(--page-gutter);
+  list-style: none;
+}
+
+.makerRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--row-padding) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+.thumb {
+  flex: none;
+  width: var(--space-3xl);
+  height: var(--space-3xl);
+  overflow: hidden;
+  background: var(--color-photo-placeholder);
+}
+
+.thumbPhoto {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.makerText {
+  display: flex;
+  flex-direction: column;
+}
+
+.makerLabel {
+  color: var(--color-ink-tertiary);
+}
