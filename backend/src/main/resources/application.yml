@@ -9,8 +9,16 @@ spring:
       hibernate:
         default_batch_fetch_size: 100
   session:
+    timeout: 30d
     jdbc:
       initialize-schema: never
+
+# 세션 쿠키 이름 SESSION · HttpOnly · SameSite=Lax는 Spring Session 기본값이다.
+server:
+  servlet:
+    session:
+      cookie:
+        max-age: 30d
 
 management:
   endpoints:
@@ -20,3 +28,4 @@ management:
 
 jieuni:
   photo-public-base-url: ${PHOTO_PUBLIC_BASE_URL:}
+  admin-emails: ${ADMIN_EMAILS:}

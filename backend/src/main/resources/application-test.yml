@@ -7,3 +7,4 @@ spring:
 
 jieuni:
   photo-public-base-url: https://photos.test
+  admin-emails: admin@test.jieuni

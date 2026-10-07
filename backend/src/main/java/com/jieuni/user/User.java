@@ -42,6 +42,24 @@ public class User extends BaseTimeEntity {
 	protected User() {
 	}
 
+	public User(String provider, String providerId, String email, String nickname, String profileImageUrl,
+			UserRole role) {
+		this.provider = provider;
+		this.providerId = providerId;
+		this.email = email;
+		this.nickname = nickname;
+		this.profileImageUrl = profileImageUrl;
+		this.role = role;
+	}
+
+	public void changeNickname(String nickname) {
+		this.nickname = nickname;
+	}
+
+	public void changeRole(UserRole role) {
+		this.role = role;
+	}
+
 	public Long getId() {
 		return id;
 	}

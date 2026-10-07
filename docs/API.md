@@ -10,12 +10,12 @@
 
 | 구분 | 규칙 |
 | --- | --- |
-| 세션 | Spring Session JDBC. 쿠키 `SESSION`, HttpOnly · SameSite=Lax · 운영 Secure |
-| CSRF | 켬(Spring Security 7 `csrf.spa()`). 서버가 `XSRF-TOKEN` 쿠키(HttpOnly 아님)를 주고, 프론트는 GET 외 요청에 `X-XSRF-TOKEN` 헤더로 돌려보낸다. 없으면 403. 로그인·로그아웃 성공 시 쿠키가 지워지므로 그 뒤 `GET /api/me`로 다시 받는다 |
+| 세션 | Spring Session JDBC. 쿠키 `SESSION`, HttpOnly · SameSite=Lax · 운영 Secure. 유지 30일(마지막 요청 기준). 비로그인 요청은 세션을 만들지 않는다 |
+| CSRF | 켬(Spring Security 7 `csrf.spa()`). 서버가 모든 응답에 `XSRF-TOKEN` 쿠키(HttpOnly 아님, 없을 때만 새로)를 주고, 프론트는 GET 외 요청에 `X-XSRF-TOKEN` 헤더로 돌려보낸다. 없으면 403. 로그인·로그아웃 성공 시 쿠키가 지워지므로 그 뒤 `GET /api/me`로 다시 받는다 |
 | 같은 출처 | 브라우저는 백엔드를 직접 부르지 않는다. Next rewrites가 `/api/**`·`/oauth2/**`·`/login/oauth2/**`를 백엔드로 넘긴다. CORS 없음(DECISIONS 6절) |
 | 공개 | `/api/feed`, `/api/places/**`, `/api/makers/**`, `/api/sitemap` |
-| 로그인 필요 | `/api/me/**`, `/api/suggestions/**`, `/api/auth/logout` → 비로그인 401 |
-| 관리자 | `/api/admin/**` → `role=admin` 아니면 403 |
+| 로그인 필요 | `/api/me/**`, `/api/suggestions/**` → 비로그인 401 |
+| 관리자 | `/api/admin/**` → 비로그인 401, `role=admin` 아니면 403. 역할은 세션이 아니라 요청마다 DB의 `users.role`로 본다. 기동 때 `users.role`을 `ADMIN_EMAILS`에 맞춘다(목록에서 빠지면 다시 로그인하지 않아도 다음 요청부터 403) |
 | 개발용 | `/api/dev/**` → `dev`·`test` 프로필에서만 빈이 존재 |
 
 ### 오류 본문
@@ -30,6 +30,7 @@
 | 400 | 형식 검증 실패, 공개 시 검증 실패(`fieldErrors`), 주말 편성 |
 | 401 | 비로그인 |
 | 403 | 권한 없음, CSRF 토큰 없음 |
+| (공통) | 필터 단계 오류(잘못된 URL 400, 세션 저장소 장애 500 등)도 `/error`가 상태를 유지한 채 `{ message }`로 준다 |
 | 404 | 없음, 공개되지 않은 slug, 일반 사용자의 `/admin` 화면 |
 | 409 | 전환표 밖 상태 전환, 공개 후 slug 변경, slug 중복, 중복 편성, 08:00 지난 오늘 칸 수정, 폐업 공간 저장, 같은 이름의 공개 공간 제보 |
 | 429 | 제보 하루 10건 초과 |
@@ -145,8 +146,8 @@
 | `GET /api/me` | `{ id, nickname, profileImageUrl, role, hasNewFromFollowing }` | 비로그인 401. 응답에 `XSRF-TOKEN` 쿠키가 실린다(프론트가 처음 부르는 요청) |
 | `PATCH /api/me` | `{ nickname }` → 200 `/api/me`와 같음 | 1~20자 |
 | `DELETE /api/me` | 204 | SPEC 3절 탈퇴 순서. 세션 무효화 |
-| `POST /api/auth/logout` | 204 | 세션 삭제, 쿠키 만료 |
-| `POST /api/dev/login` | `{ email }` → 200 `/api/me`와 같음 | **dev·test 프로필만.** 없으면 만들고(`provider=dev`) 세션 생성 |
+| `POST /api/auth/logout` | 204 | 세션 삭제, 쿠키 만료. 비로그인도 204(멱등) |
+| `POST /api/dev/login` | `{ email }` → 200 `/api/me`와 같음 | **dev·test 프로필만.** 없으면 만들고(`provider=dev`, 닉네임은 이메일 앞부분) 세션 생성. 기존 세션이 있으면 세션 ID를 바꾼다 |
 
 구글은 `email`을 항상 주지만 `users.email`은 nullable로 둔다(공개 후 카카오 등 제공자 추가 대비). `provider` 값은 `google` · `dev`.
 

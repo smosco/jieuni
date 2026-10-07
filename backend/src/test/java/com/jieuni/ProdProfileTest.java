@@ -30,6 +30,11 @@ class ProdProfileTest {
 	}
 
 	@Test
+	void noDevLogin() {
+		assertThat(context.containsBean("devLoginController")).isFalse();
+	}
+
+	@Test
 	void fixedNowIsIgnored() {
 		assertThat(context.containsBean("devClock")).isFalse();
 		assertThat(clock.instant()).isAfter(Instant.parse("2026-01-01T00:00:00Z"));
