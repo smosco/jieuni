@@ -3,3 +3,10 @@ spring:
     url: ${DB_URL}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
+
+# TLS를 앞단(호스팅)이 끝내도 쿠키에 Secure가 붙게 한다.
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true

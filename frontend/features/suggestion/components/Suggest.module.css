@@ -1,0 +1,80 @@
+/* 머리: 둘러보기와 같다(좌우 24px, 위 64px, 사이 8px, 아래 20px) */
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-4xl) var(--page-gutter) var(--head-bottom);
+}
+
+.eyebrow,
+.title,
+.intro,
+.thanks,
+.notice {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--color-ink-tertiary);
+}
+
+.intro {
+  color: var(--color-ink-secondary);
+}
+
+/* 입력 항목 사이 24px, 아래는 탭 바 위 48px까지 */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  padding: var(--space-xl) var(--page-gutter) var(--space-3xl);
+}
+
+.thanks,
+.notice {
+  word-break: keep-all;
+}
+
+.notice {
+  color: var(--color-ink-secondary);
+}
+
+.noticeLink {
+  color: var(--color-ink);
+  text-decoration: underline;
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+}
+
+.links a,
+.textButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+}
+
+.textButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+/* 크레딧 시트: 시트는 가운데 정렬, 폼은 본문 너비에서 왼쪽 정렬 */
+.sheetTitle {
+  margin: 0;
+}
+
+.sheetForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  width: 100%;
+  max-width: var(--content-width);
+  text-align: left;
+}

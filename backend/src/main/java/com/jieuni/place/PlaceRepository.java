@@ -45,6 +45,19 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
 	List<PlaceTileRow> findRelated(long placeId, Collection<Long> makerIds, Collection<PlaceStatus> statuses,
 			Limit limit);
 
+	// 같은 이름은 앞뒤 공백·대소문자를 무시하고 본다.
+	@Query("""
+			select p.slug from Place p
+			where lower(trim(p.name)) = lower(trim(:name)) and p.status in :statuses and p.slug is not null
+			order by p.publishedAt desc""")
+	List<String> findSlugsByName(String name, Collection<PlaceStatus> statuses, Limit limit);
+
+	@Query("select count(p) from Place p where p.suggestedBy.id = :userId and p.createdAt >= :since")
+	long countSuggestedSince(long userId, Instant since);
+
+	@Query("select p.status from Place p where p.id = :id")
+	Optional<PlaceStatus> findStatusById(long id);
+
 	@Query("""
 			select new com.jieuni.common.SitemapEntry(p.slug, p.updatedAt)
 			from Place p where p.status in :statuses and p.slug is not null

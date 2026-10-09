@@ -104,3 +104,18 @@
 .makerLabel {
   color: var(--color-ink-tertiary);
 }
+
+/* 공간 목록 끝: 좌우 24px, 위 32px, 아래 48px */
+.listEnd {
+  margin: 0;
+  padding: var(--space-2xl) var(--page-gutter) var(--space-3xl);
+  color: var(--color-ink-secondary);
+  word-break: keep-all;
+}
+
+.listEndLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--color-ink);
+}

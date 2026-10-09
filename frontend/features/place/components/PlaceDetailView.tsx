@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { FollowButton } from "@/features/follow/components/FollowButton";
+import { MeStateLoader } from "@/features/me/components/MeStateLoader";
 import { SaveButtons } from "@/features/save/components/SaveButtons";
+import { CreditSuggestButton } from "@/features/suggestion/components/CreditSuggestButton";
 import { KIND_LABEL, ROLE_LABEL } from "@/shared/lib/labels";
 import { PlaceGrid } from "@/shared/ui/PlaceTile";
 import { SectionLabel } from "@/shared/ui/SectionLabel";
@@ -32,6 +34,10 @@ export function PlaceDetailView({ place }: { place: PlaceDetail }) {
 
   return (
     <article>
+      <MeStateLoader
+        places={[place.id]}
+        makers={place.credits.flatMap((credit) => (credit.maker.slug ? [credit.maker.id] : []))}
+      />
       <PlaceGallery photos={place.photos} embeds={place.embeds} placeName={place.name} />
       {place.status !== "published" && <p className={`body-sm ${styles.band}`}>{STATUS_BAND[place.status]}</p>}
 
@@ -41,7 +47,7 @@ export function PlaceDetailView({ place }: { place: PlaceDetail }) {
           <h1 className={`display-xl ${styles.name}`}>{place.name}</h1>
           <p className={`body-sm ${styles.meta}`}>{meta.join(" · ")}</p>
           <div className={styles.actions}>
-            {place.status !== "closed" && <SaveButtons />}
+            {place.status !== "closed" && <SaveButtons placeId={place.id} />}
             <ShareButton title={place.name} />
           </div>
         </header>
@@ -84,14 +90,11 @@ export function PlaceDetailView({ place }: { place: PlaceDetail }) {
                   <CreditStatus verified={credit.verified} sourceUrl={credit.sourceUrl} />
                 </span>
                 {/* 프로필이 없는 만든 사람은 팔로우해도 볼 곳이 없다 */}
-                {credit.maker.slug && <FollowButton makerName={credit.maker.name} />}
+                {credit.maker.slug && <FollowButton makerId={credit.maker.id} makerName={credit.maker.name} />}
               </li>
             ))}
           </ul>
-          {/* 누르면 크레딧 알려주기 시트(제보 기능을 붙일 때 연결) */}
-          <button type="button" className={`body-sm ${styles.suggest}`}>
-            이 공간을 만드셨나요? 크레딧을 알려주세요 →
-          </button>
+          <CreditSuggestButton placeId={place.id} className={`body-sm ${styles.suggest}`} />
         </section>
 
         {place.essay && (

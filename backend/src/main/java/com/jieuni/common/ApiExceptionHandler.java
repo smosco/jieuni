@@ -6,6 +6,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -25,10 +27,21 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		return ResponseEntity.status(e.getStatus()).body(new ApiError(e.getMessage(), e.getFieldErrors()));
 	}
 
+	// 아래 Exception 처리기가 인증·권한 예외를 500으로 바꾸지 않게 따로 받는다. Security의 401·403 응답도 여기로 위임된다.
+	@ExceptionHandler(AuthenticationException.class)
+	ResponseEntity<ApiError> handleAuthentication(AuthenticationException e) {
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiError.of(HttpStatus.UNAUTHORIZED));
+	}
+
+	@ExceptionHandler(AccessDeniedException.class)
+	ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException e) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.of(HttpStatus.FORBIDDEN));
+	}
+
 	@ExceptionHandler(Exception.class)
 	ResponseEntity<ApiError> handleUnexpected(Exception e) {
 		log.error("처리하지 못한 예외", e);
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiError("잠시 후 다시 시도해 주세요"));
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiError.of(HttpStatus.INTERNAL_SERVER_ERROR));
 	}
 
 	// @Valid 실패: 필드마다 첫 메시지 하나.
@@ -45,10 +58,7 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 	@Override
 	protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers,
 			HttpStatusCode statusCode, WebRequest request) {
-		String message = statusCode.value() == 404 ? "찾을 수 없어요"
-				: statusCode.is5xxServerError() ? "잠시 후 다시 시도해 주세요"
-				: "요청을 처리할 수 없어요";
-		return ResponseEntity.status(statusCode).headers(headers).body(new ApiError(message));
+		return ResponseEntity.status(statusCode).headers(headers).body(ApiError.of(statusCode));
 	}
 
 }

@@ -1,0 +1,53 @@
+.sheet {
+  position: fixed;
+  inset: auto 0 0;
+  width: 100%;
+  max-width: var(--shell-max-width);
+  max-height: 100dvh;
+  overflow-y: auto;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+.sheet::backdrop {
+  background: var(--dim-sheet);
+}
+
+.sheet[open] {
+  animation: rise var(--duration-sheet) var(--ease-out);
+}
+
+.sheet[open]::backdrop {
+  animation: dim var(--duration-sheet) var(--ease-out);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sheet-gap);
+  padding: var(--sheet-padding);
+  text-align: center;
+}
+
+.handle {
+  width: var(--sheet-handle-width);
+  height: var(--sheet-handle-height);
+  background: var(--color-line);
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes dim {
+  from {
+    opacity: 0;
+  }
+}

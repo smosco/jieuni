@@ -34,6 +34,11 @@ class DevProfileTest {
 		assertThat(context.containsBean("devSeedRunner")).isTrue();
 	}
 
+	@Test
+	void hasDevLogin() {
+		assertThat(context.containsBean("devLoginController")).isTrue();
+	}
+
 	// 시드가 V3의 크레딧 CHECK(확인됨이면 출처 필수) 같은 제약을 어기면 컨텍스트가 뜨지 않는다.
 	// 여기서는 확인된 크레딧이 실제로 들어갔는지까지 본다.
 	@Test

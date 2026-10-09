@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FollowButton } from "@/features/follow/components/FollowButton";
+import { MeStateLoader } from "@/features/me/components/MeStateLoader";
 import { subjectParticle } from "@/shared/lib/josa";
 import { makerLabel } from "@/shared/lib/labels";
 import { BackButton } from "@/shared/ui/BackButton";
@@ -13,6 +14,7 @@ export function MakerProfileView({ maker }: { maker: MakerProfile }) {
 
   return (
     <article>
+      <MeStateLoader makers={[maker.id]} />
       <header className={styles.head}>
         <div className={styles.back}>
           <BackButton onPhoto={false} />
@@ -20,7 +22,7 @@ export function MakerProfileView({ maker }: { maker: MakerProfile }) {
         <p className={`label-sm ${styles.label}`}>{label}</p>
         <div className={styles.nameRow}>
           <h1 className={`display-xl ${styles.name}`}>{maker.name}</h1>
-          <FollowButton makerName={maker.name} />
+          <FollowButton makerId={maker.id} makerName={maker.name} />
         </div>
         {maker.intro && <p className={`body-md ${styles.intro}`}>{maker.intro}</p>}
         <MakerLinks maker={maker} />

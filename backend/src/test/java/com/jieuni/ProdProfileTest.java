@@ -14,7 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 // 개발용 장치(시드, FIXED_NOW)는 운영 프로필에 존재하지 않는다.
 @Import(TestcontainersConfiguration.class)
-@SpringBootTest(properties = "FIXED_NOW=2000-01-01T00:00:00Z")
+@SpringBootTest(properties = { "FIXED_NOW=2000-01-01T00:00:00Z", "GOOGLE_CLIENT_ID=x", "GOOGLE_CLIENT_SECRET=x",
+		"FRONTEND_URL=https://example.test" })
 @ActiveProfiles("prod")
 class ProdProfileTest {
 
@@ -27,6 +28,11 @@ class ProdProfileTest {
 	@Test
 	void noDevSeedRunner() {
 		assertThat(context.containsBean("devSeedRunner")).isFalse();
+	}
+
+	@Test
+	void noDevLogin() {
+		assertThat(context.containsBean("devLoginController")).isFalse();
 	}
 
 	@Test

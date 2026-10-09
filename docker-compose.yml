@@ -24,6 +24,10 @@ services:
       SEED_PATH: /seed/seed.json
       FIXED_NOW: ${FIXED_NOW:-}
       PHOTO_PUBLIC_BASE_URL: ${PHOTO_PUBLIC_BASE_URL:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-unset}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-unset}
     volumes:
       - ./seed:/seed:ro
     ports:

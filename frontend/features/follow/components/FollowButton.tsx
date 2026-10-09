@@ -1,23 +1,36 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
+import { useRequireLogin } from "@/features/auth/useRequireLogin";
+import { currentFollowing, useFollowMutation, useFollowing } from "../queries";
 import styles from "./FollowButton.module.css";
 
-// 아직 로그인이 없어 비로그인 상태("팔로우")만 그린다. 누르면 로그인 시트, 팔로우 상태는 로그인을 붙일 때 연결한다.
 export function FollowButton({
-  following = false,
+  makerId,
   makerName,
   onPhoto = false,
+  onLeave,
 }: {
-  following?: boolean;
+  makerId: number;
   makerName: string;
   onPhoto?: boolean;
+  onLeave?: () => void;
 }) {
+  const following = useFollowing(makerId) ?? false;
+  const { mutateAsync } = useFollowMutation(makerId);
+  const queryClient = useQueryClient();
+  const requireLogin = useRequireLogin();
+
   return (
     <button
       type="button"
       className={`label-sm ${styles.button} ${onPhoto ? styles.onPhoto : ""} ${following ? styles.following : ""}`}
       aria-pressed={following}
       aria-label={`${makerName} ${following ? "팔로잉" : "팔로우"}`}
+      onClick={() => {
+        const next = !currentFollowing(queryClient, makerId);
+        requireLogin({ action: { action: "follow", makerId }, onLeave, resume: next }, () => mutateAsync(next));
+      }}
     >
       {following ? "팔로잉" : "팔로우"}
     </button>

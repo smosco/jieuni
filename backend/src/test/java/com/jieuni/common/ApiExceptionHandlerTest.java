@@ -1,6 +1,8 @@
 package com.jieuni.common;
 
 import com.jieuni.IntegrationTest;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -8,6 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 @Import(ApiExceptionHandlerTest.ErrorController.class)
 @WithMockUser
@@ -41,7 +45,7 @@ class ApiExceptionHandlerTest extends IntegrationTest {
 
 	@Test
 	void invalidBodyGivesFieldErrors() {
-		assertThat(mvc.post().uri("/test/errors/valid").with(csrf())
+		assertThat(mvc.post().uri("/test/errors/valid").with(xsrf())
 				.contentType(MediaType.APPLICATION_JSON).content("{\"nickname\":\"\"}"))
 				.hasStatus(HttpStatus.BAD_REQUEST)
 				.bodyJson()
@@ -50,7 +54,7 @@ class ApiExceptionHandlerTest extends IntegrationTest {
 
 	@Test
 	void unreadableJsonIs400WithMessage() {
-		assertThat(mvc.post().uri("/test/errors/valid").with(csrf())
+		assertThat(mvc.post().uri("/test/errors/valid").with(xsrf())
 				.contentType(MediaType.APPLICATION_JSON).content("{"))
 				.hasStatus(HttpStatus.BAD_REQUEST)
 				.bodyJson()
@@ -67,7 +71,7 @@ class ApiExceptionHandlerTest extends IntegrationTest {
 
 	@Test
 	void wrongMethodIs405WithMessage() {
-		assertThat(mvc.delete().uri("/test/errors/conflict").with(csrf()))
+		assertThat(mvc.delete().uri("/test/errors/conflict").with(xsrf()))
 				.hasStatus(HttpStatus.METHOD_NOT_ALLOWED)
 				.bodyJson()
 				.isStrictlyEqualTo("{\"message\":\"요청을 처리할 수 없어요\"}");
@@ -79,6 +83,36 @@ class ApiExceptionHandlerTest extends IntegrationTest {
 				.hasStatus(HttpStatus.INTERNAL_SERVER_ERROR)
 				.bodyJson()
 				.isStrictlyEqualTo("{\"message\":\"잠시 후 다시 시도해 주세요\"}");
+	}
+
+	@Test
+	void accessDeniedInControllerIs403Not500() {
+		assertThat(mvc.get().uri("/test/errors/denied"))
+				.hasStatus(HttpStatus.FORBIDDEN)
+				.bodyJson()
+				.isStrictlyEqualTo("{\"message\":\"권한이 없어요\"}");
+	}
+
+	@Test
+	void authenticationExceptionInControllerIs401Not500() {
+		assertThat(mvc.get().uri("/test/errors/unauthenticated"))
+				.hasStatus(HttpStatus.UNAUTHORIZED)
+				.bodyJson()
+				.isStrictlyEqualTo("{\"message\":\"로그인이 필요해요\"}");
+	}
+
+	// 필터 단계 오류(방화벽 거부 등)가 컨테이너의 /error 포워드로 오는 경우. MockMvc는 포워드를 하지 않으므로 직접 꾸민다.
+	@Test
+	@WithAnonymousUser
+	void errorDispatchKeepsStatusForAnonymous() {
+		assertThat(mvc.get().uri("/error").with(request -> {
+			request.setDispatcherType(DispatcherType.ERROR);
+			request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 400);
+			return request;
+		}))
+				.hasStatus(HttpStatus.BAD_REQUEST)
+				.bodyJson()
+				.isStrictlyEqualTo("{\"message\":\"요청을 처리할 수 없어요\"}");
 	}
 
 	@RestController
@@ -100,6 +134,16 @@ class ApiExceptionHandlerTest extends IntegrationTest {
 
 		@PostMapping("/test/errors/valid")
 		void valid(@Valid @RequestBody NicknameBody body) {
+		}
+
+		@GetMapping("/test/errors/denied")
+		void denied() {
+			throw new AccessDeniedException("내부 정보");
+		}
+
+		@GetMapping("/test/errors/unauthenticated")
+		void unauthenticated() {
+			throw new AuthenticationCredentialsNotFoundException("내부 정보");
 		}
 
 		@GetMapping("/test/errors/boom")

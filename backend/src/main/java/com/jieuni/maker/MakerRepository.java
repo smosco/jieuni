@@ -13,6 +13,8 @@ import java.util.Optional;
 
 public interface MakerRepository extends JpaRepository<Maker, Long> {
 
+	boolean existsByIdAndSlugIsNotNull(long id);
+
 	@Query("select m from Maker m left join fetch m.affiliation where m.slug = :slug")
 	Optional<Maker> findWithAffiliationBySlug(String slug);
 

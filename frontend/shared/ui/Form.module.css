@@ -1,0 +1,98 @@
+/* 입력 폼과 큰 버튼. 내 공간 설정·공간 소개하기·크레딧 알려주기가 같이 쓴다. */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.label {
+  color: var(--color-ink-secondary);
+}
+
+/* 밑줄만 있는 입력칸. 포커스 때 밑줄이 진해진다. */
+.input,
+.textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--touch-min);
+  padding: 0;
+  border: 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+  border-radius: 0;
+  background: none;
+  color: var(--color-ink);
+}
+
+.textarea {
+  padding: var(--space-sm) 0;
+  resize: vertical;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  border-bottom-color: var(--color-ink);
+  outline: none;
+}
+
+.select {
+  min-height: var(--touch-min);
+  padding: 0;
+  border: 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+  border-radius: 0;
+  background: none;
+  color: var(--color-ink);
+}
+
+.help {
+  margin: 0;
+  color: var(--color-ink-tertiary);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-min);
+  cursor: pointer;
+}
+
+.check input {
+  margin: 0;
+  accent-color: var(--color-ink);
+}
+
+/* 큰 버튼: 주 버튼(바탕 ink)과 보조 버튼(테두리 ink) */
+.primary,
+.secondary {
+  min-height: var(--touch-min);
+  padding: var(--big-button-padding);
+  border: var(--hairline) solid var(--color-ink);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+.secondary {
+  background: none;
+  color: var(--color-ink);
+}
+
+.primary:disabled,
+.secondary:disabled {
+  border-color: var(--color-line);
+  background: none;
+  color: var(--color-ink-tertiary);
+  cursor: default;
+}

@@ -10,12 +10,12 @@
 
 | 구분 | 규칙 |
 | --- | --- |
-| 세션 | Spring Session JDBC. 쿠키 `SESSION`, HttpOnly · SameSite=Lax · 운영 Secure |
-| CSRF | 켬(Spring Security 7 `csrf.spa()`). 서버가 `XSRF-TOKEN` 쿠키(HttpOnly 아님)를 주고, 프론트는 GET 외 요청에 `X-XSRF-TOKEN` 헤더로 돌려보낸다. 없으면 403. 로그인·로그아웃 성공 시 쿠키가 지워지므로 그 뒤 `GET /api/me`로 다시 받는다 |
+| 세션 | Spring Session JDBC. 쿠키 `SESSION`, HttpOnly · SameSite=Lax · 운영 Secure. 유지 30일(마지막 요청 기준). 비로그인 요청은 세션을 만들지 않는다 |
+| CSRF | 켬(Spring Security 7 `csrf.spa()`). 서버가 모든 응답에 `XSRF-TOKEN` 쿠키(HttpOnly 아님, 없을 때만 새로)를 주고, 프론트는 GET 외 요청에 `X-XSRF-TOKEN` 헤더로 돌려보낸다. 없으면 403. 로그인·로그아웃 성공 시 쿠키가 지워지므로 그 뒤 `GET /api/me`로 다시 받는다 |
 | 같은 출처 | 브라우저는 백엔드를 직접 부르지 않는다. Next rewrites가 `/api/**`·`/oauth2/**`·`/login/oauth2/**`를 백엔드로 넘긴다. CORS 없음(DECISIONS 6절) |
 | 공개 | `/api/feed`, `/api/places/**`, `/api/makers/**`, `/api/sitemap` |
-| 로그인 필요 | `/api/me/**`, `/api/suggestions/**`, `/api/auth/logout` → 비로그인 401 |
-| 관리자 | `/api/admin/**` → `role=admin` 아니면 403 |
+| 로그인 필요 | `/api/me/**`, `/api/suggestions/**` → 비로그인 401 |
+| 관리자 | `/api/admin/**` → 비로그인 401, `role=admin` 아니면 403. 역할은 세션이 아니라 요청마다 DB의 `users.role`로 본다. 기동 때 `users.role`을 `ADMIN_EMAILS`에 맞춘다(목록에서 빠지면 다시 로그인하지 않아도 다음 요청부터 403) |
 | 개발용 | `/api/dev/**` → `dev`·`test` 프로필에서만 빈이 존재 |
 
 ### 오류 본문
@@ -30,6 +30,7 @@
 | 400 | 형식 검증 실패, 공개 시 검증 실패(`fieldErrors`), 주말 편성 |
 | 401 | 비로그인 |
 | 403 | 권한 없음, CSRF 토큰 없음 |
+| (공통) | 필터 단계 오류(잘못된 URL 400, 세션 저장소 장애 500 등)도 `/error`가 상태를 유지한 채 `{ message }`로 준다 |
 | 404 | 없음, 공개되지 않은 slug, 일반 사용자의 `/admin` 화면 |
 | 409 | 전환표 밖 상태 전환, 공개 후 slug 변경, slug 중복, 중복 편성, 08:00 지난 오늘 칸 수정, 폐업 공간 저장, 같은 이름의 공개 공간 제보 |
 | 429 | 제보 하루 10건 초과 |
@@ -140,13 +141,14 @@
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `GET /oauth2/authorization/google?redirect=/places/x` | 302 → 구글 | Spring Security 기본 진입점. MVP 제공자는 구글만. `redirect`는 `/`로 시작하는 경로만 허용, 세션에 저장 |
-| `GET /login/oauth2/code/google` | 302 → `FRONTEND_URL + redirect` | 콜백. `users` upsert(`(provider, providerId)` 기준). 이메일이 `ADMIN_EMAILS`에 있으면 `role=admin` |
+| `GET /oauth2/authorization/google?redirect=/places/x` | 302 → 구글 | Spring Security 기본 진입점. MVP 제공자는 구글만. `redirect`는 `/`로 시작하는 사이트 안 경로만 허용(`//`, 역슬래시, 제어 문자가 있으면 `/`), 세션에 저장. 구글에 주는 `redirect_uri`는 `FRONTEND_URL/login/oauth2/code/google` 고정 |
+| `GET /login/oauth2/code/google` | 302 → `redirect`(상대 경로) | 콜백. `users` upsert(`(provider, providerId)` 기준). 새 사용자 닉네임은 구글 이름(없으면 이메일 앞부분, 그것도 없으면 "방문자")을 20자로 자른 값, 다시 로그인하면 닉네임은 그대로 두고 사진·이메일만 갱신. 이메일은 `email_verified=true`일 때만 저장하고 `ADMIN_EMAILS`와 비교 |
+| (같은 콜백, 실패·취소) | 302 → `redirect?login=error` | 구글에서 취소(`error=access_denied`)하거나 검증이 실패하면. 원인은 서버 로그에만 |
 | `GET /api/me` | `{ id, nickname, profileImageUrl, role, hasNewFromFollowing }` | 비로그인 401. 응답에 `XSRF-TOKEN` 쿠키가 실린다(프론트가 처음 부르는 요청) |
 | `PATCH /api/me` | `{ nickname }` → 200 `/api/me`와 같음 | 1~20자 |
 | `DELETE /api/me` | 204 | SPEC 3절 탈퇴 순서. 세션 무효화 |
-| `POST /api/auth/logout` | 204 | 세션 삭제, 쿠키 만료 |
-| `POST /api/dev/login` | `{ email }` → 200 `/api/me`와 같음 | **dev·test 프로필만.** 없으면 만들고(`provider=dev`) 세션 생성 |
+| `POST /api/auth/logout` | 204 | 세션 삭제, 쿠키 만료. 비로그인도 204(멱등) |
+| `POST /api/dev/login` | `{ email }` → 200 `/api/me`와 같음 | **dev·test 프로필만.** 없으면 만들고(`provider=dev`, 닉네임은 이메일 앞부분) 세션 생성. 기존 세션이 있으면 세션 ID를 바꾼다 |
 
 구글은 `email`을 항상 주지만 `users.email`은 nullable로 둔다(공개 후 카카오 등 제공자 추가 대비). `provider` 값은 `google` · `dev`.
 
@@ -156,14 +158,14 @@
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `GET /api/me/state?places=1,2&makers=3` | `{ saves: { "1": "want" }, follows: [3] }` | 공개 화면 위 사용자별 값. 최대 60개씩 |
-| `PUT /api/me/saves/{placeId}` | `{ status: "want" \| "been" }` → 200 `{ placeId, status }` | 같은 행 하나를 갱신(want↔been). 폐업 공간 409 |
+| `GET /api/me/state?places=1,2&makers=3` | `{ saves: { "1": "want" }, follows: [3] }` | 공개 화면 위 사용자별 값. 최대 100개씩(넘거나 숫자가 아니면 400). 저장·팔로우하지 않은 id는 빠진다 |
+| `PUT /api/me/saves/{placeId}` | `{ status: "want" \| "been" }` → 200 `{ placeId, status }` | 같은 행 하나를 갱신(want↔been). 폐업 공간 409, 공개되지 않은·없는 공간 404 |
 | `DELETE /api/me/saves/{placeId}` | 204 | 켜진 버튼을 다시 누름 = 삭제. 없어도 204 |
-| `GET /api/me/saves?status=want&cursor=` | `{ items: PlaceTile[], nextCursor }` | `updated_at desc`. caption = null |
-| `PUT /api/me/follows/{makerId}` | 204 | 이미 있어도 204 |
+| `GET /api/me/saves?status=want&cursor=` | `{ items: PlaceTile[], nextCursor }` | `status` 필수. `updated_at desc`(상태를 바꾸면 그 목록의 맨 앞). caption = null. 저장한 뒤 폐업한 공간도 보인다(`status: closed`) |
+| `PUT /api/me/follows/{makerId}` | 204 | 이미 있어도 204. 없는 만든 사람 404 |
 | `DELETE /api/me/follows/{makerId}` | 204 | |
-| `GET /api/me/following/places?cursor=` | `{ items: (PlaceTile & { isNew: boolean })[], nextCursor }` | 팔로우한 사람들의 공개 공간, 중복 제거, `published_at desc`. caption = 만든 사람 이름(여럿이면 첫 번째). `isNew = published_at > following_seen_at` |
-| `GET /api/me/following/makers` | `{ items: MakerSummary[] }` | 팔로우순. 커서 없음(수가 작다) |
+| `GET /api/me/following/places?cursor=` | `{ items: (PlaceTile & { isNew: boolean })[], nextCursor }` | 팔로우한 사람들의 공개 공간, 중복 제거, `published_at desc`. caption = 만든 사람 이름(여럿이면 첫 번째). `isNew = published_at > max(following_seen_at, 그 공간의 팔로우한 사람을 팔로우한 시각)`. 늦게 팔로우한 사람의 지난 공간은 새롭지 않다. 공간에 팔로우한 사람이 여럿이면 그중 한 명 기준으로라도 새로우면 true. 팔로잉 탭을 연 적이 없으면 팔로우 시각만 본다 |
+| `GET /api/me/following/makers` | `{ items: MakerSummary[] }` | 최근 팔로우순. 커서 없음(수가 작다) |
 | `POST /api/me/following/seen` | 204 | `following_seen_at = now`. 호출 전 응답의 `isNew`는 프론트가 화면을 떠날 때까지 유지 |
 
 `hasNewFromFollowing`(`/api/me`)은 `GET /api/me/following/places`의 `isNew`가 하나라도 있는가와 같은 식이다.
@@ -174,11 +176,11 @@
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `POST /api/suggestions/places` | `{ name, region, link?, reason, makerHint? }` → 201 `{ id, status: "suggested" }` | 같은 이름의 공개 공간이 있으면 409 `{ message, slug }` |
-| `POST /api/suggestions/credits` | `{ placeId, role, makerName, sourceUrl?, isSelf }` → 201 `{ id, status: "pending" }` | |
+| `POST /api/suggestions/places` | `{ name, region, link?, reason, makerHint? }` → 201 `{ id, status: "suggested" }` | 같은 이름(앞뒤 공백·대소문자 무시)의 공개 공간(공개·휴업·폐업)이 있으면 409 `{ message, slug }`. 이름 100자 · 지역 50자 · 이유 300자 · 만든 사람 100자. `link`는 http·https만(빈 값은 없음) |
+| `POST /api/suggestions/credits` | `{ placeId, role, makerName, sourceUrl?, isSelf? }` → 201 `{ id, status: "pending" }` | 공개 페이지가 없는 공간 404. `sourceUrl`은 http·https만. `isSelf`가 빠지면 false |
 | `GET /api/me/suggestions` | `{ places: [{ id, name, region, status, createdAt }], credits: [{ id, placeName, role, makerName, status }] }` | 내 것만. 화면 문구: suggested·pending=검토 중, published=소개됨, rejected·declined=보류 |
 
-두 제보 합산 사용자당 하루(KST) 10건, 11번째 429.
+두 제보 합산 사용자당 하루(KST 자정 기준) 10건, 11번째 429 `{ message }`. 동시에 보내도 10건을 넘지 않는다(사용자 행을 잠근 뒤 센다).
 
 ---
 
@@ -318,7 +320,7 @@ A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일�
 
 | 이름 | 어디 | 뜻 |
 | --- | --- | --- |
-| `FRONTEND_URL` | backend | 로그인 후 이동, 재생성 호출 대상 |
+| `FRONTEND_URL` | backend | 구글 `redirect_uri`의 바탕, 재생성 호출 대상 |
 | `REVALIDATE_SECRET` | backend, frontend | 재생성 호출 비밀 |
 | `AI_URL`, `AI_INTERNAL_TOKEN` | backend, ai | 내부 호출 |
 | `ADMIN_EMAILS` | backend | 쉼표 구분 |

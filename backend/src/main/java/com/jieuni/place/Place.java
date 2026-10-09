@@ -104,6 +104,20 @@ public class Place extends BaseTimeEntity {
 	protected Place() {
 	}
 
+	// 사용자가 보낸 공간 제보. 이름·지역만 있고 나머지는 관리자가 채운다.
+	public static Place suggested(String name, String region, User suggestedBy, String reason, String link,
+			String makerHint) {
+		Place place = new Place();
+		place.name = name;
+		place.region = region;
+		place.status = PlaceStatus.SUGGESTED;
+		place.suggestedBy = suggestedBy;
+		place.suggestionReason = reason;
+		place.suggestionLink = link;
+		place.suggestionMakerHint = makerHint;
+		return place;
+	}
+
 	public Long getId() {
 		return id;
 	}

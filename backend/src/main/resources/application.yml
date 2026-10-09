@@ -8,9 +8,30 @@ spring:
     properties:
       hibernate:
         default_batch_fetch_size: 100
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: openid, email, profile
+            # 브라우저는 Next rewrites를 거쳐 오므로 요청에서 주소를 만들지 않고 프론트 주소로 고정한다.
+            redirect-uri: ${FRONTEND_URL}/login/oauth2/code/google
   session:
+    timeout: 30d
     jdbc:
       initialize-schema: never
+
+# 세션 쿠키 이름 SESSION · HttpOnly · SameSite=Lax는 Spring Session 기본값이다.
+server:
+  # 로그인 뒤 Location을 상대 경로 그대로 보낸다. 절대 주소로 바꾸면 Next 프록시가 바꾼 Host(백엔드 주소)가 들어간다.
+  tomcat:
+    use-relative-redirects: true
+  servlet:
+    session:
+      cookie:
+        max-age: 30d
 
 management:
   endpoints:
@@ -20,3 +41,4 @@ management:
 
 jieuni:
   photo-public-base-url: ${PHOTO_PUBLIC_BASE_URL:}
+  admin-emails: ${ADMIN_EMAILS:}

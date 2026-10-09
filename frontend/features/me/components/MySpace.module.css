@@ -1,0 +1,208 @@
+/* 머리: 좌우 24px, 위 64px, 사이 8px, 아래 20px (둘러보기와 같다) */
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-4xl) var(--page-gutter) var(--head-bottom);
+}
+
+.headRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nickname,
+.title {
+  margin: 0;
+}
+
+.nickname {
+  color: var(--color-ink-tertiary);
+}
+
+/* 글자만 보이고 터치 영역은 위아래로 44px까지 늘린다 */
+.settings {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+}
+
+.settings::before {
+  content: "";
+  position: absolute;
+  inset: calc((var(--touch-min) - 100%) / -2) calc(var(--space-md) * -1);
+}
+
+/* 머리 안, 탭 바로 위 한 줄: "내가 소개한 공간 →"(제보가 있을 때만) · "공간 소개하기 →" */
+.headLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xl);
+}
+
+/* 글자만 보이고 터치 영역은 위아래로 44px까지 */
+.headLink {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+}
+
+.headLink::before {
+  content: "";
+  position: absolute;
+  inset: calc((var(--touch-min) - 100%) / -2) 0;
+}
+
+.sheetRows {
+  width: 100%;
+  max-width: var(--content-width);
+  text-align: left;
+}
+
+.grid {
+  padding-top: var(--head-bottom);
+}
+
+/* 팔로잉 탭: 섹션 제목 위 20px · 아래 12px, 두 번째 섹션은 위 28px */
+.sectionHead {
+  padding: var(--head-bottom) var(--page-gutter) var(--space-md);
+}
+
+.makersSection {
+  padding: var(--me-section-top) var(--page-gutter) var(--space-xl);
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--row-padding) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+.rowText {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.sub {
+  color: var(--color-ink-tertiary);
+}
+
+.status {
+  flex: none;
+  color: var(--color-ink-secondary);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-lg);
+  padding: var(--space-3xl) var(--page-gutter);
+}
+
+/* 한글이 낱말 중간에서 줄을 바꾸지 않게 */
+.emptyText,
+.sheetText {
+  word-break: keep-all;
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
+
+.emptyLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--color-ink);
+}
+
+/* 설정 시트 */
+.sheetTitle,
+.sheetText {
+  margin: 0;
+}
+
+.sheetText {
+  max-width: var(--content-width);
+  color: var(--color-ink-secondary);
+}
+
+.nicknameForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: var(--content-width);
+  text-align: left;
+}
+
+.nicknameRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.sheetButtons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+  max-width: var(--content-width);
+}
+
+.smallButton {
+  flex: none;
+  min-height: var(--touch-min);
+  padding: var(--save-button-padding);
+  border: var(--hairline) solid var(--color-ink);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.smallButton:disabled {
+  border-color: var(--color-line);
+  color: var(--color-ink-tertiary);
+  cursor: default;
+}
+
+/* 로그아웃 상태의 내 공간: 버튼이 본문 너비를 채운다 */
+.loginButton {
+  width: 100%;
+  max-width: var(--content-width);
+}
+
+.textButton {
+  min-height: var(--touch-min);
+  padding: 0 var(--space-lg);
+  border: 0;
+  background: none;
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+}
+
+.textButton:disabled {
+  color: var(--color-ink-tertiary);
+  cursor: default;
+}

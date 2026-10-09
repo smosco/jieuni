@@ -1,16 +1,30 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
+import { useRequireLogin } from "@/features/auth/useRequireLogin";
+import { currentSaveStatus, useSaveMutation, useSaveStatus } from "../queries";
+import { nextSaveStatus, type SaveStatus } from "../types";
 import styles from "./SaveButtons.module.css";
-
-export type SaveStatus = "want" | "been";
 
 const BUTTONS: { status: SaveStatus; label: string }[] = [
   { status: "want", label: "가고 싶어요" },
   { status: "been", label: "다녀왔어요" },
 ];
 
-// 아직 로그인이 없어 비로그인 상태(둘 다 off)만 그린다. 누르면 로그인 시트, 저장 상태와 낙관적 업데이트는 로그인을 붙일 때 연결한다.
-export function SaveButtons({ status = null, onPhoto = false }: { status?: SaveStatus | null; onPhoto?: boolean }) {
+export function SaveButtons({
+  placeId,
+  onPhoto = false,
+  onLeave,
+}: {
+  placeId: number;
+  onPhoto?: boolean;
+  onLeave?: () => void;
+}) {
+  const status = useSaveStatus(placeId) ?? null;
+  const { mutateAsync } = useSaveMutation(placeId);
+  const queryClient = useQueryClient();
+  const requireLogin = useRequireLogin();
+
   return (
     <div className={styles.group}>
       {BUTTONS.map((button) => (
@@ -19,6 +33,12 @@ export function SaveButtons({ status = null, onPhoto = false }: { status?: SaveS
           type="button"
           className={`label-md ${styles.button} ${onPhoto ? styles.onPhoto : ""} ${status === button.status ? styles.on : ""}`}
           aria-pressed={status === button.status}
+          onClick={() => {
+            const next = nextSaveStatus(currentSaveStatus(queryClient, placeId), button.status);
+            requireLogin({ action: { action: "save", placeId, status: button.status }, onLeave, resume: next !== null }, () =>
+              mutateAsync(next),
+            );
+          }}
         >
           {button.label}
         </button>

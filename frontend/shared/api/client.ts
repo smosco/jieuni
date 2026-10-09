@@ -1,11 +1,12 @@
 import { readCookie } from "./cookie";
 
-// 백엔드 오류 본문 { message, fieldErrors? }
+// 백엔드 오류 본문 { message, fieldErrors? }. body는 그 밖의 값(예: 중복 제보 409의 slug)을 읽을 때 쓴다.
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
     public readonly fieldErrors?: Record<string, string>,
+    public readonly body?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "ApiError";
@@ -48,8 +49,12 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 async function toApiError(res: Response): Promise<ApiError> {
   try {
     const body = (await res.json()) as { message?: string; fieldErrors?: Record<string, string> };
-    return new ApiError(res.status, body.message ?? res.statusText, body.fieldErrors);
+    return new ApiError(res.status, body.message ?? res.statusText, body.fieldErrors, body);
   } catch {
     return new ApiError(res.status, res.statusText);
   }
+}
+
+export function isUnauthorized(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 401;
 }
