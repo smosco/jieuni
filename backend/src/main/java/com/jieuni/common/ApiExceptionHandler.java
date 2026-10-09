@@ -1,7 +1,9 @@
 package com.jieuni.common;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -22,6 +24,10 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
 	private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
+	// 사용자가 고칠 수 있는 DB 제약 위반 → 409 문구. 중복 여부는 미리 조회하지 않고 제약 하나로 판단한다(동시 요청도 같은 길).
+	private static final Map<String, String> CONFLICTS = Map.of(
+			"uq_places_slug", "이미 다른 공간이 쓰는 주소(slug)예요");
+
 	@ExceptionHandler(ApiException.class)
 	ResponseEntity<ApiError> handleApi(ApiException e) {
 		return ResponseEntity.status(e.getStatus()).body(new ApiError(e.getMessage(), e.getFieldErrors()));
@@ -36,6 +42,26 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(AccessDeniedException.class)
 	ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException e) {
 		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.of(HttpStatus.FORBIDDEN));
+	}
+
+	// 목록에 없는 제약 위반은 서버가 막았어야 할 값이므로 500으로 남긴다.
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException e) {
+		String name = constraintName(e);
+		String message = name == null ? null : CONFLICTS.get(name);
+		if (message == null) {
+			return handleUnexpected(e);
+		}
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(message));
+	}
+
+	private static String constraintName(Throwable e) {
+		for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+			if (cause instanceof ConstraintViolationException violation) {
+				return violation.getConstraintName();
+			}
+		}
+		return null;
 	}
 
 	@ExceptionHandler(Exception.class)

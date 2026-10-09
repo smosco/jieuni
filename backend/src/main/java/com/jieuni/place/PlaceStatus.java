@@ -3,6 +3,8 @@ package com.jieuni.place;
 import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.EnumeratedValue;
 
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.Set;
 
 public enum PlaceStatus {
@@ -31,6 +33,10 @@ public enum PlaceStatus {
 	@JsonValue
 	public String value() {
 		return value;
+	}
+
+	public static Optional<PlaceStatus> fromValue(String value) {
+		return Arrays.stream(values()).filter(status -> status.value.equals(value)).findFirst();
 	}
 
 }

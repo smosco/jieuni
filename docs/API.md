@@ -191,10 +191,10 @@
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
 | `GET /api/admin/dashboard` | `{ picks: { thisWeek: Pick[5], nextWeek: Pick[5] }, pendingSuggestions, draftCount, llmCostThisMonthUsd }` | 관리자 홈. `Pick`은 6절과 같고 빈 칸은 `place: null` |
-| `GET /api/admin/places?status=&q=&cursor=` | `{ items: [{ id, slug, name, region, kind, status, updatedAt, hasPhoto }], nextCursor }` | `updated_at desc`. `q`는 이름 부분 일치 |
+| `GET /api/admin/places?status=&q=&cursor=` | `{ items: [{ id, slug, name, region, kind, status, updatedAt, hasPhoto }], nextCursor }` | `updated_at desc, id desc`. `q`는 이름 부분 일치(대소문자 무시). `status`는 하나, 모르는 값 400 |
 | `POST /api/admin/places` | `{ name, region? }` → 201 `AdminPlace` | `status=draft`. slug는 비워 두고 공개 전에 채운다 |
 | `GET /api/admin/places/{id}` | `AdminPlace` | 수정 폼·미리보기. 공개 상세와 같은 하위 목록을 전부 포함 |
-| `PATCH /api/admin/places/{id}` | `AdminPlace`의 스칼라 필드 부분 → 200 `AdminPlace` | 형식 검증만(길이·enum·slug 형식). slug 중복 409. 공개 후 slug 변경 409 |
+| `PATCH /api/admin/places/{id}` | `AdminPlace`의 스칼라 필드 전부 → 200 `AdminPlace` | 임시저장. 빠지거나 null·빈 문자열이면 비운다. `name`만 필수. 형식 검증만(길이·enum·slug 형식·좌표 범위). slug 중복 409. 공개 후 slug 변경 409(같은 값은 통과) |
 | `POST /api/admin/places/{id}/status` | `{ to }` → 200 `AdminPlace` | SPEC 3절 전환표만, 밖이면 409. `to=published`면 `PublishRules` 검사, 실패 400 `fieldErrors`. 처음 공개 때 `published_at` |
 | `PUT /api/admin/places/{id}/credits` | `[{ makerId, role, verified, sourceUrl? }]` → 200 `AdminPlace` | 통째 교체, 배열 순서 = position. `verified`인데 `sourceUrl` 없으면 400 |
 | `PUT /api/admin/places/{id}/sources` | `[{ title, url, type }]` → 200 `AdminPlace` | 통째 교체 |
@@ -203,10 +203,13 @@
 ```jsonc
 // AdminPlace = 공개 상세(1절)의 모든 필드 + 아래
 { …, "status": "draft", "suggestedBy": { "id": 9, "nickname": "…" } | null, "suggestionReason": "…" | null,
+  "suggestionLink": "…" | null, "suggestionMakerHint": "…" | null,
   "createdAt": "…", "updatedAt": "…", "slugLocked": true,          // published_at이 있으면 true
   "photos": [ Photo & { "id": 11, "objectKey": "places/1/abc", "position": 0 } ],
   "credits": [ … & { "makerId": 3 } ] }
 // senses·impression 등 빈 값은 null. 미리보기는 이 응답을 공개 상세 컴포넌트에 그대로 넣는다.
+// PATCH 요청은 이 응답의 스칼라 필드 모양 그대로: slug, name, kind, region, address, lat, lng, access, visitNote,
+// summary, impression, senses { light, sound, scent, touch }, essay, visitedByEditorOn("2026-05", 1일로 저장).
 ```
 
 ### 사진

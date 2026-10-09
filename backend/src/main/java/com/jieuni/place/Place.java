@@ -118,6 +118,35 @@ public class Place extends BaseTimeEntity {
 		return place;
 	}
 
+	// 관리자가 처음부터 쓰는 공간. slug는 공개 전에 채운다.
+	public static Place draft(String name, String region) {
+		Place place = new Place();
+		place.name = name;
+		place.region = region;
+		place.status = PlaceStatus.DRAFT;
+		return place;
+	}
+
+	public void edit(PlaceEdit edit) {
+		this.slug = edit.slug();
+		this.name = edit.name();
+		this.kind = edit.kind();
+		this.region = edit.region();
+		this.address = edit.address();
+		this.lat = edit.lat();
+		this.lng = edit.lng();
+		this.access = edit.access();
+		this.visitNote = edit.visitNote();
+		this.summary = edit.summary();
+		this.impression = edit.impression();
+		this.senseLight = edit.senseLight();
+		this.senseSound = edit.senseSound();
+		this.senseScent = edit.senseScent();
+		this.senseTouch = edit.senseTouch();
+		this.essay = edit.essay();
+		this.visitedByEditorOn = edit.visitedByEditorOn();
+	}
+
 	public Long getId() {
 		return id;
 	}
