@@ -80,6 +80,8 @@
   --new-tag-offset: 6px;
   --new-tag-padding: 3px 6px;
   --me-section-top: 28px;
+  --admin-max-width: 960px;
+  --admin-nav-width: 160px;
 
   /* font: --font-serif · --font-sans는 app/layout.tsx의 next/font가 <html>에 정의한다(여기서도 선언하면 순서에 따라 뒤집힌다). */
 
