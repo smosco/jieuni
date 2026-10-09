@@ -42,7 +42,8 @@ function toAction(v: Record<string, unknown>): PendingAction | null {
     case "follow":
       return typeof v.makerId === "number" ? { action: "follow", makerId: v.makerId } : null;
     case "suggest":
-      return { action: "suggest" };
+    case "me":
+      return { action: v.action };
     default:
       return null;
   }

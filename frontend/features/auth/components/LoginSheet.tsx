@@ -6,14 +6,15 @@ import { useToast } from "@/shared/ui/Toast";
 import { BottomSheet } from "@/shared/ui/BottomSheet";
 import { devLogin } from "../api";
 import { loginUrl } from "../login";
-import { savePending } from "../pendingAction";
-import type { PendingAction } from "../types";
+import { clearPending, savePending } from "../pendingAction";
+import type { LoginRequest, PendingAction } from "../types";
 import styles from "./LoginSheet.module.css";
 
 const TITLE: Record<PendingAction["action"], string> = {
   save: "저장하려면 로그인이 필요해요",
   follow: "팔로우하려면 로그인이 필요해요",
   suggest: "소개하려면 로그인이 필요해요",
+  me: "내 공간을 보려면 로그인이 필요해요",
 };
 
 const DEV_LOGIN = process.env.NODE_ENV === "development";
@@ -22,14 +23,22 @@ export function LoginSheet({
   request,
   onClose,
 }: {
-  request: { action: PendingAction; onLeave?: () => void } | null;
+  request: LoginRequest | null;
   onClose: () => void;
 }) {
   const titleId = useId();
   return (
     <BottomSheet open={request !== null} onClose={onClose} labelledBy={titleId}>
       {/* 닫을 때마다 내용을 내려 체크를 처음 상태로 돌린다. */}
-      {request && <Content titleId={titleId} action={request.action} onLeave={request.onLeave} onClose={onClose} />}
+      {request && (
+        <Content
+          titleId={titleId}
+          action={request.action}
+          onLeave={request.onLeave}
+          resume={request.resume ?? true}
+          onClose={onClose}
+        />
+      )}
     </BottomSheet>
   );
 }
@@ -38,11 +47,13 @@ function Content({
   titleId,
   action,
   onLeave,
+  resume,
   onClose,
 }: {
   titleId: string;
   action: PendingAction;
   onLeave?: () => void;
+  resume: boolean;
   onClose: () => void;
 }) {
   // 첫 로그인인지는 OAuth 전에 알 수 없어 매번 묻는다. 한 번 로그인한 사용자는 시트를 다시 보지 않는다.
@@ -52,7 +63,9 @@ function Content({
 
   function remember() {
     const { pathname, search } = window.location;
-    savePending(action, pathname + search);
+    // 이어서 하지 않을 때는 예전에 남은 동작도 지운다.
+    if (resume) savePending(action, pathname + search);
+    else clearPending();
     return { pathname, search };
   }
 

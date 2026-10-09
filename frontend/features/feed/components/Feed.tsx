@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef } from "react";
+import { useMeStateLoader } from "@/features/me/queries";
 import { track } from "@/shared/lib/track";
 import type { FeedResponse } from "../types";
 import { FeedCard } from "./FeedCard";
@@ -44,6 +45,11 @@ export function Feed({ feed }: { feed: FeedResponse }) {
   }, []);
 
   const openedWeekdays = feed.picks.map((pick) => pick.weekday);
+  // 같은 만든 사람이 여러 카드에 나올 수 있다.
+  useMeStateLoader(
+    feed.picks.map((pick) => pick.place.id),
+    [...new Set(feed.picks.flatMap((pick) => (pick.firstMaker?.slug ? [pick.firstMaker.id] : [])))],
+  );
 
   function rememberCard(index: number) {
     sessionStorage.setItem(RETURN_KEY, String(index));

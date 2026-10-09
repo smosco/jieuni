@@ -34,3 +34,9 @@ export const ROLE_LABEL: Record<CreditRole, string> = {
 export function makerLabel(kind: MakerKind, region: string | null): string {
   return [kind.toUpperCase(), region].filter(Boolean).join(" · ");
 }
+
+export const MAKER_KIND_LABEL: Record<MakerKind, string> = {
+  person: "개인",
+  studio: "스튜디오",
+  owner: "주인",
+};

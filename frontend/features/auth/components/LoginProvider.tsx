@@ -1,17 +1,17 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { resumeFollow } from "@/features/follow/queries";
 import { useMe } from "@/features/me/queries";
+import { resumeSave } from "@/features/save/queries";
 import { useToast } from "@/shared/ui/Toast";
 import { pathOf, stripLoginError } from "../login";
-import { FAILURE_MESSAGE, clearPending, runAction, takePending } from "../pendingAction";
-import type { PendingAction } from "../types";
+import { clearPending, takePending } from "../pendingAction";
+import type { LoginRequest } from "../types";
 import { LoginSheet } from "./LoginSheet";
 
-type Request = { action: PendingAction; onLeave?: () => void };
-
-const LoginContext = createContext<{ openLogin: (action: PendingAction, onLeave?: () => void) => void }>({
+const LoginContext = createContext<{ openLogin: (request: LoginRequest) => void }>({
   openLogin: () => {},
 });
 
@@ -20,10 +20,10 @@ export function useLoginSheet() {
 }
 
 export function LoginProvider({ children }: { children: ReactNode }) {
-  const [request, setRequest] = useState<Request | null>(null);
+  const [request, setRequest] = useState<LoginRequest | null>(null);
   const { data: me } = useMe();
-  const queryClient = useQueryClient();
   const toast = useToast();
+  const queryClient = useQueryClient();
 
   // 로그인 실패·취소로 돌아오면 서버가 login=error를 붙인다. 전체 새로고침으로만 들어오므로 처음 한 번만 본다.
   useEffect(() => {
@@ -40,10 +40,12 @@ export function LoginProvider({ children }: { children: ReactNode }) {
     if (!me) return;
     const pending = takePending();
     if (!pending || pathOf(pending.returnTo) !== window.location.pathname) return;
-    runAction(pending, queryClient).catch(() => toast(FAILURE_MESSAGE[pending.action]));
+    // 실패하면 mutation이 되돌리고 토스트를 띄운다.
+    if (pending.action === "save") resumeSave(queryClient, toast, pending.placeId, pending.status);
+    if (pending.action === "follow") resumeFollow(queryClient, toast, pending.makerId);
   }, [me, queryClient, toast]);
 
-  const openLogin = useCallback((action: PendingAction, onLeave?: () => void) => setRequest({ action, onLeave }), []);
+  const openLogin = useCallback((next: LoginRequest) => setRequest(next), []);
   const value = useMemo(() => ({ openLogin }), [openLogin]);
 
   return (

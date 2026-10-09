@@ -53,3 +53,7 @@ async function toApiError(res: Response): Promise<ApiError> {
     return new ApiError(res.status, res.statusText);
   }
 }
+
+export function isUnauthorized(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 401;
+}

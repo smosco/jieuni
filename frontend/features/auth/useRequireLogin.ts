@@ -2,39 +2,35 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
+import { forgetUser } from "@/features/me/cache";
 import { useMe } from "@/features/me/queries";
-import { ApiError } from "@/shared/api/client";
-import { useToast } from "@/shared/ui/Toast";
+import { isUnauthorized } from "@/shared/api/client";
 import { useLoginSheet } from "./components/LoginProvider";
-import { FAILURE_MESSAGE, runAction } from "./pendingAction";
-import type { PendingAction } from "./types";
+import type { LoginRequest } from "./types";
 
-// 비로그인이면 로그인 시트, 로그인 상태면 바로 실행.
-// 세션이 끝나 401이 오면 비로그인으로 바꾸고 같은 동작으로 시트를 연다(로그인하면 이어서 완료된다).
-// onLeave: 구글 로그인으로 페이지를 떠나기 직전에 부른다(피드가 보던 카드를 남긴다).
+// 비로그인이면 로그인 시트, 로그인 상태면 run을 실행한다.
+// 세션이 끝나 401이 오면 이전 사용자의 값을 지우고 시트를 연다(resume이면 로그인 뒤 이어서 완료된다).
+// 그 밖의 실패는 run(저장·팔로우 mutation)이 되돌리고 토스트를 띄운다.
 export function useRequireLogin() {
   const { data: me } = useMe();
   const { openLogin } = useLoginSheet();
   const queryClient = useQueryClient();
-  const toast = useToast();
 
   return useCallback(
-    async (action: PendingAction, onLeave?: () => void) => {
+    async (request: LoginRequest, run: () => Promise<unknown>) => {
       if (me === null) {
-        openLogin(action, onLeave);
+        openLogin(request);
         return;
       }
       try {
-        await runAction(action, queryClient);
+        await run();
       } catch (e) {
-        if (e instanceof ApiError && e.status === 401) {
-          queryClient.setQueryData(["me"], null);
-          openLogin(action, onLeave);
-          return;
+        if (isUnauthorized(e)) {
+          forgetUser(queryClient);
+          openLogin(request);
         }
-        toast(FAILURE_MESSAGE[action.action]);
       }
     },
-    [me, openLogin, queryClient, toast],
+    [me, openLogin, queryClient],
   );
 }

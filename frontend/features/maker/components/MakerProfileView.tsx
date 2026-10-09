@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FollowButton } from "@/features/follow/components/FollowButton";
+import { MeStateLoader } from "@/features/me/components/MeStateLoader";
 import { subjectParticle } from "@/shared/lib/josa";
 import { makerLabel } from "@/shared/lib/labels";
 import { BackButton } from "@/shared/ui/BackButton";
@@ -13,6 +14,7 @@ export function MakerProfileView({ maker }: { maker: MakerProfile }) {
 
   return (
     <article>
+      <MeStateLoader makers={[maker.id]} />
       <header className={styles.head}>
         <div className={styles.back}>
           <BackButton onPhoto={false} />

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FollowButton } from "@/features/follow/components/FollowButton";
+import { MeStateLoader } from "@/features/me/components/MeStateLoader";
 import { SaveButtons } from "@/features/save/components/SaveButtons";
 import { KIND_LABEL, ROLE_LABEL } from "@/shared/lib/labels";
 import { PlaceGrid } from "@/shared/ui/PlaceTile";
@@ -32,6 +33,10 @@ export function PlaceDetailView({ place }: { place: PlaceDetail }) {
 
   return (
     <article>
+      <MeStateLoader
+        places={[place.id]}
+        makers={place.credits.flatMap((credit) => (credit.maker.slug ? [credit.maker.id] : []))}
+      />
       <PlaceGallery photos={place.photos} embeds={place.embeds} placeName={place.name} />
       {place.status !== "published" && <p className={`body-sm ${styles.band}`}>{STATUS_BAND[place.status]}</p>}
 

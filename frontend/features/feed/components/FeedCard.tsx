@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FollowButton } from "@/features/follow/components/FollowButton";
+import { useFollowing } from "@/features/follow/queries";
 import { SaveButtons } from "@/features/save/components/SaveButtons";
 import { KIND_LABEL, ROLE_LABEL } from "@/shared/lib/labels";
 import { track } from "@/shared/lib/track";
@@ -25,6 +26,9 @@ export function FeedCard({
 }) {
   const { place, firstMaker } = pick;
   const closed = place.status === "closed";
+  const following = useFollowing(firstMaker?.id ?? 0);
+  // 피드에서는 팔로우한 사람에게만 숨긴다. 상태를 모르면(비로그인·받는 중·실패) 보인다.
+  const showFollow = following !== true;
 
   return (
     <section className={styles.card} data-track={trackKey} aria-label={`${weekdayKo(pick.weekday)}의 공간: ${place.name}`}>
@@ -73,8 +77,7 @@ export function FeedCard({
             ) : (
               <span className="body-md">{firstMaker.name}</span>
             )}
-            {/* 피드에서는 아직 팔로우하지 않은 사람에게만 보인다. 로그인 전에는 모두 해당한다. */}
-            {firstMaker.slug && (
+            {firstMaker.slug && showFollow && (
               <span className={styles.interactive}>
                 <FollowButton makerId={firstMaker.id} makerName={firstMaker.name} onPhoto onLeave={onLeave} />
               </span>

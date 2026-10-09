@@ -51,3 +51,13 @@
 .closed {
   opacity: 0.4;
 }
+
+.new {
+  position: absolute;
+  top: var(--new-tag-offset);
+  left: var(--new-tag-offset);
+  z-index: 1;
+  padding: var(--new-tag-padding);
+  background: var(--color-paper);
+  color: var(--color-earth);
+}
