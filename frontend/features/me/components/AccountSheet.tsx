@@ -9,6 +9,7 @@ import { useToast } from "@/shared/ui/Toast";
 import { changeNickname, deleteMe, logout } from "../api";
 import { forgetUser } from "../cache";
 import type { Me } from "../types";
+import form from "@/shared/ui/Form.module.css";
 import styles from "./MySpace.module.css";
 
 export function AccountSheet({ open, me, onClose }: { open: boolean; me: Me; onClose: () => void }) {
@@ -80,10 +81,10 @@ function Content({ titleId, me, onClose }: { titleId: string; me: Me; onClose: (
           저장한 공간과 팔로우는 바로 지워져요. 소개한 공간은 남지만 누가 소개했는지는 지워져요.
         </p>
         <div className={styles.sheetButtons}>
-          <button type="button" className={`label-md ${styles.primaryButton}`} onClick={leave}>
+          <button type="button" className={`label-md ${form.primary}`} onClick={leave}>
             탈퇴하기
           </button>
-          <button type="button" className={`label-md ${styles.secondaryButton}`} onClick={() => setConfirming(false)}>
+          <button type="button" className={`label-md ${form.secondary}`} onClick={() => setConfirming(false)}>
             취소
           </button>
         </div>
@@ -103,7 +104,7 @@ function Content({ titleId, me, onClose }: { titleId: string; me: Me; onClose: (
         <div className={styles.nicknameRow}>
           <input
             id={`${titleId}-nickname`}
-            className={`body-md ${styles.input}`}
+            className={`body-md ${form.input}`}
             value={nickname}
             onChange={(e) => {
               setNickname(e.target.value);
@@ -117,13 +118,13 @@ function Content({ titleId, me, onClose }: { titleId: string; me: Me; onClose: (
           </button>
         </div>
         {error && (
-          <p id={`${titleId}-error`} className={`body-sm ${styles.error}`}>
+          <p id={`${titleId}-error`} className={`body-sm ${form.error}`}>
             {error}
           </p>
         )}
       </form>
       <div className={styles.sheetButtons}>
-        <button type="button" className={`label-md ${styles.secondaryButton}`} onClick={signOut}>
+        <button type="button" className={`label-md ${form.secondary}`} onClick={signOut}>
           로그아웃
         </button>
       </div>

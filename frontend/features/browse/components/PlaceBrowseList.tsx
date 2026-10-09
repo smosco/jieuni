@@ -28,6 +28,15 @@ export function PlaceBrowseList({ kinds, initial }: { kinds: PlaceKind[]; initia
     <>
       <PlaceGrid places={places} variant="bleed" />
       <div ref={sentinel} />
+      {/* 더 받을 게 없을 때만. 목록 중간에 두면 이어 받기 전에 끝처럼 보인다. */}
+      {!hasNextPage && (
+        <p className={`body-md ${styles.listEnd}`}>
+          찾는 공간이 없나요?{" "}
+          <Link href="/suggest" className={`label-md ${styles.listEndLink}`}>
+            공간 소개하기 →
+          </Link>
+        </p>
+      )}
     </>
   );
 }

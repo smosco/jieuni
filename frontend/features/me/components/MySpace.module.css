@@ -37,10 +37,16 @@
   inset: calc((var(--touch-min) - 100%) / -2) calc(var(--space-md) * -1);
 }
 
-/* 머리 안, 탭 바로 위. 글자만 보이고 터치 영역은 위아래로 44px까지 */
-.suggestionsLink {
+/* 머리 안, 탭 바로 위 한 줄: "내가 소개한 공간 →"(제보가 있을 때만) · "공간 소개하기 →" */
+.headLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xl);
+}
+
+/* 글자만 보이고 터치 영역은 위아래로 44px까지 */
+.headLink {
   position: relative;
-  align-self: flex-start;
   padding: 0;
   border: 0;
   background: none;
@@ -48,7 +54,7 @@
   cursor: pointer;
 }
 
-.suggestionsLink::before {
+.headLink::before {
   content: "";
   position: absolute;
   inset: calc((var(--touch-min) - 100%) / -2) 0;
@@ -156,28 +162,6 @@
   gap: var(--space-md);
 }
 
-.input {
-  flex: 1;
-  min-width: 0;
-  min-height: var(--touch-min);
-  padding: 0;
-  border: 0;
-  border-bottom: var(--hairline) solid var(--color-line);
-  border-radius: 0;
-  background: none;
-  color: var(--color-ink);
-}
-
-.input:focus {
-  border-bottom-color: var(--color-ink);
-  outline: none;
-}
-
-.error {
-  margin: 0;
-  color: var(--color-ink-secondary);
-}
-
 .sheetButtons {
   display: flex;
   flex-direction: column;
@@ -186,34 +170,15 @@
   max-width: var(--content-width);
 }
 
-.primaryButton,
-.secondaryButton,
-.smallButton {
-  min-height: var(--touch-min);
-  border: var(--hairline) solid var(--color-ink);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-
-.primaryButton,
-.secondaryButton {
-  padding: var(--big-button-padding);
-}
-
-.primaryButton {
-  background: var(--color-ink);
-  color: var(--color-paper);
-}
-
-.secondaryButton,
-.smallButton {
-  background: none;
-  color: var(--color-ink);
-}
-
 .smallButton {
   flex: none;
+  min-height: var(--touch-min);
   padding: var(--save-button-padding);
+  border: var(--hairline) solid var(--color-ink);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-ink);
+  cursor: pointer;
 }
 
 .smallButton:disabled {
@@ -223,7 +188,7 @@
 }
 
 /* 로그아웃 상태의 내 공간: 버튼이 본문 너비를 채운다 */
-.empty .secondaryButton {
+.loginButton {
   width: 100%;
   max-width: var(--content-width);
 }

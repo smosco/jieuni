@@ -33,7 +33,7 @@ export function MySuggestionsLink() {
 
   return (
     <>
-      <button type="button" className={`label-md ${styles.suggestionsLink}`} onClick={() => setOpen(true)}>
+      <button type="button" className={styles.headLink} onClick={() => setOpen(true)}>
         내가 소개한 공간 →
       </button>
       <BottomSheet open={open} onClose={() => setOpen(false)} labelledBy={titleId}>

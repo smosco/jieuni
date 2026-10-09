@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FollowButton } from "@/features/follow/components/FollowButton";
 import { MeStateLoader } from "@/features/me/components/MeStateLoader";
 import { SaveButtons } from "@/features/save/components/SaveButtons";
+import { CreditSuggestButton } from "@/features/suggestion/components/CreditSuggestButton";
 import { KIND_LABEL, ROLE_LABEL } from "@/shared/lib/labels";
 import { PlaceGrid } from "@/shared/ui/PlaceTile";
 import { SectionLabel } from "@/shared/ui/SectionLabel";
@@ -93,10 +94,7 @@ export function PlaceDetailView({ place }: { place: PlaceDetail }) {
               </li>
             ))}
           </ul>
-          {/* 누르면 크레딧 알려주기 시트(제보 기능을 붙일 때 연결) */}
-          <button type="button" className={`body-sm ${styles.suggest}`}>
-            이 공간을 만드셨나요? 크레딧을 알려주세요 →
-          </button>
+          <CreditSuggestButton placeId={place.id} className={`body-sm ${styles.suggest}`} />
         </section>
 
         {place.essay && (
