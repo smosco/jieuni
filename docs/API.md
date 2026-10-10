@@ -190,59 +190,93 @@
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `GET /api/admin/dashboard` | `{ picks: { thisWeek: Pick[5], nextWeek: Pick[5] }, pendingSuggestions, draftCount, llmCostThisMonthUsd }` | 관리자 홈. `Pick`은 6절과 같고 빈 칸은 `place: null` |
-| `GET /api/admin/places?status=&q=&cursor=` | `{ items: [{ id, slug, name, region, kind, status, updatedAt, hasPhoto }], nextCursor }` | `updated_at desc`. `q`는 이름 부분 일치 |
+| `GET /api/admin/dashboard` | `{ picks: { thisWeek: Pick[5], nextWeek: Pick[5] }, pendingSuggestions, draftCount, llmCostThisMonthUsd }` | 관리자 홈. `Pick`은 아래 편성과 같고 빈 칸은 `place: null`·`line: null`. 이번 주 = 오늘(KST)이 든 달력 주의 월~금(주말에 보면 끝난 주), 다음 주 = 그다음 월~금. `pendingSuggestions` = 제보됨 공간 수 + 대기 중 크레딧 제보 수. `draftCount` = 작성 중 공간 수. `llmCostThisMonthUsd` = 이번 달(KST 1일 00:00부터) `llm_calls.cost_usd` 합, 없으면 0 |
+| `GET /api/admin/places?status=&q=&cursor=` | `{ items: [{ id, slug, name, region, kind, status, updatedAt, hasPhoto, pickedOn }], nextCursor }` | `updated_at desc, id desc`. `pickedOn`은 편성된 날(`YYYY-MM-DD`) 또는 null — 공간은 한 번만 편성하므로 편성 화면이 이미 편성된 공간을 고르지 못하게 한다. `q`는 이름 부분 일치(대소문자 무시). `status`는 하나, 모르는 값 400 |
 | `POST /api/admin/places` | `{ name, region? }` → 201 `AdminPlace` | `status=draft`. slug는 비워 두고 공개 전에 채운다 |
 | `GET /api/admin/places/{id}` | `AdminPlace` | 수정 폼·미리보기. 공개 상세와 같은 하위 목록을 전부 포함 |
-| `PATCH /api/admin/places/{id}` | `AdminPlace`의 스칼라 필드 부분 → 200 `AdminPlace` | 형식 검증만(길이·enum·slug 형식). slug 중복 409. 공개 후 slug 변경 409 |
-| `POST /api/admin/places/{id}/status` | `{ to }` → 200 `AdminPlace` | SPEC 3절 전환표만, 밖이면 409. `to=published`면 `PublishRules` 검사, 실패 400 `fieldErrors`. 처음 공개 때 `published_at` |
-| `PUT /api/admin/places/{id}/credits` | `[{ makerId, role, verified, sourceUrl? }]` → 200 `AdminPlace` | 통째 교체, 배열 순서 = position. `verified`인데 `sourceUrl` 없으면 400 |
-| `PUT /api/admin/places/{id}/sources` | `[{ title, url, type }]` → 200 `AdminPlace` | 통째 교체 |
-| `PUT /api/admin/places/{id}/embeds` | `[{ type, url }]` → 200 `AdminPlace` | 통째 교체 |
+| `PATCH /api/admin/places/{id}` | `AdminPlace`의 스칼라 필드 전부 → 200 `AdminPlace` | 임시저장. 빠지거나 null·빈 문자열이면 비운다. `name`만 필수. 형식 검증만(길이·enum·slug 형식·좌표 범위). slug 중복 409. 공개 후 slug 변경 409(같은 값은 통과). 공개 페이지가 있는 상태(published·paused·closed)면 아래 공개 검증도 통과해야 한다(실패 400 `{ message: "공개된 공간이라 이 값은 비울 수 없어요", fieldErrors }`, 수정은 남지 않음) |
+| `POST /api/admin/places/{id}/status` | `{ to }` → 200 `AdminPlace` | SPEC 3절 전환표만, 밖이면(같은 상태로도) 409 `{ message: "공개 상태에서는 작성 중(으)로 바꿀 수 없어요" }`. `to=published`면 아래 공개 검증, 실패 400 `{ message: "공개할 수 없어요", fieldErrors }`. 처음 공개 때만 `published_at`(휴업 뒤 다시 공개해도 그대로). 모르는 `to` 400 |
+| `PUT /api/admin/places/{id}/credits` | `[{ makerId, role, verified, sourceUrl? }]` → 200 `AdminPlace` | 통째 교체, 배열 순서 = position. `verified`인데 `sourceUrl` 없으면 400(`credits[i].sourceUrl`), 없는 만든 사람 400(`credits[i].makerId`) |
+| `PUT /api/admin/places/{id}/sources` | `[{ title, url, type }]` → 200 `AdminPlace` | 통째 교체. `title` 200자 |
+| `PUT /api/admin/places/{id}/embeds` | `[{ type, url }]` → 200 `AdminPlace` | 통째 교체. 공개 화면이 그릴 수 있는 주소만: youtube는 `youtube.com`·`www.youtube.com`·`m.youtube.com`의 `watch?v={id}`·`/shorts/{id}`·`/embed/{id}` 또는 `youtu.be/{id}`, instagram은 `instagram.com`·`www.instagram.com`의 `/p/{code}`·`/reel/{code}`. 프로필·채널·홈 주소는 400 `embeds[i].url`("유튜브 영상 주소를 넣어 주세요" / "인스타그램 게시물 주소를 넣어 주세요") |
+
+**목록 교체 공통**: 링크(`sourceUrl`, `url`)는 http·https만, 500자. 앞뒤 공백은 지우고 빈 칸은 null. 형식 오류의 키는 `credits[0].role`처럼 목록 이름 + 원소 번호 + 필드(원소가 null이면 `embeds[0]`: "빈 항목은 보낼 수 없어요"). 모르는 enum 값은 칸 이름 없는 400. 공개 페이지가 있는 상태면 교체 뒤 공개 검증도 통과해야 한다(실패 400 `{ message: "공개된 공간이라 이 값은 비울 수 없어요", fieldErrors }`, 교체는 남지 않음). 성공하면 공간의 `updatedAt`이 바뀐다.
 
 ```jsonc
 // AdminPlace = 공개 상세(1절)의 모든 필드 + 아래
 { …, "status": "draft", "suggestedBy": { "id": 9, "nickname": "…" } | null, "suggestionReason": "…" | null,
+  "suggestionLink": "…" | null, "suggestionMakerHint": "…" | null,
   "createdAt": "…", "updatedAt": "…", "slugLocked": true,          // published_at이 있으면 true
-  "photos": [ Photo & { "id": 11, "objectKey": "places/1/abc", "position": 0 } ],
+  "photos": [ Photo & { "id": 11, "objectKey": "uploads/1/<uuid>", "position": 0 } ],
   "credits": [ … & { "makerId": 3 } ] }
 // senses·impression 등 빈 값은 null. 미리보기는 이 응답을 공개 상세 컴포넌트에 그대로 넣는다.
+// PATCH 요청은 이 응답의 스칼라 필드 모양 그대로: slug, name, kind, region, address, lat, lng, access, visitNote,
+// summary, impression, senses { light, sound, scent, touch }, essay, visitedByEditorOn("2026-05", 1일로 저장).
 ```
+
+### 공개 시 검증 — `PublishRules`
+
+`published`로 바꿀 때와 공개 페이지가 있는 공간을 고칠 때 서버가 검사한다. 관리자 폼의 공개 검증 스키마(Zod)는 이 표를 1:1로 옮긴다(키·조건·문구). 여러 개가 함께 실패하면 모두 이 순서로 준다. 길이·형식은 PATCH의 형식 검증이 먼저 막는다.
+
+| 키 | 실패 조건 | 문구 |
+| --- | --- | --- |
+| `slug` | 없음 | 주소(slug)를 정해 주세요 |
+| `name` | 비어 있음 | 공간 이름을 입력해 주세요 |
+| `kind` | 없음 | 종류를 골라 주세요 |
+| `region` | 없음 | 지역을 입력해 주세요 |
+| `address` | 없음 | 주소를 입력해 주세요 |
+| `lat` | 없음 | 좌표를 입력해 주세요 |
+| `lng` | 없음 | 좌표를 입력해 주세요 |
+| `access` | 없음 | 방문 방식을 골라 주세요 |
+| `summary` | 없음 | 한 줄 소개를 입력해 주세요 |
+| `impression` | 없음 | 감상을 입력해 주세요 |
+| `credits` | `sourceUrl`이 있는 크레딧이 0개(확인 여부는 보지 않는다) | 출처가 있는 크레딧이 1개 이상 필요해요 |
+| `sources` | `visitedByEditorOn`이 없고 출처가 0개 | 머물러 본 날이 없으면 출처가 1개 이상 필요해요 |
+| `photos` | 사진 0장이고 임베드 0개 | 사진 또는 임베드가 1개 이상 필요해요 |
+| `photos[i].alt` | 비어 있음 | 사진 설명을 입력해 주세요 |
+| `photos[i].credit` | 비어 있음 | 사진 출처(이름)를 입력해 주세요 |
+| `photos[i].sourceUrl` | `license`가 `own`이 아닌데 없음 | 출처 링크를 입력해 주세요 |
+
+`i`는 `photos` 배열(position 순)의 인덱스. "없음·비어 있음"은 null 또는 공백뿐인 문자열. `visitNote`·`senses`·`essay`·`visitedByEditorOn`은 선택이다.
 
 ### 사진
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `POST /api/admin/uploads` | `{ placeId, contentType: "image/webp" }` → `{ objectKey, uploadUrls: { w1600, w800 } }` | PUT 서명 URL 5분. `image/webp` 외 400. objectKey = `uploads/{placeId}/{uuid}`(접두사만 구분, 등록 여부는 DB로 판단 — 가정). R2 서명 URL은 `*.r2.cloudflarestorage.com` 엔드포인트로만 발급된다(커스텀 도메인 불가) |
-| `POST /api/admin/places/{id}/photos` | `{ objectKey, width, height, alt, credit, license, sourceUrl? }` → 201 `AdminPlace` | position은 맨 뒤. `license`가 `own`이 아닌데 `sourceUrl` 없으면 400 |
-| `PATCH /api/admin/places/{id}/photos/{photoId}` | `{ alt?, credit?, license?, sourceUrl? }` → 200 `AdminPlace` | 같은 규칙 |
-| `PUT /api/admin/places/{id}/photos/order` | `{ photoIds: [11, 12] }` → 200 `AdminPlace` | 배열 순서 = position, 첫 번째가 대표 |
-| `DELETE /api/admin/places/{id}/photos/{photoId}` | 204 | 객체도 삭제 |
+| `POST /api/admin/uploads` | `{ placeId, contentType: "image/webp" }` → `{ objectKey, uploadUrls: { w1600, w800 } }` | PUT 서명 URL 5분. `contentType`이 서명에 들어가 브라우저는 `Content-Type: image/webp`로 올려야 한다(다르면 R2 403). `image/webp` 외 400(`contentType`: "WebP 사진만 올릴 수 있어요"), 없는 공간 404. objectKey = `uploads/{placeId}/{uuid}`, 파일은 `{objectKey}-1600.webp`·`-800.webp`. 서명 URL은 크기를 제한하지 않는다(관리자 전용·5분). R2 서명 URL은 `*.r2.cloudflarestorage.com` 엔드포인트로만 발급된다(커스텀 도메인 불가) |
+| `POST /api/admin/places/{id}/photos` | `{ objectKey, width, height, alt, credit, license, sourceUrl? }` → 201 `AdminPlace` | position은 맨 뒤. `objectKey`가 이 공간에 발급한 모양이 아니면 400 `objectKey`("이 공간의 업로드 키가 아니에요"), 두 크기 파일이 저장소에 없으면 400 `objectKey`("업로드가 끝나지 않은 사진이에요"). `license`가 `own`이 아닌데 `sourceUrl` 없으면 400 `sourceUrl`. 같은 키 두 번 409 "이미 등록된 사진이에요" |
+| `PATCH /api/admin/places/{id}/photos/{photoId}` | `{ alt, credit, license, sourceUrl }` → 200 `AdminPlace` | 공간 PATCH처럼 네 칸 전부(빠지거나 빈 칸이면 비움, `license`만 필수). 같은 출처 규칙. 없는 사진 404 |
+| `PUT /api/admin/places/{id}/photos/order` | `{ photoIds: [11, 12] }` → 200 `AdminPlace` | 배열 순서 = position, 첫 번째가 대표. 지금 사진 id 전부와 정확히 같아야 한다(빠짐·중복·남의 id 400 `photoIds`: "사진 목록이 맞지 않아요") |
+| `DELETE /api/admin/places/{id}/photos/{photoId}` | 204 | 남은 사진의 position을 0부터 다시 매긴다. 두 크기 파일은 커밋 뒤에 지우고, 실패하면 로그만 남긴다(다음 고아 정리가 지운다) |
 
-고아 정리: `@Scheduled` 매일 03:00 KST, `uploads/` 접두사 중 `place_photos.object_key`에 없고 24시간 지난 객체 삭제.
+사진 등록·수정·순서·삭제도 목록 교체처럼 공개 페이지가 있는 상태면 공개 검증을 통과해야 한다(공개된 공간의 마지막 사진을 임베드 없이 지우면 400, 아무것도 바뀌지 않는다). 형식: `alt` 200자, `credit` 100자, `sourceUrl` http·https 500자, `width`·`height` 1 이상.
+
+고아 정리: `@Scheduled` 매일 03:00 KST, `uploads/` 접두사의 파일 중 업로드 키(`-1600.webp`·`-800.webp`를 뗀 것)가 `place_photos.object_key`에 없고 24시간 이상 지난 것을 지운다. 실패는 로그만.
 
 ### 만든 사람
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `GET /api/admin/makers?q=&cursor=` | `{ items: [{ id, slug, name, kind, region, placeCount }], nextCursor }` | `q` 이름 부분 일치(크레딧 콤보박스가 쓴다) |
-| `POST /api/admin/makers` | `{ name, kind, slug?, region?, intro?, website?, instagram?, affiliationId? }` → 201 `AdminMaker` | |
+| `GET /api/admin/makers?q=&cursor=&size=` | `{ items: [{ id, slug, name, kind, region, placeCount, updatedAt }], nextCursor }` | `q` 이름 부분 일치(대소문자 무시, 크레딧 콤보박스가 쓴다). `updated_at desc, id desc`. `placeCount`는 크레딧에 있는 공간 수(상태 무관) |
+| `POST /api/admin/makers` | `{ name, kind, slug?, region?, intro?, website?, instagram?, affiliationId? }` → 201 `AdminMaker` | slug 중복 409 |
 | `GET /api/admin/makers/{id}` | `AdminMaker` | |
-| `PATCH /api/admin/makers/{id}` | 부분 → 200 `AdminMaker` | 공개 공간에 연결된 뒤 slug 변경 409. slug 중복 409 |
+| `PATCH /api/admin/makers/{id}` | POST와 같은 모양, 필드 전부 → 200 `AdminMaker` | 빠지거나 null·빈 칸이면 비운다(공간 PATCH와 같은 이유). slug 잠금 409, slug 중복 409 |
 
-`AdminMaker` = 1절 `GET /api/makers/{slug}` 응답 + `slugLocked`, `createdAt`, `updatedAt`.
+**만든 사람 검증**: `name` 필수 100자, `kind` 필수, `slug` 80자·영문 소문자·숫자·하이픈, `region` 50자, `intro` 200자, `website` http·https 500자, `instagram`은 `@` 없는 아이디(영문·숫자·`.`·`_` 30자, 앞의 `@`는 지운다), `affiliationId`는 있는 다른 만든 사람(없으면·자기 자신이면 400 `affiliationId`). **slug 잠금**: `makers.slug_locked_at`이 있으면 slug를 바꾸거나 비울 수 없다(409). 잠그는 때는 셋이다 — 공간이 처음 공개될 때 그 공간 크레딧의 만든 사람, 공개 페이지가 있는 공간(published·paused·closed)의 크레딧을 교체할 때 그 크레딧의 만든 사람, 이미 공개된 공간의 크레딧에 있는 사람에게 slug를 처음 정할 때. slug가 없으면 잠그지 않는다(처음 정하는 것은 된다). 한 번 잠기면 크레딧에서 빠져도 풀리지 않는다. 시각은 서버 `Clock`.
+
+`AdminMaker` = 1절 `GET /api/makers/{slug}` 응답 + `slugLocked`, `createdAt`, `updatedAt`. `places`는 공개 프로필과 같은 목록(공개 페이지가 있는 공간)이라 작성 중인 공간은 빠진다. 프로필이 404인 사람도 응답한다.
 
 ### 편성
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `GET /api/admin/picks?from=2026-10-05&to=2026-10-16` | `{ items: Pick[] }` | 날짜 범위 안의 편성 |
-| `PUT /api/admin/picks/{date}` | `{ placeId, line }` → 200 `Pick` | 월~금만(주말 400), published만(아니면 409), 이미 편성된 공간 409, 지난 날짜·오늘 08:00 지난 오늘 칸 409. `line` 1~40자 |
-| `DELETE /api/admin/picks/{date}` | 204 | 같은 잠금 규칙 |
+| `GET /api/admin/picks?from=2026-10-05&to=2026-10-16` | `{ items: Pick[] }` | 범위 안의 평일 전부, 날짜순. 편성이 없는 날은 빈 칸(`place: null`). 두 날짜 필수, `from > to`·62일 이상 400. 편성 뒤 휴업·폐업한 공간도 칸에 그대로 보인다 |
+| `PUT /api/admin/picks/{date}` | `{ placeId, line }` → 200 `Pick` | 월~금만(주말 400 "월~금만 편성할 수 있어요"), 열린 칸(`locked`) 409 "이미 열린 날은 바꿀 수 없어요", 없는 공간 404, published만(아니면 409 "공개된 공간만 편성할 수 있어요"), 다른 날에 편성된 공간 409 "이미 다른 날에 편성된 공간이에요". 같은 날 칸이 있으면 공간·한 줄을 바꾼다. `line` 앞뒤 공백을 지운 뒤 1~40자(400 `line`) |
+| `DELETE /api/admin/picks/{date}` | 204 | 같은 주말·잠금 규칙. 편성이 없으면 404 |
 
 ```jsonc
 // Pick
-{ "date": "2026-10-07", "weekday": "WED", "line": "…", "locked": false,   // locked = 수정 불가(지난 날·오늘 08:00 뒤)
+{ "date": "2026-10-07", "weekday": "WED", "line": "…" | null, "locked": false,   // locked = pick_date 08:00 KST <= 지금(피드에 열린 칸). 피드 공개와 같은 경계
   "place": { "id": 1, "slug": "…", "name": "…", "photo": Photo | null } | null }
 ```
 
@@ -250,11 +284,11 @@
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `GET /api/admin/suggestions?type=places\|credits&status=` | `{ items: [...] }` | places: `{ id, name, region, link, reason, makerHint, suggestedBy, createdAt }` · credits: `{ id, place: {id, slug, name}, role, makerName, sourceUrl, isSelf, user, status, createdAt }` |
-| `POST /api/admin/suggestions/places/{placeId}/start` | → 200 `AdminPlace` | suggested → draft. 폼으로 이동 |
-| `POST /api/admin/suggestions/places/{placeId}/reject` | → 204 | suggested → rejected |
-| `POST /api/admin/suggestions/credits/{id}/accept` | `{ makerId, verified, sourceUrl? }` → 200 `AdminPlace` | 크레딧 맨 뒤에 추가, `status=accepted`, `reviewed_at` |
-| `POST /api/admin/suggestions/credits/{id}/decline` | → 204 | `status=declined` |
+| `GET /api/admin/suggestions?type=places\|credits&status=` | `{ items: [...] }` | places: `{ id, name, region, link, reason, makerHint, suggestedBy: { id, nickname } \| null, createdAt }` · credits: `{ id, place: {id, slug, name}, role, makerName, sourceUrl, isSelf, user: { id, nickname } \| null, status, createdAt }`. 먼저 온 것부터(`created_at`, `id`). `status` 기본은 places `suggested`, credits `pending`. places는 `suggested`·`rejected`, credits는 `pending`·`accepted`·`declined`만, 그 밖·`type` 없음 400. 탈퇴한 사람은 null. 페이지 없음 |
+| `POST /api/admin/suggestions/places/{placeId}/start` | → 200 `AdminPlace` | suggested → draft. 폼으로 이동. 상태 전환과 같은 길이라 제보됨이 아니면 409 |
+| `POST /api/admin/suggestions/places/{placeId}/reject` | → 204 | suggested → rejected. 같은 409 |
+| `POST /api/admin/suggestions/credits/{id}/accept` | `{ makerId, verified, sourceUrl? }` → 200 `AdminPlace` | 역할은 제보의 역할, `sourceUrl`이 없으면 제보의 출처. 크레딧 목록 교체와 같은 길로 맨 뒤에 추가(없는 만든 사람 400 `makerId`, 확인됨인데 출처 없음 400 `sourceUrl`, slug 잠금·공개 검증 그대로). `status=accepted`, `reviewed_at`. 대기 중이 아니면 409 "이미 검토한 제보예요" |
+| `POST /api/admin/suggestions/credits/{id}/decline` | → 204 | `status=declined`, `reviewed_at`. 같은 409 |
 
 ### AI 초안·호출 기록
 
@@ -291,7 +325,7 @@ A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일�
 
 `usage`의 키는 `llm_calls` 컬럼과 1:1이다(`purpose`·`place_id`는 Spring이 채운다). 서버는 `draft`에 `impression`·`sense_*`·`line`·`essay`가 들어 있으면 버린다.
 
-### Spring → Next `POST {FRONTEND_URL}/api/revalidate`
+### Spring → Next `POST {REVALIDATE_URL}/api/revalidate`
 
 ```jsonc
 // 헤더 X-Revalidate-Secret: ${REVALIDATE_SECRET} (없거나 다르면 401)
@@ -302,13 +336,15 @@ A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일�
 
 | 태그 | 붙는 페이지 | 보내는 때(SPEC 6절 표) |
 | --- | --- | --- |
-| `feed` | `/` | 매일 08:00 KST 스케줄러 |
-| `browse` | `/places`, `/makers` | 공간 공개·수정·상태 변경 |
+| `feed` | `/` | 매일 월~금 08:00 KST 스케줄러, 편성 등록·삭제, 공간·만든 사람 변경(피드 카드가 이름·대표 사진·첫 만든 사람을 보여준다) |
+| `browse` | `/places`, `/makers` | 공간 공개·수정·상태 변경, 만든 사람 수정 |
 | `place:{slug}` | `/places/[slug]`, 그 OG 이미지 | 공간 공개·수정·상태 변경, 크레딧에 있는 만든 사람 수정 |
-| `maker:{slug}` | `/makers/[slug]`, 그 OG 이미지 | 만든 사람 수정, 그 사람이 크레딧에 있는 공간의 공개·수정·상태 변경 |
+| `maker:{slug}` | `/makers/[slug]`, 그 OG 이미지 | 만든 사람 수정(잠기기 전 slug를 바꿨으면 옛 slug도), 그 사람이 크레딧에 있거나 크레딧에서 빠진 공간의 공개·수정·상태 변경 |
 | `sitemap` | `/sitemap.xml` | 공간 처음 공개, 만든 사람 처음 공개 공간 연결 |
 
-호출은 트랜잭션 커밋 뒤에만(`AFTER_COMMIT`). 실패는 로그만. 모든 공개 페이지는 1시간 주기로도 다시 만든다.
+공간 변경은 바뀐 뒤 상태가 공개 페이지가 있는 상태(published·paused·closed)일 때만 보낸다. 수정·상태 전환·크레딧·출처·임베드 교체·사진 추가·수정·순서·삭제·크레딧 제보 수락이 모두 같은 규칙이다. 만든 사람 수정은 그 사람이 크레딧에 있는 공개 공간이 있을 때만 보낸다.
+
+호출은 트랜잭션 커밋 뒤에만(`AFTER_COMMIT`). 실패는 로그만, 재시도 없음. 모든 공개 페이지는 1시간 주기로도 다시 만든다.
 
 ### 헬스
 
@@ -320,8 +356,9 @@ A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일�
 
 | 이름 | 어디 | 뜻 |
 | --- | --- | --- |
-| `FRONTEND_URL` | backend | 구글 `redirect_uri`의 바탕, 재생성 호출 대상 |
-| `REVALIDATE_SECRET` | backend, frontend | 재생성 호출 비밀 |
+| `FRONTEND_URL` | backend | 구글 `redirect_uri`의 바탕(브라우저가 보는 주소) |
+| `REVALIDATE_URL` | backend | 재생성 호출 대상. 비우면 `FRONTEND_URL`. compose는 `http://frontend:3000`으로 고정 |
+| `REVALIDATE_SECRET` | backend, frontend | 재생성 호출 비밀. prod는 이것과 재생성 주소(`REVALIDATE_URL` 또는 `FRONTEND_URL`)가 없으면 시작하지 않는다. dev·test는 비면 호출을 건너뛴다 |
 | `AI_URL`, `AI_INTERNAL_TOKEN` | backend, ai | 내부 호출 |
 | `ADMIN_EMAILS` | backend | 쉼표 구분 |
 | `FIXED_NOW` | backend(dev만) | 있으면 `Clock`을 이 시각(ISO-8601)으로 고정 |

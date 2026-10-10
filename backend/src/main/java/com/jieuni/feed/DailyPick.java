@@ -59,6 +59,12 @@ public class DailyPick extends BaseTimeEntity implements Persistable<LocalDate> 
 		isNew = false;
 	}
 
+	// 같은 날 칸을 다른 공간·한 줄로 바꾼다. 새 객체를 같은 날짜로 save()하지 않는다(isNew라 INSERT가 PK 충돌).
+	public void change(Place place, String line) {
+		this.place = place;
+		this.line = line;
+	}
+
 	public LocalDate getPickDate() {
 		return pickDate;
 	}

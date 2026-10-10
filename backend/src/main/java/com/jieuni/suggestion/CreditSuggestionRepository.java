@@ -8,6 +8,17 @@ import java.util.List;
 
 public interface CreditSuggestionRepository extends JpaRepository<CreditSuggestion, Long> {
 
+	long countByStatus(SuggestionStatus status);
+
+	// 관리자 검토: 먼저 온 것부터.
+	@Query("""
+			select new com.jieuni.suggestion.AdminCreditSuggestionRow(c.id, p.id, p.slug, p.name, c.role, c.makerName,
+			    c.sourceUrl, c.isSelf, u.id, u.nickname, c.status, c.createdAt)
+			from CreditSuggestion c join c.place p left join c.user u
+			where c.status = :status
+			order by c.createdAt, c.id""")
+	List<AdminCreditSuggestionRow> findForReview(SuggestionStatus status);
+
 	@Query("select count(c) from CreditSuggestion c where c.user.id = :userId and c.createdAt >= :since")
 	long countSince(long userId, Instant since);
 

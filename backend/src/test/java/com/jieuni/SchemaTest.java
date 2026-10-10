@@ -25,7 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Import(TestcontainersConfiguration.class)
-@SpringBootTest(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
+// 프로필 없이 뜨므로 S3 클라이언트가 만들어질 값만 준다(네트워크는 쓰지 않는다).
+@SpringBootTest(properties = { "spring.jpa.properties.hibernate.generate_statistics=true",
+		"S3_ENDPOINT=https://test.r2.cloudflarestorage.com", "S3_BUCKET=b", "S3_ACCESS_KEY=x", "S3_SECRET_KEY=x" })
 @Transactional
 class SchemaTest {
 

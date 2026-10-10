@@ -49,6 +49,31 @@ public class PlacePhoto {
 	protected PlacePhoto() {
 	}
 
+	PlacePhoto(Place place, Input input, int position) {
+		this.place = place;
+		this.objectKey = input.objectKey();
+		this.width = input.width();
+		this.height = input.height();
+		edit(input.alt(), input.credit(), input.license(), input.sourceUrl());
+		this.position = position;
+	}
+
+	// 관리자가 등록하는 사진 한 장. 순서(position)는 맨 뒤로 정한다.
+	public record Input(String objectKey, int width, int height, String alt, String credit, PhotoLicense license,
+			String sourceUrl) {
+	}
+
+	public void edit(String alt, String credit, PhotoLicense license, String sourceUrl) {
+		this.alt = alt;
+		this.credit = credit;
+		this.license = license;
+		this.sourceUrl = sourceUrl;
+	}
+
+	void moveTo(int position) {
+		this.position = position;
+	}
+
 	public Long getId() {
 		return id;
 	}

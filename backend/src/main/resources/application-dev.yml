@@ -8,6 +8,11 @@ spring:
 GOOGLE_CLIENT_ID: unset
 GOOGLE_CLIENT_SECRET: unset
 FRONTEND_URL: http://localhost:3000
+# R2 키가 없어도 뜨게 한다(실제 업로드만 실패).
+S3_ENDPOINT: https://unset.r2.cloudflarestorage.com
+S3_BUCKET: unset
+S3_ACCESS_KEY: unset
+S3_SECRET_KEY: unset
 
 jieuni:
   seed-path: ${SEED_PATH:../seed/seed.json}

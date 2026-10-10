@@ -18,6 +18,14 @@ public interface DailyPickRepository extends JpaRepository<DailyPick, LocalDate>
 			order by d.pickDate desc""")
 	List<FeedPickRow> findOpened(LocalDate from, LocalDate to, Collection<PlaceStatus> statuses);
 
+	// 관리자 편성 화면·대시보드. 공간 상태와 상관없이 편성된 칸 전부.
+	@Query("""
+			select new com.jieuni.feed.AdminPickRow(d.pickDate, d.line, p.id, p.slug, p.name, ph)
+			from DailyPick d join d.place p left join PlacePhoto ph on ph.place = p and ph.position = 0
+			where d.pickDate between :from and :to
+			order by d.pickDate""")
+	List<AdminPickRow> findAdminRows(LocalDate from, LocalDate to);
+
 	// 공간마다 크레딧을 position 순으로. 서비스가 공간별 첫 행만 쓴다.
 	@Query("""
 			select new com.jieuni.feed.FirstMakerRow(c.place.id, m.id, m.slug, m.name, c.role)

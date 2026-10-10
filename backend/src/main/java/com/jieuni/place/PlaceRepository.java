@@ -1,14 +1,17 @@
 package com.jieuni.place;
 
 import com.jieuni.common.SitemapEntry;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface PlaceRepository extends JpaRepository<Place, Long> {
 
@@ -63,5 +66,25 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
 			from Place p where p.status in :statuses and p.slug is not null
 			order by p.slug""")
 	List<SitemapEntry> findSitemapEntries(Collection<PlaceStatus> statuses);
+
+	// 사진 API: 같은 공간의 사진 요청을 한 줄로 세운다. 동시에 등록하면 같은 position을 골라 커밋 때 유니크가 깨진다.
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("select p from Place p where p.id = :id")
+	Optional<Place> findForUpdate(long id);
+
+	long countByStatus(PlaceStatus status);
+
+	// 관리자 제보 검토: 먼저 온 것부터. 제보됨·반려는 제보로만 생기는 상태다(제보한 사람이 탈퇴하면 u가 없다).
+	@Query("""
+			select new com.jieuni.place.SuggestedPlaceRow(p.id, p.name, p.region, p.suggestionLink, p.suggestionReason,
+			    p.suggestionMakerHint, u.id, u.nickname, p.status, p.createdAt)
+			from Place p left join p.suggestedBy u
+			where p.status = :status
+			order by p.createdAt, p.id""")
+	List<SuggestedPlaceRow> findSuggested(PlaceStatus status);
+
+	// 고아 정리: 버킷에서 찾은 업로드 키 중 등록된 것.
+	@Query("select ph.objectKey from PlacePhoto ph where ph.objectKey in :keys")
+	Set<String> findRegisteredObjectKeys(Collection<String> keys);
 
 }

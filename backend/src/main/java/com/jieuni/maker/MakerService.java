@@ -33,11 +33,7 @@ public class MakerService {
 	public MakerProfileResponse profile(String slug) {
 		Maker maker = makers.findWithAffiliationBySlug(slug).orElseThrow(MakerService::notFound);
 
-		// 같은 공간은 한 칸. 첫 행이 position이 가장 앞선 역할이다.
-		Map<Long, PlaceTile> places = new LinkedHashMap<>();
-		for (MakerPlaceRow row : makers.findProfilePlaces(maker.getId(), PlaceStatus.HAS_PAGE)) {
-			places.putIfAbsent(row.place().id(), tile(row.place(), row.role().label()));
-		}
+		List<PlaceTile> places = places(maker.getId());
 		if (places.isEmpty()) {
 			throw notFound();
 		}
@@ -48,7 +44,17 @@ public class MakerService {
 				affiliation == null ? null
 						: new MakerProfileResponse.Affiliation(affiliation.getId(), affiliation.getSlug(),
 								affiliation.getName()),
-				List.copyOf(places.values()));
+				places);
+	}
+
+	// 프로필 격자: 공개 페이지가 있는 공간. 같은 공간은 한 칸이고, 첫 행이 position이 가장 앞선 역할이다.
+	// 관리자 만든 사람 응답도 같은 목록을 쓴다.
+	public List<PlaceTile> places(long makerId) {
+		Map<Long, PlaceTile> places = new LinkedHashMap<>();
+		for (MakerPlaceRow row : makers.findProfilePlaces(makerId, PlaceStatus.HAS_PAGE)) {
+			places.putIfAbsent(row.place().id(), tile(row.place(), row.role().label()));
+		}
+		return List.copyOf(places.values());
 	}
 
 	public CursorPage<MakerSummary> browse(String cursorParam, Integer sizeParam) {

@@ -21,6 +21,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 
 @Entity
@@ -116,6 +118,98 @@ public class Place extends BaseTimeEntity {
 		place.suggestionLink = link;
 		place.suggestionMakerHint = makerHint;
 		return place;
+	}
+
+	// 관리자가 처음부터 쓰는 공간. slug는 공개 전에 채운다.
+	public static Place draft(String name, String region) {
+		Place place = new Place();
+		place.name = name;
+		place.region = region;
+		place.status = PlaceStatus.DRAFT;
+		return place;
+	}
+
+	public void edit(PlaceEdit edit) {
+		this.slug = edit.slug();
+		this.name = edit.name();
+		this.kind = edit.kind();
+		this.region = edit.region();
+		this.address = edit.address();
+		this.lat = edit.lat();
+		this.lng = edit.lng();
+		this.access = edit.access();
+		this.visitNote = edit.visitNote();
+		this.summary = edit.summary();
+		this.impression = edit.impression();
+		this.senseLight = edit.senseLight();
+		this.senseSound = edit.senseSound();
+		this.senseScent = edit.senseScent();
+		this.senseTouch = edit.senseTouch();
+		this.essay = edit.essay();
+		this.visitedByEditorOn = edit.visitedByEditorOn();
+	}
+
+	// 관리자 API의 통째 교체: 옛 행은 orphanRemoval로 지워지고, 배열 순서가 position이 된다.
+	// ActionQueue는 고아 삭제를 INSERT보다 먼저 두지만, id가 IDENTITY라 트랜잭션 안의 새 행은 persist 때 바로 INSERT된다.
+	// 그래서 실제로는 새 행이 먼저 들어가고 옛 행이 나중에 지워진다(SQL 로그). 세 테이블에는 (place_id, position) 유니크가 없어 상관없다.
+	public void replaceCredits(List<PlaceCredit.Input> inputs) {
+		credits.clear();
+		for (int i = 0; i < inputs.size(); i++) {
+			credits.add(new PlaceCredit(this, inputs.get(i), i));
+		}
+	}
+
+	public void replaceSources(List<PlaceSource.Input> inputs) {
+		sources.clear();
+		for (int i = 0; i < inputs.size(); i++) {
+			sources.add(new PlaceSource(this, inputs.get(i), i));
+		}
+	}
+
+	public void replaceEmbeds(List<PlaceEmbed.Input> inputs) {
+		embeds.clear();
+		for (int i = 0; i < inputs.size(); i++) {
+			embeds.add(new PlaceEmbed(this, inputs.get(i), i));
+		}
+	}
+
+	// 사진은 (place_id, position) 유니크(커밋 때 검사)가 있어 통째 교체 대신 한 장씩 다룬다. position 0이 대표 사진이다.
+	public PlacePhoto addPhoto(PlacePhoto.Input input) {
+		int last = photos.stream().mapToInt(PlacePhoto::getPosition).max().orElse(-1);
+		PlacePhoto photo = new PlacePhoto(this, input, last + 1);
+		photos.add(photo);
+		return photo;
+	}
+
+	// 남은 사진을 0부터 다시 매겨 대표 사진(position 0)이 비지 않게 한다.
+	public void removePhoto(PlacePhoto photo) {
+		photos.remove(photo);
+		renumberPhotos();
+	}
+
+	// photoIds가 지금 사진 id 전부와 정확히 같아야 한다. 아니면 아무것도 바꾸지 않고 false.
+	public boolean reorderPhotos(List<Long> photoIds) {
+		if (photoIds.size() != photos.size()
+				|| !new HashSet<>(photoIds).equals(new HashSet<>(photos.stream().map(PlacePhoto::getId).toList()))) {
+			return false;
+		}
+		photos.sort(Comparator.comparingInt(p -> photoIds.indexOf(p.getId())));
+		renumberPhotos();
+		return true;
+	}
+
+	private void renumberPhotos() {
+		for (int i = 0; i < photos.size(); i++) {
+			photos.get(i).moveTo(i);
+		}
+	}
+
+	// 처음 공개한 시각은 한 번만 정한다. 휴업에서 다시 공개해도 둘러보기 순서가 바뀌지 않게.
+	public void changeStatus(PlaceStatus to, Instant now) {
+		this.status = to;
+		if (to == PlaceStatus.PUBLISHED && publishedAt == null) {
+			this.publishedAt = now;
+		}
 	}
 
 	public Long getId() {

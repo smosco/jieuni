@@ -26,7 +26,8 @@ import java.util.Map;
 import java.util.Set;
 
 // 개발용 가짜 데이터(seed/seed.json)를 makers가 비어 있을 때만 한 트랜잭션으로 넣는다.
-// 화면 개발용이라 공개 시 검증(PublishRules)을 거치지 않고 행을 직접 쓴다.
+// 행을 직접 써서 공개 시 검증(PublishRules)을 거치지 않는다. 공개 페이지가 있는 공간이 그 검증을 통과하는지는 테스트가 본다
+// (통과하지 못하면 관리자 폼에서 어떤 값도 저장할 수 없다).
 @Component
 @Profile("dev")
 class DevSeedRunner implements ApplicationRunner {
@@ -120,6 +121,14 @@ class DevSeedRunner implements ApplicationRunner {
 						.param("sourceUrl", c.sourceUrl()).param("position", i)
 						.update();
 			}
+			for (int i = 0; i < p.embeds().size(); i++) {
+				EmbedSeed e = p.embeds().get(i);
+				jdbc.sql("""
+						insert into place_embeds (place_id, type, url, position)
+						values (:placeId, :type, :url, :position)""")
+						.param("placeId", placeId).param("type", e.type()).param("url", e.url()).param("position", i)
+						.update();
+			}
 			for (int i = 0; i < p.sources().size(); i++) {
 				SourceSeed s = p.sources().get(i);
 				jdbc.sql("""
@@ -130,6 +139,15 @@ class DevSeedRunner implements ApplicationRunner {
 						.update();
 			}
 		}
+
+		// 공개 페이지가 있는 공간의 크레딧에 든 만든 사람은 프로필 주소가 이미 밖에 나간 것으로 잠근다(관리자 API와 같게).
+		jdbc.sql("""
+				update makers set slug_locked_at = :now
+				where slug is not null
+				  and id in (select c.maker_id from place_credits c join places p on p.id = c.place_id
+				             where p.published_at is not null)""")
+				.param("now", now)
+				.update();
 
 		// 편성은 "몇 주 전 무슨 요일"로 적혀 있어서, 언제 적재해도 이번 주·지난주 칸에 들어간다.
 		LocalDate thisMonday = LocalDate.ofInstant(clock.instant(), KST).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -154,7 +172,7 @@ class DevSeedRunner implements ApplicationRunner {
 	record PlaceSeed(String slug, String name, String kind, String region, String address, BigDecimal lat,
 			BigDecimal lng, String access, String visitNote, String summary, String impression, Senses senses,
 			String essay, LocalDate visitedByEditorOn, String status, int publishedDaysAgo, List<CreditSeed> credits,
-			List<SourceSeed> sources) {
+			List<SourceSeed> sources, List<EmbedSeed> embeds) {
 	}
 
 	record Senses(String light, String sound, String scent, String touch) {
@@ -164,6 +182,9 @@ class DevSeedRunner implements ApplicationRunner {
 	}
 
 	record SourceSeed(String title, String url, String type) {
+	}
+
+	record EmbedSeed(String type, String url) {
 	}
 
 	record PickSeed(int weeksAgo, DayOfWeek weekday, String place, String line) {

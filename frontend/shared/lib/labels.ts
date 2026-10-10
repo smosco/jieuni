@@ -1,4 +1,4 @@
-import type { CreditRole, MakerKind, PlaceKind } from "@/shared/api/types";
+import type { Access, CreditRole, MakerKind, PlaceKind } from "@/shared/api/types";
 
 // 코드 값 → 화면 문구. 역할 문구는 백엔드 CreditRole과 같아야 한다.
 export const KIND_LABEL: Record<PlaceKind, string> = {
@@ -14,6 +14,13 @@ export const KIND_LABEL: Record<PlaceKind, string> = {
   religious: "종교 공간",
   public: "공공 공간",
   other: "그 밖",
+};
+
+export const ACCESS_LABEL: Record<Access, string> = {
+  walk_in: "바로 방문",
+  reservation: "예약",
+  ticket: "입장권",
+  guests_only: "투숙객만",
 };
 
 export const ROLE_LABEL: Record<CreditRole, string> = {

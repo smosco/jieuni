@@ -1,0 +1,372 @@
+/* 관리자 셸: 최대 960px 가운데, 왼쪽 메뉴 + 본문. 본문이 본문 너비(327px)보다 좁아지면 메뉴 아래로 내려간다. */
+.shell {
+  display: flex;
+  flex-wrap: wrap;
+  max-width: var(--admin-max-width);
+  min-height: 100dvh;
+  margin: 0 auto;
+}
+
+.nav {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--admin-nav-width);
+  padding: var(--space-2xl) var(--page-gutter);
+  border-right: var(--hairline) solid var(--color-line);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-2xl);
+}
+
+.eyebrow,
+.brandName,
+.title {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--color-ink-tertiary);
+}
+
+/* 메뉴 너비에서 "지은이"가 갈라지지 않게 */
+.brandName {
+  word-break: keep-all;
+}
+
+.menu {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--color-ink-secondary);
+}
+
+.menuOn {
+  color: var(--color-ink);
+}
+
+.menuOff {
+  color: var(--color-ink-tertiary);
+  cursor: default;
+}
+
+.siteLink {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--color-ink-secondary);
+}
+
+.main {
+  flex: 1 1 var(--content-width);
+  min-width: 0;
+  padding: var(--space-2xl) var(--page-gutter);
+}
+
+/* 머리: ADMIN → 8px → 제목, 오른쪽에 버튼 */
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  margin-bottom: var(--head-bottom);
+}
+
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* 제목 옆 상태 문구 */
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-md);
+}
+
+.shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xl);
+}
+
+.shortcut {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--color-ink);
+}
+
+/* 상단 탭에 더한다. 공개 화면용 좌우 24px은 본문 여백과 겹치므로 지운다.
+   가로 스크롤로 두면 탭의 터치 영역(위아래로 늘린 것) 때문에 세로 스크롤바가 생겨 줄을 바꾼다.
+   셸이 이 파일을 상단 탭 CSS보다 먼저 불러오므로, 같은 우선순위면 탭 쪽 padding·gap이 이긴다. 요소를 붙여 순서와 상관없이 이기게 한다. */
+nav.tabs {
+  flex-wrap: wrap;
+  row-gap: var(--space-md);
+  padding: 0;
+}
+
+.search {
+  padding: var(--space-lg) 0;
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--row-padding) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+.rowLeft,
+.rowRight {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.rowLeft {
+  min-width: 0;
+}
+
+.rowRight {
+  flex: none;
+  align-items: flex-end;
+}
+
+.rowName,
+.sub,
+.status,
+.meta {
+  margin: 0;
+}
+
+.sub,
+.meta {
+  color: var(--color-ink-tertiary);
+}
+
+.status {
+  color: var(--color-ink-secondary);
+}
+
+.empty {
+  margin: 0;
+  padding-top: var(--space-3xl);
+  color: var(--color-ink-secondary);
+}
+
+/* 권한 없음: 메뉴 없이 가운데 */
+.notFound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  min-height: 100dvh;
+  padding: 0 var(--page-gutter);
+}
+
+.notFoundText {
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
+
+.notFoundLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--color-ink);
+}
+
+/* 보조 큰 버튼 모양의 링크: a는 기본이 inline이라 높이가 먹지 않는다 */
+.linkButton {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+/* 홈 대시보드: 편성 두 주(넓으면 나란히) → 숫자 세 칸 */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+  padding-top: var(--space-2xl);
+}
+
+.blockHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+.weeks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--content-width)), 1fr));
+  gap: var(--space-xl);
+}
+
+.week {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.weekTitle {
+  margin: 0 0 var(--space-sm);
+  color: var(--color-ink-secondary);
+  font-weight: inherit;
+}
+
+.summary {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.summaryRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-lg);
+  padding: var(--space-sm) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+.summaryName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xl);
+  margin: 0;
+}
+
+.count {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.count dt,
+.count dd {
+  margin: 0;
+}
+
+/* 편성: 두 주를 위아래로, 칸마다 날짜 · 공간과 한 줄 · 버튼 */
+.lead {
+  margin: 0 0 var(--space-2xl);
+  color: var(--color-ink-secondary);
+}
+
+.pickWeeks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+  max-width: var(--admin-form-width);
+}
+
+.slots {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--row-padding) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+/* 가운데 정렬: 오른쪽 글자 버튼의 터치 영역(44px)이 줄 아래로 늘어지지 않게 */
+.slotRow {
+  display: grid;
+  grid-template-columns: max-content 1fr max-content;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.slotDay {
+  flex: none;
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
+
+.slotMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.slotLine {
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
+
+/* 아직 채울 수 있는 빈 칸만 포인트 색으로 강조한다 */
+.slotEmpty {
+  margin: 0;
+  color: var(--color-earth);
+}
+
+.slotPast {
+  margin: 0;
+  color: var(--color-ink-tertiary);
+}
+
+.slotActions {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.slotEditor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.slotButtons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+/* 제보 한 건: 이름·누가 언제 → 제보 내용 → 버튼 */
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-xl) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+  max-width: var(--admin-form-width);
+}

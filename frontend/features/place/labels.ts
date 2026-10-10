@@ -1,13 +1,6 @@
-import type { Access, SourceType } from "./types";
+import type { SourceType } from "./types";
 
 // 코드 값 → 상세 화면 문구
-export const ACCESS_LABEL: Record<Access, string> = {
-  walk_in: "바로 방문",
-  reservation: "예약",
-  ticket: "입장권",
-  guests_only: "투숙객만",
-};
-
 export const ENCOUNTER_LABEL: Record<SourceType, string> = {
   article: "기사로 만남",
   video: "영상으로 만남",

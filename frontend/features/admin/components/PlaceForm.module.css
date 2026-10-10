@@ -1,0 +1,266 @@
+/* 관리자 공간 폼: 본문 안 왼쪽 정렬, 묶음 사이 48px, 항목 사이 24px. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+  max-width: var(--admin-form-width);
+}
+
+.ai {
+  display: flex;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* 위도·경도, 감각 두 칸 */
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--row-padding) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+  overflow-wrap: anywhere;
+}
+
+.sub {
+  margin: 0;
+  color: var(--color-ink-tertiary);
+}
+
+.none,
+.error {
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: baseline;
+  gap: var(--space-md) var(--space-lg);
+  margin: 0;
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.link {
+  color: var(--color-ink);
+  text-decoration: underline;
+}
+
+/* 아래에 붙는 저장 줄. 공개·미리보기 버튼도 이 줄에 더한다. */
+.bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--space-lg) 0;
+  border-top: var(--hairline) solid var(--color-line);
+  background: var(--color-paper);
+}
+
+.barActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+.barStatus {
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
+
+/* 잠긴 칸(공개 뒤 slug): 고칠 수 없다는 것을 글자색으로 */
+.form input:read-only {
+  color: var(--color-ink-secondary);
+}
+
+/* 미리보기: 공개 셸과 같은 너비로 가운데, 둘레에 선 */
+.previewHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.preview {
+  max-width: var(--shell-max-width);
+  margin: 0 auto;
+  border: var(--hairline) solid var(--color-line);
+}
+
+/* 순서가 있는 목록(크레딧·출처·임베드): 줄마다 위아래 16px, 아래 1px 선 */
+.listBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-lg) 0;
+  border-top: var(--hairline) solid transparent;
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+/* 끌어 놓을 자리: 그 줄 위 선이 진해진다. 평소 위 선은 투명해 묶음 제목의 선과 겹쳐 보이지 않는다. */
+.dropTarget {
+  border-top-color: var(--color-ink);
+}
+
+.itemHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+.handle {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--color-ink-tertiary);
+  cursor: grab;
+  user-select: none;
+}
+
+.itemActions {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.textButton {
+  min-height: var(--touch-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+}
+
+.textButton:disabled {
+  color: var(--color-ink-tertiary);
+  cursor: default;
+}
+
+.rowFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.subhead {
+  margin: 0;
+  color: var(--color-ink-secondary);
+  font-weight: inherit;
+}
+
+/* 만든 사람 찾기: 입력칸 바로 아래에 목록이 뜬다 */
+.combobox {
+  position: relative;
+}
+
+.options {
+  position: absolute;
+  top: calc(var(--touch-min) + var(--space-xl));
+  right: 0;
+  left: 0;
+  z-index: 1;
+  max-height: calc(var(--touch-min) * 6);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  border: var(--hairline) solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  list-style: none;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+}
+
+.optionActive {
+  background: var(--color-paper-raised);
+}
+
+/* 고를 수 없는 줄(다른 날에 편성된 공간) */
+.optionOff {
+  color: var(--color-ink-tertiary);
+  cursor: default;
+}
+
+.createRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+/* 사진 줄: 왼쪽 미리보기, 오른쪽 대표·올리기 상태 */
+.photoHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-lg);
+}
+
+.thumb {
+  flex: none;
+  width: var(--admin-photo-thumb);
+  aspect-ratio: 3 / 2;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-photo-placeholder);
+}
+
+.thumbImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.photoState {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+}

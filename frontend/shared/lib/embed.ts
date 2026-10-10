@@ -1,4 +1,4 @@
-import type { Embed } from "./types";
+import type { Embed, EmbedType } from "@/shared/api/types";
 
 // 공개 게시물 URL → iframe 주소와 썸네일. 모르는 모양이면 null(그 임베드는 그리지 않는다).
 export function embedSource(embed: Embed): { frameUrl: string; thumbnailUrl: string | null } | null {
@@ -23,4 +23,22 @@ export function embedSource(embed: Embed): { frameUrl: string; thumbnailUrl: str
   const code = url.pathname.match(/^\/(?:p|reel)\/([^/]+)/)?.[1];
   if (!code) return null;
   return { frameUrl: `https://www.instagram.com/p/${code}/embed`, thumbnailUrl: null };
+}
+
+// 주소의 도메인으로 임베드 종류를 정한다. 백엔드의 허용 도메인과 같다. 모르는 도메인이면 null.
+const HOSTS: Record<string, EmbedType> = {
+  "youtube.com": "youtube",
+  "www.youtube.com": "youtube",
+  "m.youtube.com": "youtube",
+  "youtu.be": "youtube",
+  "instagram.com": "instagram",
+  "www.instagram.com": "instagram",
+};
+
+export function embedTypeOf(url: string): EmbedType | null {
+  try {
+    return HOSTS[new URL(url).hostname.toLowerCase()] ?? null;
+  } catch {
+    return null;
+  }
 }

@@ -41,4 +41,15 @@ management:
 
 jieuni:
   photo-public-base-url: ${PHOTO_PUBLIC_BASE_URL:}
+  # R2(S3 호환). 개발·운영 모두 R2이고 버킷만 다르다.
+  s3:
+    endpoint: ${S3_ENDPOINT}
+    region: ${S3_REGION:auto}
+    bucket: ${S3_BUCKET}
+    access-key: ${S3_ACCESS_KEY}
+    secret-key: ${S3_SECRET_KEY}
   admin-emails: ${ADMIN_EMAILS:}
+  # 백엔드가 프론트의 재생성 라우트를 부를 주소. compose 안에서는 공개 주소(FRONTEND_URL)로 프론트에 닿지 않는다.
+  revalidate:
+    url: ${REVALIDATE_URL:${FRONTEND_URL:}}
+    secret: ${REVALIDATE_SECRET:}

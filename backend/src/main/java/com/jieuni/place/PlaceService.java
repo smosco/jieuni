@@ -38,11 +38,6 @@ public class PlaceService {
 						new PlaceDetailResponse.Maker(c.getMaker().getId(), c.getMaker().getSlug(),
 								c.getMaker().getName(), c.getMaker().getKind())))
 				.toList();
-		List<Long> makerIds = place.getCredits().stream().map(c -> c.getMaker().getId()).distinct().toList();
-		List<PlaceTile> related = makerIds.isEmpty() ? List.of()
-				: places.findRelated(place.getId(), makerIds, PlaceStatus.LISTED, Limit.of(RELATED_LIMIT)).stream()
-						.map(row -> tile(row, null)).toList();
-
 		return new PlaceDetailResponse(place.getId(), place.getSlug(), place.getName(), place.getKind(),
 				place.getRegion(), place.getAddress(), place.getLat(), place.getLng(), place.getAccess(),
 				place.getVisitNote(), place.getSummary(), place.getImpression(),
@@ -55,7 +50,15 @@ public class PlaceService {
 						.map(s -> new PlaceDetailResponse.Source(s.getTitle(), s.getUrl(), s.getType())).toList(),
 				place.getPhotos().stream().map(photoUrls::of).toList(),
 				place.getEmbeds().stream().map(e -> new PlaceDetailResponse.Embed(e.getType(), e.getUrl())).toList(),
-				mapLinks(place), related);
+				mapLinks(place), related(place));
+	}
+
+	// 같은 만든 사람의 다른 공간. 관리자 미리보기도 같은 값을 쓴다.
+	public List<PlaceTile> related(Place place) {
+		List<Long> makerIds = place.getCredits().stream().map(c -> c.getMaker().getId()).distinct().toList();
+		return makerIds.isEmpty() ? List.of()
+				: places.findRelated(place.getId(), makerIds, PlaceStatus.LISTED, Limit.of(RELATED_LIMIT)).stream()
+						.map(row -> tile(row, null)).toList();
 	}
 
 	public CursorPage<PlaceTile> browse(String kindParam, String cursorParam, Integer sizeParam) {
@@ -90,7 +93,7 @@ public class PlaceService {
 	}
 
 	// 카카오는 공식 URL 형식(link/map, link/search), 네이버는 웹 형식 공식 문서가 없어 검색 주소로 둔다.
-	private PlaceDetailResponse.MapLinks mapLinks(Place place) {
+	public PlaceDetailResponse.MapLinks mapLinks(Place place) {
 		// 카카오 link/map은 쉼표로 이름·위도·경도를 나누므로 이름 안의 쉼표도 인코딩한다.
 		String name = encode(place.getName()).replace(",", "%2C");
 		String kakao = place.getLat() != null && place.getLng() != null
