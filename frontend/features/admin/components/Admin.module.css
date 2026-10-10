@@ -207,3 +207,166 @@ nav.tabs {
   flex: none;
   align-items: center;
 }
+
+/* 홈 대시보드: 편성 두 주(넓으면 나란히) → 숫자 세 칸 */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+  padding-top: var(--space-2xl);
+}
+
+.blockHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+.weeks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--content-width)), 1fr));
+  gap: var(--space-xl);
+}
+
+.week {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.weekTitle {
+  margin: 0 0 var(--space-sm);
+  color: var(--color-ink-secondary);
+  font-weight: inherit;
+}
+
+.summary {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.summaryRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-lg);
+  padding: var(--space-sm) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+.summaryName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xl);
+  margin: 0;
+}
+
+.count {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.count dt,
+.count dd {
+  margin: 0;
+}
+
+/* 편성: 두 주를 위아래로, 칸마다 날짜 · 공간과 한 줄 · 버튼 */
+.lead {
+  margin: 0 0 var(--space-2xl);
+  color: var(--color-ink-secondary);
+}
+
+.pickWeeks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+  max-width: var(--admin-form-width);
+}
+
+.slots {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--row-padding) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+/* 가운데 정렬: 오른쪽 글자 버튼의 터치 영역(44px)이 줄 아래로 늘어지지 않게 */
+.slotRow {
+  display: grid;
+  grid-template-columns: max-content 1fr max-content;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.slotDay {
+  flex: none;
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
+
+.slotMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.slotLine {
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
+
+/* 아직 채울 수 있는 빈 칸만 포인트 색으로 강조한다 */
+.slotEmpty {
+  margin: 0;
+  color: var(--color-earth);
+}
+
+.slotPast {
+  margin: 0;
+  color: var(--color-ink-tertiary);
+}
+
+.slotActions {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.slotEditor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.slotButtons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+/* 제보 한 건: 이름·누가 언제 → 제보 내용 → 버튼 */
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-xl) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+  max-width: var(--admin-form-width);
+}

@@ -1,16 +1,21 @@
 import { apiFetch } from "@/shared/api/client";
 import type { CursorPage } from "@/shared/api/types";
 import type {
+  AdminDashboard,
   AdminMaker,
   AdminMakerRow,
+  AdminPick,
   AdminPlace,
   AdminPlaceStatus,
   AdminPlaceSummary,
+  CreditAccept,
+  CreditSuggestion,
   MakerEdit,
   PhotoBody,
   PhotoEdit,
   PlaceEdit,
   PlaceLists,
+  PlaceSuggestion,
 } from "./types";
 
 export function fetchAdminPlacesPage(
@@ -91,4 +96,40 @@ export function reorderPhotos(id: number, photoIds: number[]): Promise<AdminPlac
 
 export function deletePhoto(id: number, photoId: number): Promise<void> {
   return apiFetch(`/api/admin/places/${id}/photos/${photoId}`, { method: "DELETE" });
+}
+
+export function fetchAdminDashboard(): Promise<AdminDashboard> {
+  return apiFetch("/api/admin/dashboard");
+}
+
+export function putPick(date: string, body: { placeId: number; line: string }): Promise<AdminPick> {
+  return apiFetch(`/api/admin/picks/${date}`, { method: "PUT", body: JSON.stringify(body) });
+}
+
+export function deletePick(date: string): Promise<void> {
+  return apiFetch(`/api/admin/picks/${date}`, { method: "DELETE" });
+}
+
+export function fetchPlaceSuggestions(): Promise<{ items: PlaceSuggestion[] }> {
+  return apiFetch("/api/admin/suggestions?type=places");
+}
+
+export function fetchCreditSuggestions(): Promise<{ items: CreditSuggestion[] }> {
+  return apiFetch("/api/admin/suggestions?type=credits");
+}
+
+export function startSuggestedPlace(placeId: number): Promise<AdminPlace> {
+  return apiFetch(`/api/admin/suggestions/places/${placeId}/start`, { method: "POST" });
+}
+
+export function rejectSuggestedPlace(placeId: number): Promise<void> {
+  return apiFetch(`/api/admin/suggestions/places/${placeId}/reject`, { method: "POST" });
+}
+
+export function acceptCreditSuggestion(id: number, body: CreditAccept): Promise<AdminPlace> {
+  return apiFetch(`/api/admin/suggestions/credits/${id}/accept`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export function declineCreditSuggestion(id: number): Promise<void> {
+  return apiFetch(`/api/admin/suggestions/credits/${id}/decline`, { method: "POST" });
 }

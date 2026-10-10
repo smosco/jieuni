@@ -222,6 +222,12 @@
   background: var(--color-paper-raised);
 }
 
+/* 고를 수 없는 줄(다른 날에 편성된 공간) */
+.optionOff {
+  color: var(--color-ink-tertiary);
+  cursor: default;
+}
+
 .createRow {
   display: flex;
   flex-wrap: wrap;

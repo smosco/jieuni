@@ -14,6 +14,8 @@ export type AdminPlaceSummary = {
   status: AdminPlaceStatus;
   updatedAt: string;
   hasPhoto: boolean;
+  // 편성된 날. 공간은 한 번만 편성한다.
+  pickedOn: string | null;
 };
 
 export type AdminPhoto = Photo & { id: number; objectKey: string; position: number };
@@ -121,3 +123,52 @@ export type MakerEdit = {
   instagram: string | null;
   affiliationId: number | null;
 };
+
+// 편성 한 칸. 빈 칸은 place·line이 null. locked = 이미 열린 칸(서버가 계산한다).
+export type AdminPick = {
+  date: string;
+  weekday: "MON" | "TUE" | "WED" | "THU" | "FRI";
+  line: string | null;
+  locked: boolean;
+  place: { id: number; slug: string | null; name: string; photo: Photo | null } | null;
+};
+
+// GET /api/admin/dashboard
+export type AdminDashboard = {
+  picks: { thisWeek: AdminPick[]; nextWeek: AdminPick[] };
+  pendingSuggestions: number;
+  draftCount: number;
+  llmCostThisMonthUsd: number;
+};
+
+type Reviewer = { id: number; nickname: string } | null;
+
+// GET /api/admin/suggestions?type=places
+export type PlaceSuggestion = {
+  id: number;
+  name: string;
+  region: string | null;
+  link: string | null;
+  reason: string | null;
+  makerHint: string | null;
+  suggestedBy: Reviewer;
+  createdAt: string;
+};
+
+// GET /api/admin/suggestions?type=credits
+export type CreditSuggestion = {
+  id: number;
+  place: { id: number; slug: string | null; name: string };
+  role: CreditRole;
+  makerName: string;
+  sourceUrl: string | null;
+  isSelf: boolean;
+  user: Reviewer;
+  status: "pending" | "accepted" | "declined";
+  createdAt: string;
+};
+
+export type SuggestionType = "places" | "credits";
+
+// POST /api/admin/suggestions/credits/{id}/accept
+export type CreditAccept = { makerId: number; verified: boolean; sourceUrl: string | null };

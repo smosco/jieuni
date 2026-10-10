@@ -4,27 +4,38 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import { useMe } from "@/features/me/queries";
 import { ApiError } from "@/shared/api/client";
 import {
+  acceptCreditSuggestion,
   addPhoto,
   changePlaceStatus,
   createAdminMaker,
   createAdminPlace,
+  declineCreditSuggestion,
   deletePhoto,
+  deletePick,
   editAdminMaker,
   editAdminPlace,
   editPhoto,
+  fetchAdminDashboard,
   fetchAdminMaker,
   fetchAdminMakersPage,
   fetchAdminPlace,
   fetchAdminPlacesPage,
+  fetchCreditSuggestions,
+  fetchPlaceSuggestions,
+  putPick,
+  rejectSuggestedPlace,
   reorderPhotos,
   replacePlaceList,
+  startSuggestedPlace,
 } from "./api";
 import { saveOrder } from "./listSchema";
 import { orderIds, photoSteps, toFormPhotoKey } from "./photoSchema";
-import type { AdminPlace, AdminPlaceStatus, MakerEdit, PhotoBody, PlaceEdit, PlaceLists } from "./types";
+import type { AdminPlace, AdminPlaceStatus, CreditAccept, MakerEdit, PhotoBody, PlaceEdit, PlaceLists } from "./types";
 
 const ADMIN_PLACES = ["admin", "places"] as const;
 const ADMIN_MAKERS = ["admin", "makers"] as const;
+const ADMIN_DASHBOARD = ["admin", "dashboard"] as const;
+const ADMIN_SUGGESTIONS = ["admin", "suggestions"] as const;
 
 export const adminPlaceKey = (id: number) => ["admin", "place", id] as const;
 
@@ -187,4 +198,97 @@ export function useEditAdminMaker(id: number) {
       queryClient.invalidateQueries({ queryKey: ["admin", "place"] });
     },
   });
+}
+
+// 관리자 홈과 편성 화면이 같이 쓴다. 이번 주·다음 주가 어느 날인지는 서버가 정한다.
+export function useAdminDashboard() {
+  const { data: me } = useMe();
+  return useQuery({ queryKey: ADMIN_DASHBOARD, queryFn: fetchAdminDashboard, enabled: me?.role === "admin" });
+}
+
+// 편성 칸의 공간 찾기: 공개 공간 첫 페이지만 쓴다.
+export function usePublishedPlaceSearch(q: string, enabled: boolean) {
+  const { data: me } = useMe();
+  return useQuery({
+    queryKey: [...ADMIN_PLACES, "search", q],
+    queryFn: () => fetchAdminPlacesPage("published", q, null),
+    enabled: enabled && me?.role === "admin",
+    staleTime: 30 * 1000,
+  });
+}
+
+// 편성이 바뀌면 칸(대시보드)과 공간 목록의 편성일(pickedOn)이 바뀐다.
+function usePickChange<T>(mutationFn: (vars: T) => Promise<unknown>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ADMIN_DASHBOARD });
+      queryClient.invalidateQueries({ queryKey: ADMIN_PLACES });
+    },
+  });
+}
+
+export function usePutPick() {
+  return usePickChange(({ date, placeId, line }: { date: string; placeId: number; line: string }) =>
+    putPick(date, { placeId, line }),
+  );
+}
+
+export function useDeletePick() {
+  return usePickChange(deletePick);
+}
+
+export function usePlaceSuggestions() {
+  const { data: me } = useMe();
+  return useQuery({
+    queryKey: [...ADMIN_SUGGESTIONS, "places"],
+    queryFn: fetchPlaceSuggestions,
+    enabled: me?.role === "admin",
+  });
+}
+
+export function useCreditSuggestions() {
+  const { data: me } = useMe();
+  return useQuery({
+    queryKey: [...ADMIN_SUGGESTIONS, "credits"],
+    queryFn: fetchCreditSuggestions,
+    enabled: me?.role === "admin",
+  });
+}
+
+// 검토하면 목록·대기 수가 바뀐다. 공간이 바뀌는 검토(작성 시작·반영)는 그 공간 캐시도 응답으로 바꾼다.
+function useReview<T, R extends AdminPlace | void>(mutationFn: (vars: T) => Promise<R>, alsoStale: readonly string[][] = []) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: (place: R) => {
+      if (place) queryClient.setQueryData(adminPlaceKey(place.id), place);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ADMIN_SUGGESTIONS });
+      queryClient.invalidateQueries({ queryKey: ADMIN_DASHBOARD });
+      queryClient.invalidateQueries({ queryKey: ADMIN_PLACES });
+      for (const queryKey of alsoStale) queryClient.invalidateQueries({ queryKey });
+    },
+  });
+}
+
+export function useStartSuggestedPlace() {
+  return useReview(startSuggestedPlace);
+}
+
+export function useRejectSuggestedPlace() {
+  return useReview(rejectSuggestedPlace);
+}
+
+// 만든 사람 목록의 공간 수·slug 잠금도 바뀐다.
+export function useAcceptCreditSuggestion() {
+  return useReview(({ id, body }: { id: number; body: CreditAccept }) => acceptCreditSuggestion(id, body), [
+    [...ADMIN_MAKERS],
+  ]);
+}
+
+export function useDeclineCreditSuggestion() {
+  return useReview(declineCreditSuggestion);
 }
