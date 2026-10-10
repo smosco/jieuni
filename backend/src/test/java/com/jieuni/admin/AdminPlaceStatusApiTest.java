@@ -2,7 +2,6 @@ package com.jieuni.admin;
 
 import com.jayway.jsonpath.JsonPath;
 import com.jieuni.IntegrationTest;
-import com.jieuni.place.CreditRole;
 import com.jieuni.place.PlaceStatus;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
@@ -43,14 +42,7 @@ class AdminPlaceStatusApiTest extends IntegrationTest {
 
 	// 공개 시 필수를 모두 채운 공간. 테스트마다 하나씩 비워 본다.
 	private long publishable(String slug, PlaceStatus status) {
-		long place = data.place(slug, status, PlaceStatus.HAS_PAGE.contains(status) ? PUBLISHED : null);
-		data.jdbc().sql("""
-				update places set address = '서울 종로구 1', lat = 37.5, lng = 127.0, access = 'ticket',
-				  summary = '한 문장', impression = '감상', visited_by_editor_on = '2026-05-01'
-				where id = :id""").param("id", place).update();
-		data.credit(place, data.maker(slug + "-maker"), CreditRole.ARCHITECTURE, 0);
-		data.photo(place, 0);
-		return place;
+		return data.publishablePlace(slug, status, PlaceStatus.HAS_PAGE.contains(status) ? PUBLISHED : null);
 	}
 
 	// 테스트는 요청들과 영속성 컨텍스트를 함께 쓴다. 앞 요청이 읽어 둔 공간·자식 목록이 JDBC 변경을 가리지 않게 비운다.

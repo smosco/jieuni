@@ -44,6 +44,19 @@ public class PlaceCredit {
 	protected PlaceCredit() {
 	}
 
+	PlaceCredit(Place place, Input input, int position) {
+		this.place = place;
+		this.maker = input.maker();
+		this.role = input.role();
+		this.verified = input.verified();
+		this.sourceUrl = input.sourceUrl();
+		this.position = position;
+	}
+
+	// 관리자 통째 교체의 한 줄. 순서(position)는 목록의 자리로 정한다.
+	public record Input(Maker maker, CreditRole role, boolean verified, String sourceUrl) {
+	}
+
 	public Long getId() {
 		return id;
 	}

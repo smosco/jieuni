@@ -10,12 +10,15 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.method.ParameterErrors;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -26,7 +29,8 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
 	// 사용자가 고칠 수 있는 DB 제약 위반 → 409 문구. 중복 여부는 미리 조회하지 않고 제약 하나로 판단한다(동시 요청도 같은 길).
 	private static final Map<String, String> CONFLICTS = Map.of(
-			"uq_places_slug", "이미 다른 공간이 쓰는 주소(slug)예요");
+			"uq_places_slug", "이미 다른 공간이 쓰는 주소(slug)예요",
+			"uq_makers_slug", "이미 다른 만든 사람이 쓰는 주소(slug)예요");
 
 	@ExceptionHandler(ApiException.class)
 	ResponseEntity<ApiError> handleApi(ApiException e) {
@@ -77,6 +81,25 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		Map<String, String> fieldErrors = new LinkedHashMap<>();
 		ex.getBindingResult().getFieldErrors()
 				.forEach(error -> fieldErrors.putIfAbsent(error.getField(), error.getDefaultMessage()));
+		return ResponseEntity.status(status).headers(headers).body(new ApiError("입력한 값을 확인해 주세요", fieldErrors));
+	}
+
+	// 목록 본문(@Valid List<T>)은 메서드 검증으로 돈다. 키는 매개변수 이름 + 원소 번호 + 필드("credits[0].sourceUrl").
+	@Override
+	protected ResponseEntity<Object> handleHandlerMethodValidationException(HandlerMethodValidationException ex,
+			HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+		Map<String, String> fieldErrors = new LinkedHashMap<>();
+		ex.getParameterValidationResults().stream()
+				.sorted(Comparator.comparing(r -> r.getContainerIndex() == null ? -1 : r.getContainerIndex()))
+				.forEach(result -> {
+					String key = result.getMethodParameter().getParameterName()
+							+ (result.getContainerIndex() == null ? "" : "[" + result.getContainerIndex() + "]");
+					if (result instanceof ParameterErrors errors) {
+						errors.getFieldErrors().forEach(e -> fieldErrors.putIfAbsent(key + "." + e.getField(), e.getDefaultMessage()));
+					} else {
+						result.getResolvableErrors().forEach(e -> fieldErrors.putIfAbsent(key, e.getDefaultMessage()));
+					}
+				});
 		return ResponseEntity.status(status).headers(headers).body(new ApiError("입력한 값을 확인해 주세요", fieldErrors));
 	}
 

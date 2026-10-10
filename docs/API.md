@@ -196,9 +196,11 @@
 | `GET /api/admin/places/{id}` | `AdminPlace` | 수정 폼·미리보기. 공개 상세와 같은 하위 목록을 전부 포함 |
 | `PATCH /api/admin/places/{id}` | `AdminPlace`의 스칼라 필드 전부 → 200 `AdminPlace` | 임시저장. 빠지거나 null·빈 문자열이면 비운다. `name`만 필수. 형식 검증만(길이·enum·slug 형식·좌표 범위). slug 중복 409. 공개 후 slug 변경 409(같은 값은 통과). 공개 페이지가 있는 상태(published·paused·closed)면 아래 공개 검증도 통과해야 한다(실패 400 `{ message: "공개된 공간이라 이 값은 비울 수 없어요", fieldErrors }`, 수정은 남지 않음) |
 | `POST /api/admin/places/{id}/status` | `{ to }` → 200 `AdminPlace` | SPEC 3절 전환표만, 밖이면(같은 상태로도) 409 `{ message: "공개 상태에서는 작성 중(으)로 바꿀 수 없어요" }`. `to=published`면 아래 공개 검증, 실패 400 `{ message: "공개할 수 없어요", fieldErrors }`. 처음 공개 때만 `published_at`(휴업 뒤 다시 공개해도 그대로). 모르는 `to` 400 |
-| `PUT /api/admin/places/{id}/credits` | `[{ makerId, role, verified, sourceUrl? }]` → 200 `AdminPlace` | 통째 교체, 배열 순서 = position. `verified`인데 `sourceUrl` 없으면 400 |
-| `PUT /api/admin/places/{id}/sources` | `[{ title, url, type }]` → 200 `AdminPlace` | 통째 교체 |
-| `PUT /api/admin/places/{id}/embeds` | `[{ type, url }]` → 200 `AdminPlace` | 통째 교체 |
+| `PUT /api/admin/places/{id}/credits` | `[{ makerId, role, verified, sourceUrl? }]` → 200 `AdminPlace` | 통째 교체, 배열 순서 = position. `verified`인데 `sourceUrl` 없으면 400(`credits[i].sourceUrl`), 없는 만든 사람 400(`credits[i].makerId`) |
+| `PUT /api/admin/places/{id}/sources` | `[{ title, url, type }]` → 200 `AdminPlace` | 통째 교체. `title` 200자 |
+| `PUT /api/admin/places/{id}/embeds` | `[{ type, url }]` → 200 `AdminPlace` | 통째 교체. 공개 화면이 그릴 수 있는 주소만: youtube는 `youtube.com`·`www.youtube.com`·`m.youtube.com`의 `watch?v={id}`·`/shorts/{id}`·`/embed/{id}` 또는 `youtu.be/{id}`, instagram은 `instagram.com`·`www.instagram.com`의 `/p/{code}`·`/reel/{code}`. 프로필·채널·홈 주소는 400 `embeds[i].url`("유튜브 영상 주소를 넣어 주세요" / "인스타그램 게시물 주소를 넣어 주세요") |
+
+**목록 교체 공통**: 링크(`sourceUrl`, `url`)는 http·https만, 500자. 앞뒤 공백은 지우고 빈 칸은 null. 형식 오류의 키는 `credits[0].role`처럼 목록 이름 + 원소 번호 + 필드(원소가 null이면 `embeds[0]`: "빈 항목은 보낼 수 없어요"). 모르는 enum 값은 칸 이름 없는 400. 공개 페이지가 있는 상태면 교체 뒤 공개 검증도 통과해야 한다(실패 400 `{ message: "공개된 공간이라 이 값은 비울 수 없어요", fieldErrors }`, 교체는 남지 않음). 성공하면 공간의 `updatedAt`이 바뀐다.
 
 ```jsonc
 // AdminPlace = 공개 상세(1절)의 모든 필드 + 아래
@@ -253,12 +255,14 @@
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `GET /api/admin/makers?q=&cursor=` | `{ items: [{ id, slug, name, kind, region, placeCount }], nextCursor }` | `q` 이름 부분 일치(크레딧 콤보박스가 쓴다) |
-| `POST /api/admin/makers` | `{ name, kind, slug?, region?, intro?, website?, instagram?, affiliationId? }` → 201 `AdminMaker` | |
+| `GET /api/admin/makers?q=&cursor=&size=` | `{ items: [{ id, slug, name, kind, region, placeCount, updatedAt }], nextCursor }` | `q` 이름 부분 일치(대소문자 무시, 크레딧 콤보박스가 쓴다). `updated_at desc, id desc`. `placeCount`는 크레딧에 있는 공간 수(상태 무관) |
+| `POST /api/admin/makers` | `{ name, kind, slug?, region?, intro?, website?, instagram?, affiliationId? }` → 201 `AdminMaker` | slug 중복 409 |
 | `GET /api/admin/makers/{id}` | `AdminMaker` | |
-| `PATCH /api/admin/makers/{id}` | 부분 → 200 `AdminMaker` | 공개 공간에 연결된 뒤 slug 변경 409. slug 중복 409 |
+| `PATCH /api/admin/makers/{id}` | POST와 같은 모양, 필드 전부 → 200 `AdminMaker` | 빠지거나 null·빈 칸이면 비운다(공간 PATCH와 같은 이유). slug 잠금 409, slug 중복 409 |
 
-`AdminMaker` = 1절 `GET /api/makers/{slug}` 응답 + `slugLocked`, `createdAt`, `updatedAt`.
+**만든 사람 검증**: `name` 필수 100자, `kind` 필수, `slug` 80자·영문 소문자·숫자·하이픈, `region` 50자, `intro` 200자, `website` http·https 500자, `instagram`은 `@` 없는 아이디(영문·숫자·`.`·`_` 30자, 앞의 `@`는 지운다), `affiliationId`는 있는 다른 만든 사람(없으면·자기 자신이면 400 `affiliationId`). **slug 잠금**: `makers.slug_locked_at`이 있으면 slug를 바꾸거나 비울 수 없다(409). 잠그는 때는 셋이다 — 공간이 처음 공개될 때 그 공간 크레딧의 만든 사람, 공개 페이지가 있는 공간(published·paused·closed)의 크레딧을 교체할 때 그 크레딧의 만든 사람, 이미 공개된 공간의 크레딧에 있는 사람에게 slug를 처음 정할 때. slug가 없으면 잠그지 않는다(처음 정하는 것은 된다). 한 번 잠기면 크레딧에서 빠져도 풀리지 않는다. 시각은 서버 `Clock`.
+
+`AdminMaker` = 1절 `GET /api/makers/{slug}` 응답 + `slugLocked`, `createdAt`, `updatedAt`. `places`는 공개 프로필과 같은 목록(공개 페이지가 있는 공간)이라 작성 중인 공간은 빠진다. 프로필이 404인 사람도 응답한다.
 
 ### 편성
 

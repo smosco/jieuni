@@ -40,6 +40,17 @@ public class PlaceSource {
 	protected PlaceSource() {
 	}
 
+	PlaceSource(Place place, Input input, int position) {
+		this.place = place;
+		this.title = input.title();
+		this.url = input.url();
+		this.type = input.type();
+		this.position = position;
+	}
+
+	public record Input(String title, String url, SourceType type) {
+	}
+
 	public Long getId() {
 		return id;
 	}

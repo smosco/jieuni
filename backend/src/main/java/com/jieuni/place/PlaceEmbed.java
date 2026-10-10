@@ -37,6 +37,16 @@ public class PlaceEmbed {
 	protected PlaceEmbed() {
 	}
 
+	PlaceEmbed(Place place, Input input, int position) {
+		this.place = place;
+		this.type = input.type();
+		this.url = input.url();
+		this.position = position;
+	}
+
+	public record Input(EmbedType type, String url) {
+	}
+
 	public Long getId() {
 		return id;
 	}

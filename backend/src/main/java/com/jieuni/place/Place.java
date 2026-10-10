@@ -147,6 +147,30 @@ public class Place extends BaseTimeEntity {
 		this.visitedByEditorOn = edit.visitedByEditorOn();
 	}
 
+	// 관리자 API의 통째 교체: 옛 행은 orphanRemoval로 지워지고, 배열 순서가 position이 된다.
+	// ActionQueue는 고아 삭제를 INSERT보다 먼저 두지만, id가 IDENTITY라 트랜잭션 안의 새 행은 persist 때 바로 INSERT된다.
+	// 그래서 실제로는 새 행이 먼저 들어가고 옛 행이 나중에 지워진다(SQL 로그). 세 테이블에는 (place_id, position) 유니크가 없어 상관없다.
+	public void replaceCredits(List<PlaceCredit.Input> inputs) {
+		credits.clear();
+		for (int i = 0; i < inputs.size(); i++) {
+			credits.add(new PlaceCredit(this, inputs.get(i), i));
+		}
+	}
+
+	public void replaceSources(List<PlaceSource.Input> inputs) {
+		sources.clear();
+		for (int i = 0; i < inputs.size(); i++) {
+			sources.add(new PlaceSource(this, inputs.get(i), i));
+		}
+	}
+
+	public void replaceEmbeds(List<PlaceEmbed.Input> inputs) {
+		embeds.clear();
+		for (int i = 0; i < inputs.size(); i++) {
+			embeds.add(new PlaceEmbed(this, inputs.get(i), i));
+		}
+	}
+
 	// 처음 공개한 시각은 한 번만 정한다. 휴업에서 다시 공개해도 둘러보기 순서가 바뀌지 않게.
 	public void changeStatus(PlaceStatus to, Instant now) {
 		this.status = to;

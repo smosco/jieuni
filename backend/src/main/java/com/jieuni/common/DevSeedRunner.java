@@ -140,6 +140,15 @@ class DevSeedRunner implements ApplicationRunner {
 			}
 		}
 
+		// 공개 페이지가 있는 공간의 크레딧에 든 만든 사람은 프로필 주소가 이미 밖에 나간 것으로 잠근다(관리자 API와 같게).
+		jdbc.sql("""
+				update makers set slug_locked_at = :now
+				where slug is not null
+				  and id in (select c.maker_id from place_credits c join places p on p.id = c.place_id
+				             where p.published_at is not null)""")
+				.param("now", now)
+				.update();
+
 		// 편성은 "몇 주 전 무슨 요일"로 적혀 있어서, 언제 적재해도 이번 주·지난주 칸에 들어간다.
 		LocalDate thisMonday = LocalDate.ofInstant(clock.instant(), KST).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 		for (PickSeed pick : seed.picks()) {

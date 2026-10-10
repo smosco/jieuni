@@ -54,6 +54,18 @@ public class TestData {
 				.query(Long.class).single();
 	}
 
+	// 공개 시 필수를 모두 채운 공간: 출처 있는 크레딧 1(만든 사람 "{slug}-maker"), 사진 1, 머물러 본 날이 있어 출처는 없어도 된다.
+	public long publishablePlace(String slug, PlaceStatus status, Instant publishedAt) {
+		long place = place(slug, status, publishedAt);
+		jdbc.sql("""
+				update places set address = '서울 종로구 1', lat = 37.5, lng = 127.0, access = 'ticket',
+				  summary = '한 문장', impression = '감상', visited_by_editor_on = '2026-05-01'
+				where id = :id""").param("id", place).update();
+		credit(place, maker(slug + "-maker"), CreditRole.ARCHITECTURE, 0);
+		photo(place, 0);
+		return place;
+	}
+
 	public void credit(long placeId, long makerId, CreditRole role, int position) {
 		jdbc.sql("""
 				insert into place_credits (place_id, maker_id, role, verified, source_url, position)
