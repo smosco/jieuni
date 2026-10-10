@@ -3,6 +3,7 @@ package com.jieuni.admin;
 import com.jieuni.common.ApiException;
 import com.jieuni.common.Cursor;
 import com.jieuni.common.CursorPage;
+import com.jieuni.common.PublicPagesChanged;
 import com.jieuni.maker.Maker;
 import com.jieuni.maker.MakerRepository;
 import com.jieuni.place.CreditRole;
@@ -23,6 +24,7 @@ import com.jieuni.upload.ObjectStorage;
 import com.jieuni.upload.PhotoFiles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Limit;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,7 @@ import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.YearMonth;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -56,6 +59,7 @@ public class AdminPlaceService {
 	private final PublishRules publishRules;
 	private final ObjectStorage storage;
 	private final TransactionTemplate tx;
+	private final ApplicationEventPublisher events;
 	private final Clock clock;
 
 	private static final Logger log = LoggerFactory.getLogger(AdminPlaceService.class);
@@ -74,7 +78,7 @@ public class AdminPlaceService {
 
 	AdminPlaceService(PlaceRepository places, MakerRepository makers, AdminPlaceRepository adminPlaces,
 			PlaceService placeService, PhotoUrls photoUrls, PublishRules publishRules, ObjectStorage storage,
-			TransactionTemplate tx, Clock clock) {
+			TransactionTemplate tx, ApplicationEventPublisher events, Clock clock) {
 		this.places = places;
 		this.makers = makers;
 		this.adminPlaces = adminPlaces;
@@ -83,6 +87,7 @@ public class AdminPlaceService {
 		this.publishRules = publishRules;
 		this.storage = storage;
 		this.tx = tx;
+		this.events = events;
 		this.clock = clock;
 	}
 
@@ -123,6 +128,7 @@ public class AdminPlaceService {
 		// 공개 페이지가 있는 공간은 필수 값을 비우면 공개 상세가 깨진다. 예외가 나면 트랜잭션이 롤백돼 수정이 남지 않는다.
 		if (PlaceStatus.HAS_PAGE.contains(place.getStatus())) {
 			requirePublishable(place, "공개된 공간이라 이 값은 비울 수 없어요");
+			pagesChanged(place, Set.of(), false);
 		}
 		// slug 중복은 DB 제약이 판단한다. 커밋까지 미루지 않고 여기서 내보내 응답 전에 409로 바꾼다.
 		places.flush();
@@ -143,6 +149,9 @@ public class AdminPlaceService {
 		place.changeStatus(to, clock.instant());
 		if (firstPublish) {
 			lockMakerSlugs(place);
+		}
+		if (PlaceStatus.HAS_PAGE.contains(to)) {
+			pagesChanged(place, Set.of(), firstPublish);
 		}
 		return toResponse(place);
 	}
@@ -167,20 +176,21 @@ public class AdminPlaceService {
 			}
 		}
 		requireNoErrors(errors);
+		List<String> previousMakers = place.getCredits().stream().map(c -> c.getMaker().getSlug()).toList();
 		place.replaceCredits(lines.stream()
 				.map(l -> new PlaceCredit.Input(found.get(l.makerId()), l.role(), l.verified(), l.sourceUrl()))
 				.toList());
 		if (PlaceStatus.HAS_PAGE.contains(place.getStatus())) {
 			lockMakerSlugs(place);
 		}
-		return afterReplace(place);
+		return afterReplace(place, previousMakers);
 	}
 
 	@Transactional
 	public AdminPlace replaceSources(long id, List<PlaceSource.Input> sources) {
 		Place place = find(id);
 		place.replaceSources(sources);
-		return afterReplace(place);
+		return afterReplace(place, Set.of());
 	}
 
 	@Transactional
@@ -196,7 +206,7 @@ public class AdminPlaceService {
 		}
 		requireNoErrors(errors);
 		place.replaceEmbeds(embeds);
-		return afterReplace(place);
+		return afterReplace(place, Set.of());
 	}
 
 	public record PhotoInfo(String alt, String credit, PhotoLicense license, String sourceUrl) {
@@ -219,7 +229,7 @@ public class AdminPlaceService {
 			Place place = findForUpdate(id);
 			place.addPhoto(new PlacePhoto.Input(objectKey, width, height, info.alt(), info.credit(), info.license(),
 					info.sourceUrl()));
-			return afterReplace(place);
+			return afterReplace(place, Set.of());
 		});
 	}
 
@@ -229,7 +239,7 @@ public class AdminPlaceService {
 		PlacePhoto photo = findPhoto(place, photoId);
 		requireNoErrors(photoErrors(info));
 		photo.edit(info.alt(), info.credit(), info.license(), info.sourceUrl());
-		return afterReplace(place);
+		return afterReplace(place, Set.of());
 	}
 
 	@Transactional
@@ -239,7 +249,7 @@ public class AdminPlaceService {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "입력한 값을 확인해 주세요",
 					Map.of("photoIds", "사진 목록이 맞지 않아요"));
 		}
-		return afterReplace(place);
+		return afterReplace(place, Set.of());
 	}
 
 	// 파일은 커밋 뒤에 지운다. 롤백(공개 검증 실패)되면 행과 파일이 함께 남는다.
@@ -248,7 +258,7 @@ public class AdminPlaceService {
 		Place place = findForUpdate(id);
 		PlacePhoto photo = findPhoto(place, photoId);
 		place.removePhoto(photo);
-		afterReplace(place);
+		afterReplace(place, Set.of());
 		List<String> files = PhotoFiles.files(photo.getObjectKey());
 		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
 			@Override
@@ -277,13 +287,19 @@ public class AdminPlaceService {
 	}
 
 	// 목록을 바꿔도 공개 페이지가 있는 공간은 공개 조건을 지켜야 한다. 실패하면 롤백돼 교체가 남지 않는다.
-	private AdminPlace afterReplace(Place place) {
+	private AdminPlace afterReplace(Place place, Collection<String> previousMakers) {
 		place.touch(clock.instant());
 		if (PlaceStatus.HAS_PAGE.contains(place.getStatus())) {
 			requirePublishable(place, "공개된 공간이라 이 값은 비울 수 없어요");
+			pagesChanged(place, previousMakers, false);
 		}
 		places.flush();
 		return toResponse(place);
+	}
+
+	// 이벤트는 커밋된 뒤에만 프론트로 간다. 이 뒤에 예외가 나 롤백되면 버려진다.
+	private void pagesChanged(Place place, Collection<String> previousMakers, boolean firstPublish) {
+		events.publishEvent(PublicPagesChanged.place(place, previousMakers, firstPublish));
 	}
 
 	private static void requireNoErrors(Map<String, String> errors) {

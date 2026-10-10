@@ -2,6 +2,7 @@ package com.jieuni;
 
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.servlet.http.Cookie;
+import com.jieuni.common.FakeRevalidateClient;
 import com.jieuni.upload.FakeObjectStorage;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
@@ -52,12 +53,16 @@ public abstract class IntegrationTest {
 	protected FakeObjectStorage storage;
 
 	@Autowired
+	protected FakeRevalidateClient revalidate;
+
+	@Autowired
 	private EntityManagerFactory entityManagerFactory;
 
 	@BeforeEach
 	void resetClock() {
 		clock.set(DEFAULT_NOW);
 		storage.reset();
+		revalidate.reset();
 	}
 
 	// 브라우저처럼 XSRF-TOKEN 쿠키와 같은 값의 X-XSRF-TOKEN 헤더를 싣는다.
@@ -105,6 +110,13 @@ public abstract class IntegrationTest {
 		@Primary
 		FakeObjectStorage fakeObjectStorage() {
 			return new FakeObjectStorage();
+		}
+
+		// 프론트를 띄우지 않는다. 커밋 뒤에 보낸 태그만 모은다.
+		@Bean
+		@Primary
+		FakeRevalidateClient fakeRevalidateClient() {
+			return new FakeRevalidateClient();
 		}
 
 		@Bean

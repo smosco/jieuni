@@ -3,12 +3,14 @@ package com.jieuni.admin;
 import com.jieuni.common.ApiException;
 import com.jieuni.common.Cursor;
 import com.jieuni.common.CursorPage;
+import com.jieuni.common.PublicPagesChanged;
 import com.jieuni.maker.Maker;
 import com.jieuni.maker.MakerEdit;
 import com.jieuni.maker.MakerKind;
 import com.jieuni.maker.MakerProfileResponse;
 import com.jieuni.maker.MakerRepository;
 import com.jieuni.maker.MakerService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Limit;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -26,13 +28,15 @@ class AdminMakerService {
 	private final MakerRepository makers;
 	private final AdminMakerRepository adminMakers;
 	private final MakerService makerService;
+	private final ApplicationEventPublisher events;
 	private final Clock clock;
 
 	AdminMakerService(MakerRepository makers, AdminMakerRepository adminMakers, MakerService makerService,
-			Clock clock) {
+			ApplicationEventPublisher events, Clock clock) {
 		this.makers = makers;
 		this.adminMakers = adminMakers;
 		this.makerService = makerService;
+		this.events = events;
 		this.clock = clock;
 	}
 
@@ -74,13 +78,21 @@ class AdminMakerService {
 		if (maker.isSlugLocked() && !Objects.equals(maker.getSlug(), form.slug())) {
 			throw new ApiException(HttpStatus.CONFLICT, "공개된 공간에 연결된 뒤에는 주소(slug)를 바꿀 수 없어요");
 		}
+		String previousSlug = maker.getSlug();
 		maker.edit(toEdit(form, id));
 		// 이미 공개된 공간의 크레딧에 있는 사람에게 slug를 처음 정하면 그 순간 프로필이 밖에 나간다.
+		boolean firstPublic = false;
 		if (!maker.isSlugLocked() && maker.getSlug() != null && adminMakers.isCreditedOnPublishedPlace(id)) {
 			maker.lockSlug(clock.instant());
+			firstPublic = true;
 		}
 		makers.flush();
-		return toResponse(maker);
+		AdminMaker response = toResponse(maker);
+		// slug가 없어도 이름은 공개 공간의 크레딧에 보인다. 공개 페이지가 있는 공간이 없으면 밖에 보이는 곳이 없다.
+		if (!response.places().isEmpty()) {
+			events.publishEvent(PublicPagesChanged.maker(maker, previousSlug, response.places(), firstPublic));
+		}
+		return response;
 	}
 
 	private MakerEdit toEdit(MakerForm form, Long selfId) {

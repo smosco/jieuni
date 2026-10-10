@@ -1,6 +1,7 @@
 package com.jieuni.admin;
 
 import com.jieuni.common.ApiException;
+import com.jieuni.common.PublicPagesChanged;
 import com.jieuni.feed.AdminPickRow;
 import com.jieuni.feed.DailyPick;
 import com.jieuni.feed.DailyPickRepository;
@@ -9,6 +10,7 @@ import com.jieuni.place.PhotoUrls;
 import com.jieuni.place.Place;
 import com.jieuni.place.PlaceRepository;
 import com.jieuni.place.PlaceStatus;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,12 +34,15 @@ public class AdminPickService {
 	private final DailyPickRepository picks;
 	private final PlaceRepository places;
 	private final PhotoUrls photoUrls;
+	private final ApplicationEventPublisher events;
 	private final Clock clock;
 
-	AdminPickService(DailyPickRepository picks, PlaceRepository places, PhotoUrls photoUrls, Clock clock) {
+	AdminPickService(DailyPickRepository picks, PlaceRepository places, PhotoUrls photoUrls,
+			ApplicationEventPublisher events, Clock clock) {
 		this.picks = picks;
 		this.places = places;
 		this.photoUrls = photoUrls;
+		this.events = events;
 		this.clock = clock;
 	}
 
@@ -74,6 +79,7 @@ public class AdminPickService {
 				() -> picks.save(new DailyPick(date, place, line)));
 		// 한 공간은 한 번만 편성한다(uq_daily_picks_place). 응답 전에 내보내 409로 바꾼다.
 		picks.flush();
+		feedChanged();
 		return toPick(date, picks.findAdminRows(date, date).getFirst(), clock.instant());
 	}
 
@@ -83,6 +89,12 @@ public class AdminPickService {
 		DailyPick pick = picks.findById(date)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "이 날에는 편성이 없어요"));
 		picks.delete(pick);
+		feedChanged();
+	}
+
+	// 열린 칸은 못 고치므로 지금 피드는 그대로지만, 편성이 바뀌면 피드를 비운다는 규칙 하나로 둔다.
+	private void feedChanged() {
+		events.publishEvent(PublicPagesChanged.feed());
 	}
 
 	// 주말 칸은 없다. 이미 열린 칸(피드에 보인 칸)은 바꾸지 않는다.

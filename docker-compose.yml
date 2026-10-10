@@ -31,6 +31,9 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY:-unset}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      # 컨테이너 안의 localhost는 백엔드 자신이라 재생성은 서비스 이름으로 부른다.
+      REVALIDATE_URL: http://frontend:3000
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-unset}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-unset}
     volumes:

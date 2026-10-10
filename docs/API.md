@@ -325,7 +325,7 @@ A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일�
 
 `usage`의 키는 `llm_calls` 컬럼과 1:1이다(`purpose`·`place_id`는 Spring이 채운다). 서버는 `draft`에 `impression`·`sense_*`·`line`·`essay`가 들어 있으면 버린다.
 
-### Spring → Next `POST {FRONTEND_URL}/api/revalidate`
+### Spring → Next `POST {REVALIDATE_URL}/api/revalidate`
 
 ```jsonc
 // 헤더 X-Revalidate-Secret: ${REVALIDATE_SECRET} (없거나 다르면 401)
@@ -336,13 +336,15 @@ A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일�
 
 | 태그 | 붙는 페이지 | 보내는 때(SPEC 6절 표) |
 | --- | --- | --- |
-| `feed` | `/` | 매일 08:00 KST 스케줄러 |
-| `browse` | `/places`, `/makers` | 공간 공개·수정·상태 변경 |
+| `feed` | `/` | 매일 월~금 08:00 KST 스케줄러, 편성 등록·삭제, 공간·만든 사람 변경(피드 카드가 이름·대표 사진·첫 만든 사람을 보여준다) |
+| `browse` | `/places`, `/makers` | 공간 공개·수정·상태 변경, 만든 사람 수정 |
 | `place:{slug}` | `/places/[slug]`, 그 OG 이미지 | 공간 공개·수정·상태 변경, 크레딧에 있는 만든 사람 수정 |
-| `maker:{slug}` | `/makers/[slug]`, 그 OG 이미지 | 만든 사람 수정, 그 사람이 크레딧에 있는 공간의 공개·수정·상태 변경 |
+| `maker:{slug}` | `/makers/[slug]`, 그 OG 이미지 | 만든 사람 수정(잠기기 전 slug를 바꿨으면 옛 slug도), 그 사람이 크레딧에 있거나 크레딧에서 빠진 공간의 공개·수정·상태 변경 |
 | `sitemap` | `/sitemap.xml` | 공간 처음 공개, 만든 사람 처음 공개 공간 연결 |
 
-호출은 트랜잭션 커밋 뒤에만(`AFTER_COMMIT`). 실패는 로그만. 모든 공개 페이지는 1시간 주기로도 다시 만든다.
+공간 변경은 바뀐 뒤 상태가 공개 페이지가 있는 상태(published·paused·closed)일 때만 보낸다. 수정·상태 전환·크레딧·출처·임베드 교체·사진 추가·수정·순서·삭제·크레딧 제보 수락이 모두 같은 규칙이다. 만든 사람 수정은 그 사람이 크레딧에 있는 공개 공간이 있을 때만 보낸다.
+
+호출은 트랜잭션 커밋 뒤에만(`AFTER_COMMIT`). 실패는 로그만, 재시도 없음. 모든 공개 페이지는 1시간 주기로도 다시 만든다.
 
 ### 헬스
 
@@ -354,8 +356,9 @@ A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일�
 
 | 이름 | 어디 | 뜻 |
 | --- | --- | --- |
-| `FRONTEND_URL` | backend | 구글 `redirect_uri`의 바탕, 재생성 호출 대상 |
-| `REVALIDATE_SECRET` | backend, frontend | 재생성 호출 비밀 |
+| `FRONTEND_URL` | backend | 구글 `redirect_uri`의 바탕(브라우저가 보는 주소) |
+| `REVALIDATE_URL` | backend | 재생성 호출 대상. 비우면 `FRONTEND_URL`. compose는 `http://frontend:3000`으로 고정 |
+| `REVALIDATE_SECRET` | backend, frontend | 재생성 호출 비밀. prod는 이것과 재생성 주소(`REVALIDATE_URL` 또는 `FRONTEND_URL`)가 없으면 시작하지 않는다. dev·test는 비면 호출을 건너뛴다 |
 | `AI_URL`, `AI_INTERNAL_TOKEN` | backend, ai | 내부 호출 |
 | `ADMIN_EMAILS` | backend | 쉼표 구분 |
 | `FIXED_NOW` | backend(dev만) | 있으면 `Clock`을 이 시각(ISO-8601)으로 고정 |
