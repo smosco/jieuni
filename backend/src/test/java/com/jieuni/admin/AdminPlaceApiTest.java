@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 import java.io.UnsupportedEncodingException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -236,11 +237,15 @@ class AdminPlaceApiTest extends IntegrationTest {
 		touchedAt(b, "2026-10-03T00:00:00Z");
 		touchedAt(c, "2026-10-02T00:00:00Z");
 		data.photo(a, 0);
+		data.pick(LocalDate.of(2026, 10, 6), a);
 
 		var all = assertThat(mvc.get().uri("/api/admin/places").cookie(admin)).hasStatusOk().bodyJson();
 		all.extractingPath("$.items[*].slug").asArray().containsExactly("b", "c", "a");
 		all.extractingPath("$.items[2].hasPhoto").isEqualTo(true);
 		all.extractingPath("$.items[0].hasPhoto").isEqualTo(false);
+		// 편성 칸에서 이미 편성된 공간을 고르지 못하게 날짜를 준다.
+		all.extractingPath("$.items[2].pickedOn").isEqualTo("2026-10-06");
+		all.extractingPath("$.items[0].pickedOn").isNull();
 		all.extractingPath("$.items[0].updatedAt").isEqualTo("2026-10-03T00:00:00Z");
 		all.extractingPath("$.items[1].status").isEqualTo("suggested");
 

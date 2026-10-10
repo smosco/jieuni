@@ -191,7 +191,7 @@
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
 | `GET /api/admin/dashboard` | `{ picks: { thisWeek: Pick[5], nextWeek: Pick[5] }, pendingSuggestions, draftCount, llmCostThisMonthUsd }` | 관리자 홈. `Pick`은 아래 편성과 같고 빈 칸은 `place: null`·`line: null`. 이번 주 = 오늘(KST)이 든 달력 주의 월~금(주말에 보면 끝난 주), 다음 주 = 그다음 월~금. `pendingSuggestions` = 제보됨 공간 수 + 대기 중 크레딧 제보 수. `draftCount` = 작성 중 공간 수. `llmCostThisMonthUsd` = 이번 달(KST 1일 00:00부터) `llm_calls.cost_usd` 합, 없으면 0 |
-| `GET /api/admin/places?status=&q=&cursor=` | `{ items: [{ id, slug, name, region, kind, status, updatedAt, hasPhoto }], nextCursor }` | `updated_at desc, id desc`. `q`는 이름 부분 일치(대소문자 무시). `status`는 하나, 모르는 값 400 |
+| `GET /api/admin/places?status=&q=&cursor=` | `{ items: [{ id, slug, name, region, kind, status, updatedAt, hasPhoto, pickedOn }], nextCursor }` | `updated_at desc, id desc`. `pickedOn`은 편성된 날(`YYYY-MM-DD`) 또는 null — 공간은 한 번만 편성하므로 편성 화면이 이미 편성된 공간을 고르지 못하게 한다. `q`는 이름 부분 일치(대소문자 무시). `status`는 하나, 모르는 값 400 |
 | `POST /api/admin/places` | `{ name, region? }` → 201 `AdminPlace` | `status=draft`. slug는 비워 두고 공개 전에 채운다 |
 | `GET /api/admin/places/{id}` | `AdminPlace` | 수정 폼·미리보기. 공개 상세와 같은 하위 목록을 전부 포함 |
 | `PATCH /api/admin/places/{id}` | `AdminPlace`의 스칼라 필드 전부 → 200 `AdminPlace` | 임시저장. 빠지거나 null·빈 문자열이면 비운다. `name`만 필수. 형식 검증만(길이·enum·slug 형식·좌표 범위). slug 중복 409. 공개 후 slug 변경 409(같은 값은 통과). 공개 페이지가 있는 상태(published·paused·closed)면 아래 공개 검증도 통과해야 한다(실패 400 `{ message: "공개된 공간이라 이 값은 비울 수 없어요", fieldErrors }`, 수정은 남지 않음) |

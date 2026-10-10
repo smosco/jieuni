@@ -15,16 +15,18 @@ interface AdminPlaceRepository extends Repository<Place, Long> {
 
 	@Query("""
 			select new com.jieuni.admin.AdminPlaceRow(p.id, p.slug, p.name, p.region, p.kind, p.status, p.updatedAt,
-			       case when ph.id is null then false else true end)
+			       case when ph.id is null then false else true end, d.pickDate)
 			from Place p left join PlacePhoto ph on ph.place = p and ph.position = 0
+			  left join DailyPick d on d.place = p
 			where p.status in :statuses and lower(p.name) like :pattern escape '\\'
 			order by p.updatedAt desc, p.id desc""")
 	List<AdminPlaceRow> findRows(Collection<PlaceStatus> statuses, String pattern, Limit limit);
 
 	@Query("""
 			select new com.jieuni.admin.AdminPlaceRow(p.id, p.slug, p.name, p.region, p.kind, p.status, p.updatedAt,
-			       case when ph.id is null then false else true end)
+			       case when ph.id is null then false else true end, d.pickDate)
 			from Place p left join PlacePhoto ph on ph.place = p and ph.position = 0
+			  left join DailyPick d on d.place = p
 			where p.status in :statuses and lower(p.name) like :pattern escape '\\'
 			  and (p.updatedAt, p.id) < (:at, :id)
 			order by p.updatedAt desc, p.id desc""")
