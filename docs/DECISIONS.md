@@ -190,9 +190,10 @@ v0.1은 공간을 저장소의 MDX 파일로 두는 안이었다.
 - 피드의 세로 넘기기는 CSS scroll-snap으로 만든다. 라이브러리를 쓰지 않는다.
 - 스타일은 CSS Modules + CSS 변수. 써 본 방식이라 설명 비용이 없다.
 - 관리자 폼은 같은 검증 규칙을 Zod 스키마로 두고, 서버 응답의 필드별 오류도 같은 자리에 보여준다.
+- 폼 상태는 라이브러리 없이 `useState`로 든다(2026-10-10, M2a). 값 객체 하나와 `errors`(키 = 서버 `fieldErrors` 키, `senses.touch`·`photos[0].alt`)뿐이고 검증은 Zod가 하므로, react-hook-form이 더해 주는 것은 dirty·필드 배열 정도다. AI 제안을 바깥에서 밀어 넣는 흐름(M5)도 값 객체를 바꾸면 끝난다. 임시저장은 버튼으로만: `PATCH`가 스칼라 전부를 덮어써서 자동 저장이면 공개된 공간에서 타자 중간에 400, slug 입력 중간에 409가 난다.
 
 **채택**: Next.js 16, TypeScript, CSS Modules, TanStack Query, Zod(폼 검증).
-**포기한 것**: Tailwind·UI 라이브러리로 얻는 속도.
+**포기한 것**: Tailwind·UI 라이브러리로 얻는 속도, 폼 라이브러리의 dirty·필드 배열 도우미.
 
 **2026-10-06(F1) 결정 변경 — CORS 대신 같은 주소 프록시**: 브라우저는 백엔드를 직접 부르지 않는다. `next.config.ts`의 `rewrites`가 `/api/:path*` · `/oauth2/:path*` · `/login/oauth2/:path*`를 `API_URL`(서버만 아는 주소)로 넘기고, 클라이언트 `apiFetch`는 상대 경로만 쓴다. 이유: 배포에서 프론트와 백엔드 도메인이 다르면 `SameSite=Lax` 세션 쿠키가 교차 출처 fetch에 실리지 않고 `XSRF-TOKEN` 쿠키도 JS가 읽을 수 없다. 같은 출처면 둘 다 그냥 된다. 백엔드의 CORS 설정과 `NEXT_PUBLIC_API_URL`은 없앤다(4절의 "같은 상위 도메인" 요구도 사라진다). `app/api/revalidate/route.ts`는 파일 라우트라 rewrites(배열 = `afterFiles`)보다 먼저 잡힌다([rewrites](https://nextjs.org/docs/app/api-reference/config/next-config-js/rewrites) "static files … and non-dynamic pages are checked/served" 뒤에 `afterFiles`). rewrites 목적지는 `next build` 때 결과물(`routes-manifest.json`·standalone `server.js`)에 굳는다(빌드해서 확인). 그래서 `API_URL`은 실행 환경 변수이면서 빌드 인자이기도 하다(Dockerfile `ARG API_URL`). **포기한 것**: 백엔드 응답이 Next 서버를 한 번 더 거친다(Vercel에서는 함수 호출 하나).
 

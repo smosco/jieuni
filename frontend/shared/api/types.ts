@@ -16,6 +16,8 @@ export type PlaceKind =
 
 export type PlaceStatus = "published" | "paused" | "closed";
 
+export type Access = "walk_in" | "reservation" | "ticket" | "guests_only";
+
 export type PhotoLicense = "own" | "press" | "credited";
 
 export type Photo = {

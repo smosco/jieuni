@@ -1,7 +1,6 @@
-import type { CreditRole, MakerKind, Photo, PlaceKind, PlaceTile } from "@/shared/api/types";
+import type { Access, CreditRole, MakerKind, Photo, PlaceKind, PlaceTile } from "@/shared/api/types";
 
 // GET /api/places/{slug}
-export type Access = "walk_in" | "reservation" | "ticket" | "guests_only";
 export type SourceType = "article" | "video" | "instagram" | "official";
 export type EmbedType = "youtube" | "instagram";
 
@@ -14,6 +13,8 @@ export type Credit = {
 };
 
 export type Embed = { type: EmbedType; url: string };
+
+export type Source = { title: string; url: string; type: SourceType };
 
 export type PlaceDetail = {
   id: number;
@@ -34,7 +35,7 @@ export type PlaceDetail = {
   status: "published" | "paused" | "closed";
   publishedAt: string;
   credits: Credit[];
-  sources: { title: string; url: string; type: SourceType }[];
+  sources: Source[];
   photos: Photo[];
   embeds: Embed[];
   mapLinks: { naver: string; kakao: string };

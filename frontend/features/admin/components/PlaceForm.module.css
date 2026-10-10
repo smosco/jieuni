@@ -1,0 +1,89 @@
+/* 관리자 공간 폼: 본문 안 왼쪽 정렬, 묶음 사이 48px, 항목 사이 24px. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+  max-width: var(--admin-form-width);
+}
+
+.ai {
+  display: flex;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* 위도·경도, 감각 두 칸 */
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--row-padding) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+  overflow-wrap: anywhere;
+}
+
+.sub,
+.later {
+  margin: 0;
+  color: var(--color-ink-tertiary);
+}
+
+.none,
+.error {
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: baseline;
+  gap: var(--space-md) var(--space-lg);
+  margin: 0;
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.link {
+  color: var(--color-ink);
+  text-decoration: underline;
+}
+
+/* 아래에 붙는 저장 줄. 공개·미리보기 버튼도 이 줄에 더한다. */
+.bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--space-lg) 0;
+  border-top: var(--hairline) solid var(--color-line);
+  background: var(--color-paper);
+}
+
+.barStatus {
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
