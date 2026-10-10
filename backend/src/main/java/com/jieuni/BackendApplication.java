@@ -15,7 +15,8 @@ public class BackendApplication {
 		app.addInitializers(context -> {
 			var env = context.getEnvironment();
 			if (env.matchesProfiles("prod")) {
-				var missing = Stream.of("DB_URL", "POSTGRES_USER", "POSTGRES_PASSWORD", "PHOTO_PUBLIC_BASE_URL")
+				var missing = Stream.of("DB_URL", "POSTGRES_USER", "POSTGRES_PASSWORD", "PHOTO_PUBLIC_BASE_URL",
+						"S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY")
 						.filter(name -> !StringUtils.hasText(env.getProperty(name)))
 						.toList();
 				if (!missing.isEmpty()) {

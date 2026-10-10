@@ -7,20 +7,29 @@ import com.jieuni.maker.Maker;
 import com.jieuni.maker.MakerRepository;
 import com.jieuni.place.CreditRole;
 import com.jieuni.place.EmbedType;
+import com.jieuni.place.PhotoLicense;
 import com.jieuni.place.PhotoUrls;
 import com.jieuni.place.Place;
 import com.jieuni.place.PlaceDetailResponse;
 import com.jieuni.place.PlaceCredit;
 import com.jieuni.place.PlaceEdit;
 import com.jieuni.place.PlaceEmbed;
+import com.jieuni.place.PlacePhoto;
 import com.jieuni.place.PlaceRepository;
 import com.jieuni.place.PlaceService;
 import com.jieuni.place.PlaceSource;
 import com.jieuni.place.PlaceStatus;
+import com.jieuni.upload.ObjectStorage;
+import com.jieuni.upload.PhotoFiles;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Limit;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.net.URI;
 import java.time.Clock;
@@ -45,7 +54,11 @@ public class AdminPlaceService {
 	private final PlaceService placeService;
 	private final PhotoUrls photoUrls;
 	private final PublishRules publishRules;
+	private final ObjectStorage storage;
+	private final TransactionTemplate tx;
 	private final Clock clock;
+
+	private static final Logger log = LoggerFactory.getLogger(AdminPlaceService.class);
 
 	// 공개 화면이 그릴 수 있는 임베드 주소. 그리지 못하는 주소로는 공개 조건만 채우게 된다.
 	private static final Map<EmbedType, Set<String>> EMBED_HOSTS = Map.of(
@@ -60,13 +73,16 @@ public class AdminPlaceService {
 			PlaceStatus.PAUSED, "휴업", PlaceStatus.CLOSED, "폐업", PlaceStatus.REJECTED, "반려");
 
 	AdminPlaceService(PlaceRepository places, MakerRepository makers, AdminPlaceRepository adminPlaces,
-			PlaceService placeService, PhotoUrls photoUrls, PublishRules publishRules, Clock clock) {
+			PlaceService placeService, PhotoUrls photoUrls, PublishRules publishRules, ObjectStorage storage,
+			TransactionTemplate tx, Clock clock) {
 		this.places = places;
 		this.makers = makers;
 		this.adminPlaces = adminPlaces;
 		this.placeService = placeService;
 		this.photoUrls = photoUrls;
 		this.publishRules = publishRules;
+		this.storage = storage;
+		this.tx = tx;
 		this.clock = clock;
 	}
 
@@ -183,6 +199,83 @@ public class AdminPlaceService {
 		return afterReplace(place);
 	}
 
+	public record PhotoInfo(String alt, String credit, PhotoLicense license, String sourceUrl) {
+	}
+
+	// 파일 확인(HeadObject)은 트랜잭션 밖에서 한다. 공간 잠금을 쥔 채 네트워크를 기다리지 않게.
+	public AdminPlace addPhoto(long id, String objectKey, int width, int height, PhotoInfo info) {
+		if (!places.existsById(id)) {
+			throw new ApiException(HttpStatus.NOT_FOUND, "공간을 찾을 수 없어요");
+		}
+		Map<String, String> errors = photoErrors(info);
+		if (!PhotoFiles.belongsTo(objectKey, id)) {
+			errors.put("objectKey", "이 공간의 업로드 키가 아니에요");
+		} else if (!PhotoFiles.files(objectKey).stream().allMatch(storage::exists)) {
+			// 올라가지 않은 사진이 "사진 1개 이상" 공개 조건을 채우지 못하게 한다.
+			errors.put("objectKey", "업로드가 끝나지 않은 사진이에요");
+		}
+		requireNoErrors(errors);
+		return tx.execute(status -> {
+			Place place = findForUpdate(id);
+			place.addPhoto(new PlacePhoto.Input(objectKey, width, height, info.alt(), info.credit(), info.license(),
+					info.sourceUrl()));
+			return afterReplace(place);
+		});
+	}
+
+	@Transactional
+	public AdminPlace editPhoto(long id, long photoId, PhotoInfo info) {
+		Place place = findForUpdate(id);
+		PlacePhoto photo = findPhoto(place, photoId);
+		requireNoErrors(photoErrors(info));
+		photo.edit(info.alt(), info.credit(), info.license(), info.sourceUrl());
+		return afterReplace(place);
+	}
+
+	@Transactional
+	public AdminPlace reorderPhotos(long id, List<Long> photoIds) {
+		Place place = findForUpdate(id);
+		if (!place.reorderPhotos(photoIds)) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "입력한 값을 확인해 주세요",
+					Map.of("photoIds", "사진 목록이 맞지 않아요"));
+		}
+		return afterReplace(place);
+	}
+
+	// 파일은 커밋 뒤에 지운다. 롤백(공개 검증 실패)되면 행과 파일이 함께 남는다.
+	@Transactional
+	public void deletePhoto(long id, long photoId) {
+		Place place = findForUpdate(id);
+		PlacePhoto photo = findPhoto(place, photoId);
+		place.removePhoto(photo);
+		afterReplace(place);
+		List<String> files = PhotoFiles.files(photo.getObjectKey());
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				try {
+					storage.delete(files);
+				} catch (RuntimeException e) {
+					// DB에는 이미 없는 키라 다음 고아 정리가 지운다.
+					log.warn("사진 파일 삭제 실패: {}", files, e);
+				}
+			}
+		});
+	}
+
+	private static Map<String, String> photoErrors(PhotoInfo info) {
+		Map<String, String> errors = new LinkedHashMap<>();
+		if (info.license() != PhotoLicense.OWN && info.sourceUrl() == null) {
+			errors.put("sourceUrl", "출처 링크를 입력해 주세요");
+		}
+		return errors;
+	}
+
+	private static PlacePhoto findPhoto(Place place, long photoId) {
+		return place.getPhotos().stream().filter(p -> p.getId() == photoId).findFirst()
+				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "사진을 찾을 수 없어요"));
+	}
+
 	// 목록을 바꿔도 공개 페이지가 있는 공간은 공개 조건을 지켜야 한다. 실패하면 롤백돼 교체가 남지 않는다.
 	private AdminPlace afterReplace(Place place) {
 		place.touch(clock.instant());
@@ -242,7 +335,7 @@ public class AdminPlaceService {
 		return null;
 	}
 
-	// 크레딧·출처·임베드 교체와 사진 삭제 뒤에도 같은 검사를 부른다.
+	// 크레딧·출처·임베드 교체와 사진 등록·수정·순서·삭제 뒤에도 같은 검사를 부른다.
 	private void requirePublishable(Place place, String message) {
 		Map<String, String> errors = publishRules.check(place);
 		if (!errors.isEmpty()) {
@@ -252,6 +345,10 @@ public class AdminPlaceService {
 
 	private Place find(long id) {
 		return places.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "공간을 찾을 수 없어요"));
+	}
+
+	private Place findForUpdate(long id) {
+		return places.findForUpdate(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "공간을 찾을 수 없어요"));
 	}
 
 	private AdminPlace toResponse(Place place) {

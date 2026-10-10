@@ -30,7 +30,8 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 	// 사용자가 고칠 수 있는 DB 제약 위반 → 409 문구. 중복 여부는 미리 조회하지 않고 제약 하나로 판단한다(동시 요청도 같은 길).
 	private static final Map<String, String> CONFLICTS = Map.of(
 			"uq_places_slug", "이미 다른 공간이 쓰는 주소(slug)예요",
-			"uq_makers_slug", "이미 다른 만든 사람이 쓰는 주소(slug)예요");
+			"uq_makers_slug", "이미 다른 만든 사람이 쓰는 주소(slug)예요",
+			"uq_place_photos_object_key", "이미 등록된 사진이에요");
 
 	@ExceptionHandler(ApiException.class)
 	ResponseEntity<ApiError> handleApi(ApiException e) {

@@ -207,7 +207,7 @@
 { …, "status": "draft", "suggestedBy": { "id": 9, "nickname": "…" } | null, "suggestionReason": "…" | null,
   "suggestionLink": "…" | null, "suggestionMakerHint": "…" | null,
   "createdAt": "…", "updatedAt": "…", "slugLocked": true,          // published_at이 있으면 true
-  "photos": [ Photo & { "id": 11, "objectKey": "places/1/abc", "position": 0 } ],
+  "photos": [ Photo & { "id": 11, "objectKey": "uploads/1/<uuid>", "position": 0 } ],
   "credits": [ … & { "makerId": 3 } ] }
 // senses·impression 등 빈 값은 null. 미리보기는 이 응답을 공개 상세 컴포넌트에 그대로 넣는다.
 // PATCH 요청은 이 응답의 스칼라 필드 모양 그대로: slug, name, kind, region, address, lat, lng, access, visitNote,
@@ -243,13 +243,15 @@
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `POST /api/admin/uploads` | `{ placeId, contentType: "image/webp" }` → `{ objectKey, uploadUrls: { w1600, w800 } }` | PUT 서명 URL 5분. `image/webp` 외 400. objectKey = `uploads/{placeId}/{uuid}`(접두사만 구분, 등록 여부는 DB로 판단 — 가정). R2 서명 URL은 `*.r2.cloudflarestorage.com` 엔드포인트로만 발급된다(커스텀 도메인 불가) |
-| `POST /api/admin/places/{id}/photos` | `{ objectKey, width, height, alt, credit, license, sourceUrl? }` → 201 `AdminPlace` | position은 맨 뒤. `license`가 `own`이 아닌데 `sourceUrl` 없으면 400 |
-| `PATCH /api/admin/places/{id}/photos/{photoId}` | `{ alt?, credit?, license?, sourceUrl? }` → 200 `AdminPlace` | 같은 규칙 |
-| `PUT /api/admin/places/{id}/photos/order` | `{ photoIds: [11, 12] }` → 200 `AdminPlace` | 배열 순서 = position, 첫 번째가 대표 |
-| `DELETE /api/admin/places/{id}/photos/{photoId}` | 204 | 객체도 삭제 |
+| `POST /api/admin/uploads` | `{ placeId, contentType: "image/webp" }` → `{ objectKey, uploadUrls: { w1600, w800 } }` | PUT 서명 URL 5분. `contentType`이 서명에 들어가 브라우저는 `Content-Type: image/webp`로 올려야 한다(다르면 R2 403). `image/webp` 외 400(`contentType`: "WebP 사진만 올릴 수 있어요"), 없는 공간 404. objectKey = `uploads/{placeId}/{uuid}`, 파일은 `{objectKey}-1600.webp`·`-800.webp`. 서명 URL은 크기를 제한하지 않는다(관리자 전용·5분). R2 서명 URL은 `*.r2.cloudflarestorage.com` 엔드포인트로만 발급된다(커스텀 도메인 불가) |
+| `POST /api/admin/places/{id}/photos` | `{ objectKey, width, height, alt, credit, license, sourceUrl? }` → 201 `AdminPlace` | position은 맨 뒤. `objectKey`가 이 공간에 발급한 모양이 아니면 400 `objectKey`("이 공간의 업로드 키가 아니에요"), 두 크기 파일이 저장소에 없으면 400 `objectKey`("업로드가 끝나지 않은 사진이에요"). `license`가 `own`이 아닌데 `sourceUrl` 없으면 400 `sourceUrl`. 같은 키 두 번 409 "이미 등록된 사진이에요" |
+| `PATCH /api/admin/places/{id}/photos/{photoId}` | `{ alt, credit, license, sourceUrl }` → 200 `AdminPlace` | 공간 PATCH처럼 네 칸 전부(빠지거나 빈 칸이면 비움, `license`만 필수). 같은 출처 규칙. 없는 사진 404 |
+| `PUT /api/admin/places/{id}/photos/order` | `{ photoIds: [11, 12] }` → 200 `AdminPlace` | 배열 순서 = position, 첫 번째가 대표. 지금 사진 id 전부와 정확히 같아야 한다(빠짐·중복·남의 id 400 `photoIds`: "사진 목록이 맞지 않아요") |
+| `DELETE /api/admin/places/{id}/photos/{photoId}` | 204 | 남은 사진의 position을 0부터 다시 매긴다. 두 크기 파일은 커밋 뒤에 지우고, 실패하면 로그만 남긴다(다음 고아 정리가 지운다) |
 
-고아 정리: `@Scheduled` 매일 03:00 KST, `uploads/` 접두사 중 `place_photos.object_key`에 없고 24시간 지난 객체 삭제.
+사진 등록·수정·순서·삭제도 목록 교체처럼 공개 페이지가 있는 상태면 공개 검증을 통과해야 한다(공개된 공간의 마지막 사진을 임베드 없이 지우면 400, 아무것도 바뀌지 않는다). 형식: `alt` 200자, `credit` 100자, `sourceUrl` http·https 500자, `width`·`height` 1 이상.
+
+고아 정리: `@Scheduled` 매일 03:00 KST, `uploads/` 접두사의 파일 중 업로드 키(`-1600.webp`·`-800.webp`를 뗀 것)가 `place_photos.object_key`에 없고 24시간 이상 지난 것을 지운다. 실패는 로그만.
 
 ### 만든 사람
 

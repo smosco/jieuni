@@ -84,12 +84,16 @@ public class TestData {
 	}
 
 	public void photo(long placeId, int position) {
-		jdbc.sql("""
+		photo(placeId, position, "places/" + placeId + "/p" + position);
+	}
+
+	public long photo(long placeId, int position, String objectKey) {
+		return jdbc.sql("""
 				insert into place_photos (place_id, object_key, width, height, alt, credit, license, position)
-				values (:placeId, :key, 1600, 1067, '사진 설명', '에디터', 'own', :position)""")
-				.param("placeId", placeId).param("key", "places/" + placeId + "/p" + position)
+				values (:placeId, :key, 1600, 1067, '사진 설명', '에디터', 'own', :position) returning id""")
+				.param("placeId", placeId).param("key", objectKey)
 				.param("position", position)
-				.update();
+				.query(Long.class).single();
 	}
 
 }

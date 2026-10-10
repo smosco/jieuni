@@ -1,5 +1,6 @@
 package com.jieuni.place;
 
+import com.jieuni.upload.PhotoFiles;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -17,8 +18,9 @@ public class PhotoUrls {
 		if (photo == null) {
 			return null;
 		}
-		String prefix = baseUrl + "/" + photo.getObjectKey();
-		return new Photo(new Photo.Urls(prefix + "-1600.webp", prefix + "-800.webp"), photo.getWidth(),
+		String prefix = baseUrl + "/";
+		return new Photo(new Photo.Urls(prefix + PhotoFiles.w1600(photo.getObjectKey()),
+				prefix + PhotoFiles.w800(photo.getObjectKey())), photo.getWidth(),
 				photo.getHeight(), photo.getAlt(), photo.getCredit(), photo.getLicense(), photo.getSourceUrl());
 	}
 

@@ -21,6 +21,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 
 @Entity
@@ -168,6 +170,37 @@ public class Place extends BaseTimeEntity {
 		embeds.clear();
 		for (int i = 0; i < inputs.size(); i++) {
 			embeds.add(new PlaceEmbed(this, inputs.get(i), i));
+		}
+	}
+
+	// 사진은 (place_id, position) 유니크(커밋 때 검사)가 있어 통째 교체 대신 한 장씩 다룬다. position 0이 대표 사진이다.
+	public PlacePhoto addPhoto(PlacePhoto.Input input) {
+		int last = photos.stream().mapToInt(PlacePhoto::getPosition).max().orElse(-1);
+		PlacePhoto photo = new PlacePhoto(this, input, last + 1);
+		photos.add(photo);
+		return photo;
+	}
+
+	// 남은 사진을 0부터 다시 매겨 대표 사진(position 0)이 비지 않게 한다.
+	public void removePhoto(PlacePhoto photo) {
+		photos.remove(photo);
+		renumberPhotos();
+	}
+
+	// photoIds가 지금 사진 id 전부와 정확히 같아야 한다. 아니면 아무것도 바꾸지 않고 false.
+	public boolean reorderPhotos(List<Long> photoIds) {
+		if (photoIds.size() != photos.size()
+				|| !new HashSet<>(photoIds).equals(new HashSet<>(photos.stream().map(PlacePhoto::getId).toList()))) {
+			return false;
+		}
+		photos.sort(Comparator.comparingInt(p -> photoIds.indexOf(p.getId())));
+		renumberPhotos();
+		return true;
+	}
+
+	private void renumberPhotos() {
+		for (int i = 0; i < photos.size(); i++) {
+			photos.get(i).moveTo(i);
 		}
 	}
 
