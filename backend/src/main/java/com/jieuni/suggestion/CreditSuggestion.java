@@ -73,6 +73,12 @@ public class CreditSuggestion {
 		this.status = SuggestionStatus.PENDING;
 	}
 
+	// 관리자가 검토한다. 대기 중인 제보만 바꿀 수 있는지는 서비스가 본다.
+	public void review(SuggestionStatus to, Instant at) {
+		this.status = to;
+		this.reviewedAt = at;
+	}
+
 	public Long getId() {
 		return id;
 	}

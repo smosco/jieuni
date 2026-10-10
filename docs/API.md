@@ -190,7 +190,7 @@
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `GET /api/admin/dashboard` | `{ picks: { thisWeek: Pick[5], nextWeek: Pick[5] }, pendingSuggestions, draftCount, llmCostThisMonthUsd }` | 관리자 홈. `Pick`은 6절과 같고 빈 칸은 `place: null` |
+| `GET /api/admin/dashboard` | `{ picks: { thisWeek: Pick[5], nextWeek: Pick[5] }, pendingSuggestions, draftCount, llmCostThisMonthUsd }` | 관리자 홈. `Pick`은 아래 편성과 같고 빈 칸은 `place: null`·`line: null`. 이번 주 = 오늘(KST)이 든 달력 주의 월~금(주말에 보면 끝난 주), 다음 주 = 그다음 월~금. `pendingSuggestions` = 제보됨 공간 수 + 대기 중 크레딧 제보 수. `draftCount` = 작성 중 공간 수. `llmCostThisMonthUsd` = 이번 달(KST 1일 00:00부터) `llm_calls.cost_usd` 합, 없으면 0 |
 | `GET /api/admin/places?status=&q=&cursor=` | `{ items: [{ id, slug, name, region, kind, status, updatedAt, hasPhoto }], nextCursor }` | `updated_at desc, id desc`. `q`는 이름 부분 일치(대소문자 무시). `status`는 하나, 모르는 값 400 |
 | `POST /api/admin/places` | `{ name, region? }` → 201 `AdminPlace` | `status=draft`. slug는 비워 두고 공개 전에 채운다 |
 | `GET /api/admin/places/{id}` | `AdminPlace` | 수정 폼·미리보기. 공개 상세와 같은 하위 목록을 전부 포함 |
@@ -270,13 +270,13 @@
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `GET /api/admin/picks?from=2026-10-05&to=2026-10-16` | `{ items: Pick[] }` | 날짜 범위 안의 편성 |
-| `PUT /api/admin/picks/{date}` | `{ placeId, line }` → 200 `Pick` | 월~금만(주말 400), published만(아니면 409), 이미 편성된 공간 409, 지난 날짜·오늘 08:00 지난 오늘 칸 409. `line` 1~40자 |
-| `DELETE /api/admin/picks/{date}` | 204 | 같은 잠금 규칙 |
+| `GET /api/admin/picks?from=2026-10-05&to=2026-10-16` | `{ items: Pick[] }` | 범위 안의 평일 전부, 날짜순. 편성이 없는 날은 빈 칸(`place: null`). 두 날짜 필수, `from > to`·62일 이상 400. 편성 뒤 휴업·폐업한 공간도 칸에 그대로 보인다 |
+| `PUT /api/admin/picks/{date}` | `{ placeId, line }` → 200 `Pick` | 월~금만(주말 400 "월~금만 편성할 수 있어요"), 열린 칸(`locked`) 409 "이미 열린 날은 바꿀 수 없어요", 없는 공간 404, published만(아니면 409 "공개된 공간만 편성할 수 있어요"), 다른 날에 편성된 공간 409 "이미 다른 날에 편성된 공간이에요". 같은 날 칸이 있으면 공간·한 줄을 바꾼다. `line` 앞뒤 공백을 지운 뒤 1~40자(400 `line`) |
+| `DELETE /api/admin/picks/{date}` | 204 | 같은 주말·잠금 규칙. 편성이 없으면 404 |
 
 ```jsonc
 // Pick
-{ "date": "2026-10-07", "weekday": "WED", "line": "…", "locked": false,   // locked = 수정 불가(지난 날·오늘 08:00 뒤)
+{ "date": "2026-10-07", "weekday": "WED", "line": "…" | null, "locked": false,   // locked = pick_date 08:00 KST <= 지금(피드에 열린 칸). 피드 공개와 같은 경계
   "place": { "id": 1, "slug": "…", "name": "…", "photo": Photo | null } | null }
 ```
 
@@ -284,11 +284,11 @@
 
 | 메서드 · 경로 | 요청 → 응답 | 규칙 |
 | --- | --- | --- |
-| `GET /api/admin/suggestions?type=places\|credits&status=` | `{ items: [...] }` | places: `{ id, name, region, link, reason, makerHint, suggestedBy, createdAt }` · credits: `{ id, place: {id, slug, name}, role, makerName, sourceUrl, isSelf, user, status, createdAt }` |
-| `POST /api/admin/suggestions/places/{placeId}/start` | → 200 `AdminPlace` | suggested → draft. 폼으로 이동 |
-| `POST /api/admin/suggestions/places/{placeId}/reject` | → 204 | suggested → rejected |
-| `POST /api/admin/suggestions/credits/{id}/accept` | `{ makerId, verified, sourceUrl? }` → 200 `AdminPlace` | 크레딧 맨 뒤에 추가, `status=accepted`, `reviewed_at` |
-| `POST /api/admin/suggestions/credits/{id}/decline` | → 204 | `status=declined` |
+| `GET /api/admin/suggestions?type=places\|credits&status=` | `{ items: [...] }` | places: `{ id, name, region, link, reason, makerHint, suggestedBy: { id, nickname } \| null, createdAt }` · credits: `{ id, place: {id, slug, name}, role, makerName, sourceUrl, isSelf, user: { id, nickname } \| null, status, createdAt }`. 먼저 온 것부터(`created_at`, `id`). `status` 기본은 places `suggested`, credits `pending`. places는 `suggested`·`rejected`, credits는 `pending`·`accepted`·`declined`만, 그 밖·`type` 없음 400. 탈퇴한 사람은 null. 페이지 없음 |
+| `POST /api/admin/suggestions/places/{placeId}/start` | → 200 `AdminPlace` | suggested → draft. 폼으로 이동. 상태 전환과 같은 길이라 제보됨이 아니면 409 |
+| `POST /api/admin/suggestions/places/{placeId}/reject` | → 204 | suggested → rejected. 같은 409 |
+| `POST /api/admin/suggestions/credits/{id}/accept` | `{ makerId, verified, sourceUrl? }` → 200 `AdminPlace` | 역할은 제보의 역할, `sourceUrl`이 없으면 제보의 출처. 크레딧 목록 교체와 같은 길로 맨 뒤에 추가(없는 만든 사람 400 `makerId`, 확인됨인데 출처 없음 400 `sourceUrl`, slug 잠금·공개 검증 그대로). `status=accepted`, `reviewed_at`. 대기 중이 아니면 409 "이미 검토한 제보예요" |
+| `POST /api/admin/suggestions/credits/{id}/decline` | → 204 | `status=declined`, `reviewed_at`. 같은 409 |
 
 ### AI 초안·호출 기록
 

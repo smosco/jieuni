@@ -72,6 +72,17 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
 	@Query("select p from Place p where p.id = :id")
 	Optional<Place> findForUpdate(long id);
 
+	long countByStatus(PlaceStatus status);
+
+	// 관리자 제보 검토: 먼저 온 것부터. 제보됨·반려는 제보로만 생기는 상태다(제보한 사람이 탈퇴하면 u가 없다).
+	@Query("""
+			select new com.jieuni.place.SuggestedPlaceRow(p.id, p.name, p.region, p.suggestionLink, p.suggestionReason,
+			    p.suggestionMakerHint, u.id, u.nickname, p.status, p.createdAt)
+			from Place p left join p.suggestedBy u
+			where p.status = :status
+			order by p.createdAt, p.id""")
+	List<SuggestedPlaceRow> findSuggested(PlaceStatus status);
+
 	// 고아 정리: 버킷에서 찾은 업로드 키 중 등록된 것.
 	@Query("select ph.objectKey from PlacePhoto ph where ph.objectKey in :keys")
 	Set<String> findRegisteredObjectKeys(Collection<String> keys);

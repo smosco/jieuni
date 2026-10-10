@@ -31,7 +31,10 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 	private static final Map<String, String> CONFLICTS = Map.of(
 			"uq_places_slug", "이미 다른 공간이 쓰는 주소(slug)예요",
 			"uq_makers_slug", "이미 다른 만든 사람이 쓰는 주소(slug)예요",
-			"uq_place_photos_object_key", "이미 등록된 사진이에요");
+			"uq_place_photos_object_key", "이미 등록된 사진이에요",
+			"uq_daily_picks_place", "이미 다른 날에 편성된 공간이에요",
+			// 같은 빈 날에 두 편성이 동시에 들어오면 둘째가 기본키에 걸린다.
+			"daily_picks_pkey", "방금 다른 편성이 저장됐어요");
 
 	@ExceptionHandler(ApiException.class)
 	ResponseEntity<ApiError> handleApi(ApiException e) {
