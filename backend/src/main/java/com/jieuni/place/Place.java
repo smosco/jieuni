@@ -147,6 +147,14 @@ public class Place extends BaseTimeEntity {
 		this.visitedByEditorOn = edit.visitedByEditorOn();
 	}
 
+	// 처음 공개한 시각은 한 번만 정한다. 휴업에서 다시 공개해도 둘러보기 순서가 바뀌지 않게.
+	public void changeStatus(PlaceStatus to, Instant now) {
+		this.status = to;
+		if (to == PlaceStatus.PUBLISHED && publishedAt == null) {
+			this.publishedAt = now;
+		}
+	}
+
 	public Long getId() {
 		return id;
 	}

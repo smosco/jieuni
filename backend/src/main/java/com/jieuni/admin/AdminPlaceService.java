@@ -15,10 +15,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.YearMonth;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -29,13 +31,22 @@ public class AdminPlaceService {
 	private final AdminPlaceRepository adminPlaces;
 	private final PlaceService placeService;
 	private final PhotoUrls photoUrls;
+	private final PublishRules publishRules;
+	private final Clock clock;
+
+	// 전환 거절 문구에 쓰는 상태 이름. 관리자 화면의 상태 문구와 같다.
+	private static final Map<PlaceStatus, String> STATUS_NAME = Map.of(
+			PlaceStatus.SUGGESTED, "제보됨", PlaceStatus.DRAFT, "작성 중", PlaceStatus.PUBLISHED, "공개",
+			PlaceStatus.PAUSED, "휴업", PlaceStatus.CLOSED, "폐업", PlaceStatus.REJECTED, "반려");
 
 	AdminPlaceService(PlaceRepository places, AdminPlaceRepository adminPlaces, PlaceService placeService,
-			PhotoUrls photoUrls) {
+			PhotoUrls photoUrls, PublishRules publishRules, Clock clock) {
 		this.places = places;
 		this.adminPlaces = adminPlaces;
 		this.placeService = placeService;
 		this.photoUrls = photoUrls;
+		this.publishRules = publishRules;
+		this.clock = clock;
 	}
 
 	@Transactional(readOnly = true)
@@ -72,9 +83,35 @@ public class AdminPlaceService {
 			throw new ApiException(HttpStatus.CONFLICT, "공개한 뒤에는 주소(slug)를 바꿀 수 없어요");
 		}
 		place.edit(edit);
+		// 공개 페이지가 있는 공간은 필수 값을 비우면 공개 상세가 깨진다. 예외가 나면 트랜잭션이 롤백돼 수정이 남지 않는다.
+		if (PlaceStatus.HAS_PAGE.contains(place.getStatus())) {
+			requirePublishable(place, "공개된 공간이라 이 값은 비울 수 없어요");
+		}
 		// slug 중복은 DB 제약이 판단한다. 커밋까지 미루지 않고 여기서 내보내 응답 전에 409로 바꾼다.
 		places.flush();
 		return toResponse(place);
+	}
+
+	@Transactional
+	public AdminPlace changeStatus(long id, PlaceStatus to) {
+		Place place = find(id);
+		if (!place.getStatus().canBecome(to)) {
+			throw new ApiException(HttpStatus.CONFLICT,
+					STATUS_NAME.get(place.getStatus()) + " 상태에서는 " + STATUS_NAME.get(to) + "(으)로 바꿀 수 없어요");
+		}
+		if (to == PlaceStatus.PUBLISHED) {
+			requirePublishable(place, "공개할 수 없어요");
+		}
+		place.changeStatus(to, clock.instant());
+		return toResponse(place);
+	}
+
+	// 크레딧·출처·임베드 교체와 사진 삭제 뒤에도 같은 검사를 부른다.
+	private void requirePublishable(Place place, String message) {
+		Map<String, String> errors = publishRules.check(place);
+		if (!errors.isEmpty()) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, message, errors);
+		}
 	}
 
 	private Place find(long id) {

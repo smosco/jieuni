@@ -194,8 +194,8 @@
 | `GET /api/admin/places?status=&q=&cursor=` | `{ items: [{ id, slug, name, region, kind, status, updatedAt, hasPhoto }], nextCursor }` | `updated_at desc, id desc`. `q`는 이름 부분 일치(대소문자 무시). `status`는 하나, 모르는 값 400 |
 | `POST /api/admin/places` | `{ name, region? }` → 201 `AdminPlace` | `status=draft`. slug는 비워 두고 공개 전에 채운다 |
 | `GET /api/admin/places/{id}` | `AdminPlace` | 수정 폼·미리보기. 공개 상세와 같은 하위 목록을 전부 포함 |
-| `PATCH /api/admin/places/{id}` | `AdminPlace`의 스칼라 필드 전부 → 200 `AdminPlace` | 임시저장. 빠지거나 null·빈 문자열이면 비운다. `name`만 필수. 형식 검증만(길이·enum·slug 형식·좌표 범위). slug 중복 409. 공개 후 slug 변경 409(같은 값은 통과) |
-| `POST /api/admin/places/{id}/status` | `{ to }` → 200 `AdminPlace` | SPEC 3절 전환표만, 밖이면 409. `to=published`면 `PublishRules` 검사, 실패 400 `fieldErrors`. 처음 공개 때 `published_at` |
+| `PATCH /api/admin/places/{id}` | `AdminPlace`의 스칼라 필드 전부 → 200 `AdminPlace` | 임시저장. 빠지거나 null·빈 문자열이면 비운다. `name`만 필수. 형식 검증만(길이·enum·slug 형식·좌표 범위). slug 중복 409. 공개 후 slug 변경 409(같은 값은 통과). 공개 페이지가 있는 상태(published·paused·closed)면 아래 공개 검증도 통과해야 한다(실패 400 `{ message: "공개된 공간이라 이 값은 비울 수 없어요", fieldErrors }`, 수정은 남지 않음) |
+| `POST /api/admin/places/{id}/status` | `{ to }` → 200 `AdminPlace` | SPEC 3절 전환표만, 밖이면(같은 상태로도) 409 `{ message: "공개 상태에서는 작성 중(으)로 바꿀 수 없어요" }`. `to=published`면 아래 공개 검증, 실패 400 `{ message: "공개할 수 없어요", fieldErrors }`. 처음 공개 때만 `published_at`(휴업 뒤 다시 공개해도 그대로). 모르는 `to` 400 |
 | `PUT /api/admin/places/{id}/credits` | `[{ makerId, role, verified, sourceUrl? }]` → 200 `AdminPlace` | 통째 교체, 배열 순서 = position. `verified`인데 `sourceUrl` 없으면 400 |
 | `PUT /api/admin/places/{id}/sources` | `[{ title, url, type }]` → 200 `AdminPlace` | 통째 교체 |
 | `PUT /api/admin/places/{id}/embeds` | `[{ type, url }]` → 200 `AdminPlace` | 통째 교체 |
@@ -211,6 +211,31 @@
 // PATCH 요청은 이 응답의 스칼라 필드 모양 그대로: slug, name, kind, region, address, lat, lng, access, visitNote,
 // summary, impression, senses { light, sound, scent, touch }, essay, visitedByEditorOn("2026-05", 1일로 저장).
 ```
+
+### 공개 시 검증 — `PublishRules`
+
+`published`로 바꿀 때와 공개 페이지가 있는 공간을 고칠 때 서버가 검사한다. 관리자 폼의 공개 검증 스키마(Zod)는 이 표를 1:1로 옮긴다(키·조건·문구). 여러 개가 함께 실패하면 모두 이 순서로 준다. 길이·형식은 PATCH의 형식 검증이 먼저 막는다.
+
+| 키 | 실패 조건 | 문구 |
+| --- | --- | --- |
+| `slug` | 없음 | 주소(slug)를 정해 주세요 |
+| `name` | 비어 있음 | 공간 이름을 입력해 주세요 |
+| `kind` | 없음 | 종류를 골라 주세요 |
+| `region` | 없음 | 지역을 입력해 주세요 |
+| `address` | 없음 | 주소를 입력해 주세요 |
+| `lat` | 없음 | 좌표를 입력해 주세요 |
+| `lng` | 없음 | 좌표를 입력해 주세요 |
+| `access` | 없음 | 방문 방식을 골라 주세요 |
+| `summary` | 없음 | 한 줄 소개를 입력해 주세요 |
+| `impression` | 없음 | 감상을 입력해 주세요 |
+| `credits` | `sourceUrl`이 있는 크레딧이 0개(확인 여부는 보지 않는다) | 출처가 있는 크레딧이 1개 이상 필요해요 |
+| `sources` | `visitedByEditorOn`이 없고 출처가 0개 | 머물러 본 날이 없으면 출처가 1개 이상 필요해요 |
+| `photos` | 사진 0장이고 임베드 0개 | 사진 또는 임베드가 1개 이상 필요해요 |
+| `photos[i].alt` | 비어 있음 | 사진 설명을 입력해 주세요 |
+| `photos[i].credit` | 비어 있음 | 사진 출처(이름)를 입력해 주세요 |
+| `photos[i].sourceUrl` | `license`가 `own`이 아닌데 없음 | 출처 링크를 입력해 주세요 |
+
+`i`는 `photos` 배열(position 순)의 인덱스. "없음·비어 있음"은 null 또는 공백뿐인 문자열. `visitNote`·`senses`·`essay`·`visitedByEditorOn`은 선택이다.
 
 ### 사진
 

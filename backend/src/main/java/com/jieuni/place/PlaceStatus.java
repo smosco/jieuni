@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.EnumeratedValue;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -33,6 +34,18 @@ public enum PlaceStatus {
 	@JsonValue
 	public String value() {
 		return value;
+	}
+
+	// 허용하는 상태 전환. 공개한 공간은 작성 중으로 되돌리지 않는다(저장한 사용자가 있다). 내리려면 폐업.
+	// 폐업·반려는 끝 상태다.
+	private static final Map<PlaceStatus, Set<PlaceStatus>> NEXT = Map.of(
+			SUGGESTED, Set.of(DRAFT, REJECTED),
+			DRAFT, Set.of(PUBLISHED),
+			PUBLISHED, Set.of(PAUSED, CLOSED),
+			PAUSED, Set.of(PUBLISHED, CLOSED));
+
+	public boolean canBecome(PlaceStatus to) {
+		return NEXT.getOrDefault(this, Set.of()).contains(to);
 	}
 
 	public static Optional<PlaceStatus> fromValue(String value) {

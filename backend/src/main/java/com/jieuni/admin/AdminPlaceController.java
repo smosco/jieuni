@@ -4,10 +4,12 @@ import com.jieuni.common.CursorPage;
 import com.jieuni.place.Access;
 import com.jieuni.place.PlaceEdit;
 import com.jieuni.place.PlaceKind;
+import com.jieuni.place.PlaceStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
@@ -92,6 +94,9 @@ class AdminPlaceController {
 		}
 	}
 
+	record StatusRequest(@NotNull(message = "바꿀 상태를 골라 주세요") PlaceStatus to) {
+	}
+
 	@GetMapping
 	CursorPage<AdminPlaceRow> list(@RequestParam(required = false) String status,
 			@RequestParam(required = false) String q, @RequestParam(required = false) String cursor,
@@ -108,6 +113,11 @@ class AdminPlaceController {
 	@GetMapping("/{id}")
 	AdminPlace get(@PathVariable long id) {
 		return adminPlaceService.get(id);
+	}
+
+	@PostMapping("/{id}/status")
+	AdminPlace changeStatus(@PathVariable long id, @Valid @RequestBody StatusRequest body) {
+		return adminPlaceService.changeStatus(id, body.to());
 	}
 
 	@PatchMapping("/{id}")

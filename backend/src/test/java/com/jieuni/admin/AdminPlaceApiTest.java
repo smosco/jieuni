@@ -205,7 +205,10 @@ class AdminPlaceApiTest extends IntegrationTest {
 		assertThat(patch(draft, editBody("second"))).hasStatusOk();
 		assertThat(patch(draft, editBody(null))).hasStatusOk();
 
+		// 공개된 공간은 PATCH 뒤에도 공개 검증을 통과해야 하므로 크레딧·사진을 갖춘다(나머지는 editBody가 채운다).
 		long published = data.place("published-one", PlaceStatus.PUBLISHED, PUBLISHED);
+		data.credit(published, data.maker("published-maker"), CreditRole.ARCHITECTURE, 0);
+		data.photo(published, 0);
 		assertThat(patch(published, editBody("published-one"))).hasStatusOk();
 		assertThat(patch(published, editBody("renamed"))).hasStatus(HttpStatus.CONFLICT).bodyJson()
 				.isStrictlyEqualTo("{\"message\":\"공개한 뒤에는 주소(slug)를 바꿀 수 없어요\"}");
