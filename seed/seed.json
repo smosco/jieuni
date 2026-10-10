@@ -28,7 +28,8 @@
       ],
       "sources": [
         { "title": "(가짜) 언덕을 걷는 정원 이야기", "url": "https://example.com/articles/quiet-hill", "type": "article" }
-      ]
+      ],
+      "embeds": [{ "type": "instagram", "url": "https://www.instagram.com/p/seed-quiet-hill-garden/" }]
     },
     {
       "slug": "ondo-coffee", "name": "온도 커피", "kind": "cafe", "region": "서울 성동구",
@@ -45,7 +46,8 @@
       "sources": [
         { "title": "(가짜) 공장이 카페가 되기까지", "url": "https://example.com/articles/ondo", "type": "article" },
         { "title": "(가짜) 온도 커피 공간 영상", "url": "https://example.com/videos/ondo", "type": "video" }
-      ]
+      ],
+      "embeds": [{ "type": "instagram", "url": "https://www.instagram.com/p/seed-ondo-coffee/" }]
     },
     {
       "slug": "stone-library-stay", "name": "돌담 서재 스테이", "kind": "stay", "region": "제주 제주시",
@@ -58,7 +60,8 @@
       "credits": [
         { "maker": "seojin-yoon", "role": "architecture", "verified": true, "sourceUrl": "https://example.com/official/stone-library" }
       ],
-      "sources": []
+      "sources": [],
+      "embeds": [{ "type": "instagram", "url": "https://www.instagram.com/p/seed-stone-library-stay/" }]
     },
     {
       "slug": "sopung-bookstore", "name": "소풍 책방", "kind": "bookstore", "region": "강원 강릉시",
@@ -73,7 +76,8 @@
       ],
       "sources": [
         { "title": "(가짜) 소풍 책방 공식 계정", "url": "https://example.com/official/sopung", "type": "official" }
-      ]
+      ],
+      "embeds": [{ "type": "instagram", "url": "https://www.instagram.com/p/seed-sopung-bookstore/" }]
     },
     {
       "slug": "old-tile-bar", "name": "옛 타일 바", "kind": "bar", "region": "부산 중구",
@@ -88,7 +92,8 @@
       ],
       "sources": [
         { "title": "(가짜) 목욕탕이 바가 된 이야기", "url": "https://example.com/articles/old-tile", "type": "article" }
-      ]
+      ],
+      "embeds": [{ "type": "instagram", "url": "https://www.instagram.com/p/seed-old-tile-bar/" }]
     }
   ],
   "picks": [
