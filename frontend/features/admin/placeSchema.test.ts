@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { draftSchema, publishSchema, toFieldErrors, type PlaceFormValues, type PublishInput } from "./placeSchema";
-import type { AdminPhoto } from "./types";
+import {
+  draftSchema,
+  isDirty,
+  publishErrors as formPublishErrors,
+  publishSchema,
+  toFieldErrors,
+  toFormValues,
+  type PlaceFormValues,
+  type PublishInput,
+} from "./placeSchema";
+import type { AdminPhoto, AdminPlace } from "./types";
 
 const EMPTY: PlaceFormValues = {
   slug: "",
@@ -191,5 +200,60 @@ describe("공개 시 검증", () => {
   it("여러 개가 함께 실패하면 서버와 같은 순서", () => {
     const errors = publishErrors({ address: null, lat: null, credits: [] });
     expect(Object.keys(errors)).toEqual(["address", "lat", "credits"]);
+  });
+});
+
+const SAVED: AdminPlace = {
+  ...PUBLISHABLE,
+  id: 1,
+  visitNote: "주말은 예약",
+  status: "draft",
+  publishedAt: null,
+  mapLinks: { naver: "n", kakao: "k" },
+  relatedPlaces: [],
+  suggestedBy: null,
+  suggestionReason: null,
+  suggestionLink: null,
+  suggestionMakerHint: null,
+  createdAt: "2026-10-10T00:00:00Z",
+  updatedAt: "2026-10-10T00:00:00Z",
+  slugLocked: false,
+};
+
+describe("저장 안 된 변경", () => {
+  it("불러온 그대로면 변경 아님", () => {
+    expect(isDirty(toFormValues(SAVED), SAVED)).toBe(false);
+  });
+
+  it("앞뒤 공백·공백뿐인 칸은 변경 아님", () => {
+    const values = toFormValues(SAVED);
+    expect(isDirty({ ...values, visitNote: "  주말은 예약 ", essay: "   ", lat: "37.50" }, SAVED)).toBe(false);
+  });
+
+  it("값을 바꾸거나 비우면 변경", () => {
+    const values = toFormValues(SAVED);
+    expect(isDirty({ ...values, summary: "다른 한 줄" }, SAVED)).toBe(true);
+    expect(isDirty({ ...values, visitNote: "" }, SAVED)).toBe(true);
+    expect(isDirty({ ...values, senses: { ...values.senses, touch: "돌" } }, SAVED)).toBe(true);
+  });
+
+  it("형식이 틀린 입력은 변경", () => {
+    expect(isDirty({ ...toFormValues(SAVED), lat: "abc" }, SAVED)).toBe(true);
+  });
+});
+
+describe("폼 입력으로 공개 검증", () => {
+  it("빈 칸·공백뿐인 칸을 없음으로 본다", () => {
+    const values = toFormValues(SAVED);
+    expect(formPublishErrors({ ...values, address: "  ", lat: "" }, SAVED)).toEqual({
+      address: "주소를 입력해 주세요",
+      lat: "좌표를 입력해 주세요",
+    });
+  });
+
+  it("하위 목록 규칙은 저장된 목록으로 본다", () => {
+    expect(formPublishErrors(toFormValues(SAVED), { ...SAVED, photos: [] })).toEqual({
+      photos: "사진 또는 임베드가 1개 이상 필요해요",
+    });
   });
 });

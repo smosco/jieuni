@@ -26,3 +26,7 @@ export function createAdminPlace(body: { name: string; region: string | null }):
 export function editAdminPlace(id: number, body: PlaceEdit): Promise<AdminPlace> {
   return apiFetch(`/api/admin/places/${id}`, { method: "PATCH", body: JSON.stringify(body) });
 }
+
+export function changePlaceStatus(id: number, to: AdminPlaceStatus): Promise<AdminPlace> {
+  return apiFetch(`/api/admin/places/${id}/status`, { method: "POST", body: JSON.stringify({ to }) });
+}

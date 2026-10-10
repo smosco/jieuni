@@ -178,3 +178,41 @@ export function toFormValues(place: AdminPlace): PlaceFormValues {
     visitedByEditorOn: str(place.visitedByEditorOn),
   };
 }
+
+// 서버 값 → PATCH 본문 모양(키 순서도 draftSchema 출력과 같다).
+export function toEdit(place: AdminPlace): PlaceEdit {
+  return {
+    slug: place.slug,
+    name: place.name,
+    kind: place.kind,
+    region: place.region,
+    address: place.address,
+    lat: place.lat,
+    lng: place.lng,
+    access: place.access,
+    visitNote: place.visitNote,
+    summary: place.summary,
+    impression: place.impression,
+    senses: {
+      light: place.senses.light,
+      sound: place.senses.sound,
+      scent: place.senses.scent,
+      touch: place.senses.touch,
+    },
+    essay: place.essay,
+    visitedByEditorOn: place.visitedByEditorOn,
+  };
+}
+
+// 저장 안 된 변경: 입력을 저장할 때처럼 정규화해 저장된 값과 비교한다. 앞뒤 공백·빈 칸 차이는 변경이 아니다.
+// 형식이 틀린 입력은 저장된 값일 수 없으니 변경이다.
+export function isDirty(values: PlaceFormValues, place: AdminPlace): boolean {
+  const parsed = draftSchema.safeParse(values);
+  return !parsed.success || JSON.stringify(parsed.data) !== JSON.stringify(toEdit(place));
+}
+
+// 지금 입력 + 저장된 하위 목록으로 공개 검증. "비어 있음"은 정규화 전 문자열로 봐도 같다.
+export function publishErrors(values: PlaceFormValues, place: AdminPlace): Record<string, string> {
+  const result = publishSchema.safeParse({ ...place, ...values });
+  return result.success ? {} : toFieldErrors(result.error.issues);
+}

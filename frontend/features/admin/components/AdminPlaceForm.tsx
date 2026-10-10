@@ -7,10 +7,18 @@ import { ACCESS_LABEL, KIND_LABEL } from "@/shared/lib/labels";
 import form from "@/shared/ui/Form.module.css";
 import { SectionLabel } from "@/shared/ui/SectionLabel";
 import { STATUS_LABEL, updatedAtLabel } from "../labels";
-import { draftSchema, toFieldErrors, toFormValues, type PlaceFormValues } from "../placeSchema";
-import { useAdminPlace, useEditAdminPlace } from "../queries";
-import type { AdminPlace, Senses } from "../types";
+import {
+  draftSchema,
+  isDirty,
+  publishErrors,
+  toFieldErrors,
+  toFormValues,
+  type PlaceFormValues,
+} from "../placeSchema";
+import { useAdminPlace, useChangePlaceStatus, useEditAdminPlace } from "../queries";
+import type { AdminPlace, AdminPlaceStatus, Senses } from "../types";
 import { AdminHead } from "./AdminHead";
+import { useLeaveGuard } from "./LeaveGuard";
 import { CreditsBlock, PhotosBlock, SourcesBlock, StatusBlock } from "./PlaceAttached";
 import { PlaceFormField, type FieldSpec } from "./PlaceFormField";
 import admin from "./Admin.module.css";
@@ -102,14 +110,44 @@ export function AdminPlaceForm({ id }: { id: number }) {
   return <PlaceForm key={place.id} place={place} />;
 }
 
+type Transition = { to: AdminPlaceStatus; label: string; done: string; confirm?: string };
+
+const CLOSE: Transition = {
+  to: "closed",
+  label: "폐업",
+  done: "폐업으로 바꿨어요",
+  confirm: "폐업으로 바꾸면 되돌릴 수 없어요. 바꿀까요?",
+};
+
+// 폼에서 누를 수 있는 상태 전환. 서버 전환표의 부분집합이다(제보 → 작성 중·반려는 제보 검토 화면에서).
+const TRANSITIONS: Partial<Record<AdminPlaceStatus, Transition[]>> = {
+  draft: [{ to: "published", label: "공개", done: "공개했어요", confirm: "공개하면 주소(slug)를 바꿀 수 없어요. 공개할까요?" }],
+  published: [{ to: "paused", label: "휴업", done: "휴업으로 바꿨어요" }, CLOSE],
+  paused: [{ to: "published", label: "다시 공개", done: "다시 공개했어요" }, CLOSE],
+};
+
+// 공개 검증 안내를 칸에 보일 상태. 제보·반려된 공간은 아직 공개와 상관없다.
+const CHECKS_PUBLISH: AdminPlaceStatus[] = ["draft", "published", "paused", "closed"];
+
 function PlaceForm({ place }: { place: AdminPlace }) {
   const [values, setValues] = useState(() => toFormValues(place));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
   const edit = useEditAdminPlace(place.id);
+  const transition = useChangePlaceStatus(place.id);
+
+  // 저장한 값은 쿼리 캐시의 place다(저장·전환 응답으로 바뀐다). 입력을 같은 모양으로 정규화해 비교한다.
+  const dirty = isDirty(values, place);
+  useLeaveGuard(dirty);
+  const hints = CHECKS_PUBLISH.includes(place.status) ? publishErrors(values, place) : {};
+  const publishable = Object.keys(hints).length === 0;
+  const busy = edit.isPending || transition.isPending;
+  const transitions = TRANSITIONS[place.status] ?? [];
 
   function change(key: FieldKey, value: string) {
     setValues((v) => write(v, key, value));
+    setNotice(null);
     if (errors[key]) {
       setErrors((e) => {
         const next = { ...e };
@@ -125,9 +163,20 @@ function PlaceForm({ place }: { place: AdminPlace }) {
     if (message) setErrors((e) => ({ ...e, [key]: message }));
   }
 
+  function fail(err: unknown, fallback: string) {
+    if (err instanceof ApiError && err.status === 400) {
+      setErrors(err.fieldErrors ?? {});
+      setNotice(err.message);
+    } else if (err instanceof ApiError && err.status === 409) {
+      setNotice(err.message);
+    } else {
+      setNotice(fallback);
+    }
+  }
+
   function save(e: FormEvent) {
     e.preventDefault();
-    if (edit.isPending) return;
+    if (busy) return;
     const parsed = draftSchema.safeParse(values);
     if (!parsed.success) {
       setErrors(toFieldErrors(parsed.error.issues));
@@ -136,42 +185,67 @@ function PlaceForm({ place }: { place: AdminPlace }) {
     }
     setErrors({});
     setNotice(null);
+    setDone(null);
     edit.mutate(parsed.data, {
+      onSuccess: (saved) => setDone(`저장했어요 · ${updatedAtLabel(saved.updatedAt)}`),
       onError: (err) => {
         if (err instanceof ApiError && err.status === 409) {
           // PATCH의 409는 slug 중복과 공개 뒤 slug 변경뿐이다.
           setErrors({ slug: err.message });
           setNotice("입력한 값을 확인해 주세요");
-        } else if (err instanceof ApiError && err.status === 400) {
-          setErrors(err.fieldErrors ?? {});
-          setNotice(err.message);
         } else {
-          setNotice("저장하지 못했어요. 다시 시도해 주세요");
+          fail(err, "저장하지 못했어요. 다시 시도해 주세요");
         }
       },
+    });
+  }
+
+  // 서버는 저장된 값으로 전환을 판단하므로, 저장하지 않은 변경이 있으면 버튼을 끈다.
+  function changeStatus(t: Transition) {
+    if (busy || dirty) return;
+    if (t.confirm && !(t.to === "published" && place.publishedAt) && !window.confirm(t.confirm)) return;
+    setErrors({});
+    setNotice(null);
+    setDone(null);
+    transition.mutate(t.to, {
+      onSuccess: () => setDone(t.done),
+      onError: (err) => fail(err, "바꾸지 못했어요. 다시 시도해 주세요"),
     });
   }
 
   function fields(rows: Field[][]) {
     return rows.map((row) => (
       <div key={row[0].key} className={row.length > 1 ? styles.pair : undefined}>
-        {row.map((field) => (
-          <PlaceFormField
-            key={field.key}
-            field={field}
-            value={read(values, field.key)}
-            error={errors[field.key]}
-            onChange={(value) => change(field.key, value)}
-            onBlur={() => check(field.key)}
-          />
-        ))}
+        {row.map((spec) => {
+          const field =
+            spec.key === "slug" && place.slugLocked
+              ? { ...spec, readOnly: true, help: "공개한 뒤에는 바꿀 수 없어요" }
+              : spec;
+          return (
+            <PlaceFormField
+              key={field.key}
+              field={field}
+              value={read(values, field.key)}
+              error={errors[field.key] ?? hints[field.key]}
+              onChange={(value) => change(field.key, value)}
+              onBlur={() => check(field.key)}
+            />
+          );
+        })}
       </div>
     ));
   }
 
   const status = edit.isPending
     ? "저장 중…"
-    : (notice ?? (edit.isSuccess ? `저장했어요 · ${updatedAtLabel(place.updatedAt)}` : null));
+    : transition.isPending
+      ? "바꾸는 중…"
+      : (notice ??
+        (dirty
+          ? "저장하지 않은 변경이 있어요"
+          : (done ?? (place.status === "draft" && !publishable ? "공개하려면 표시한 칸을 채워 주세요" : null))));
+  const attachedErrors = { ...hints, ...errors };
+  const publishes = transitions.some((t) => t.to === "published");
 
   return (
     <>
@@ -195,9 +269,9 @@ function PlaceForm({ place }: { place: AdminPlace }) {
           <SectionLabel>감상과 감각</SectionLabel>
           {fields(FEELING)}
         </section>
-        <CreditsBlock place={place} errors={errors} />
-        <SourcesBlock place={place} errors={errors} />
-        <PhotosBlock place={place} errors={errors} />
+        <CreditsBlock place={place} errors={attachedErrors} />
+        <SourcesBlock place={place} errors={attachedErrors} />
+        <PhotosBlock place={place} errors={attachedErrors} />
         <section className={styles.group}>
           <SectionLabel>에세이</SectionLabel>
           {fields(ESSAY)}
@@ -208,9 +282,55 @@ function PlaceForm({ place }: { place: AdminPlace }) {
           <p className={`${notice ? "body-sm" : "label-sm"} ${styles.barStatus}`} role="status">
             {status}
           </p>
-          <button type="submit" className={`label-md ${form.primary}`} disabled={edit.isPending}>
-            임시저장
-          </button>
+          <div className={styles.barActions}>
+            {/* 미리보기는 저장된 응답을 그린다. 저장 안 된 변경이 있으면 다른 내용이 보이므로 끈다. */}
+            {dirty ? (
+              <button type="button" className={`label-md ${form.secondary}`} disabled>
+                미리보기
+              </button>
+            ) : (
+              <Link
+                href={`/admin/places/${place.id}/preview`}
+                target="_blank"
+                className={`label-md ${form.secondary} ${admin.linkButton}`}
+              >
+                미리보기
+              </Link>
+            )}
+            {transitions
+              .filter((t) => t.to !== "published")
+              .map((t) => (
+                <button
+                  key={t.to}
+                  type="button"
+                  className={`label-md ${form.secondary}`}
+                  disabled={busy || dirty}
+                  onClick={() => changeStatus(t)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            <button
+              type="submit"
+              className={`label-md ${publishes ? form.secondary : form.primary}`}
+              disabled={busy}
+            >
+              임시저장
+            </button>
+            {transitions
+              .filter((t) => t.to === "published")
+              .map((t) => (
+                <button
+                  key={t.to}
+                  type="button"
+                  className={`label-md ${form.primary}`}
+                  disabled={busy || dirty || !publishable}
+                  onClick={() => changeStatus(t)}
+                >
+                  {t.label}
+                </button>
+              ))}
+          </div>
         </div>
       </form>
     </>

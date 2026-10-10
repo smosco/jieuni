@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useConfirmLeave } from "./LeaveGuard";
 import styles from "./Admin.module.css";
 
 // href가 없는 항목은 아직 화면이 없다(AI 기록은 AI 초안 연동 뒤).
@@ -15,10 +16,14 @@ const MENU: { href?: string; label: string }[] = [
 
 export function AdminNav() {
   const pathname = usePathname();
+  const confirmLeave = useConfirmLeave();
+  const guard = (e: { preventDefault: () => void }) => {
+    if (!confirmLeave()) e.preventDefault();
+  };
 
   return (
     <nav className={styles.nav} aria-label="관리자 메뉴">
-      <Link href="/admin" className={styles.brand}>
+      <Link href="/admin" className={styles.brand} onNavigate={guard}>
         <span className={`label-sm ${styles.eyebrow}`}>ADMIN</span>
         <span className={`display-md ${styles.brandName}`}>공간의 지은이</span>
       </Link>
@@ -40,6 +45,7 @@ export function AdminNav() {
                 href={item.href}
                 className={`${styles.menuItem} ${active ? styles.menuOn : ""}`}
                 aria-current={active ? "page" : undefined}
+                onNavigate={guard}
               >
                 {item.label}
               </Link>
@@ -47,7 +53,7 @@ export function AdminNav() {
           );
         })}
       </ul>
-      <Link href="/" className={`label-md ${styles.siteLink}`}>
+      <Link href="/" className={`label-md ${styles.siteLink}`} onNavigate={guard}>
         사이트로 →
       </Link>
     </nav>

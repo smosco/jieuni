@@ -2,7 +2,7 @@
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMe } from "@/features/me/queries";
-import { createAdminPlace, editAdminPlace, fetchAdminPlace, fetchAdminPlacesPage } from "./api";
+import { changePlaceStatus, createAdminPlace, editAdminPlace, fetchAdminPlace, fetchAdminPlacesPage } from "./api";
 import type { AdminPlace, AdminPlaceStatus, PlaceEdit } from "./types";
 
 const ADMIN_PLACES = ["admin", "places"] as const;
@@ -47,6 +47,17 @@ export function useEditAdminPlace(id: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: PlaceEdit) => editAdminPlace(id, body),
+    onSuccess: (place: AdminPlace) => {
+      queryClient.setQueryData(adminPlaceKey(id), place);
+      queryClient.invalidateQueries({ queryKey: ADMIN_PLACES });
+    },
+  });
+}
+
+export function useChangePlaceStatus(id: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (to: AdminPlaceStatus) => changePlaceStatus(id, to),
     onSuccess: (place: AdminPlace) => {
       queryClient.setQueryData(adminPlaceKey(id), place);
       queryClient.invalidateQueries({ queryKey: ADMIN_PLACES });

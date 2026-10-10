@@ -8,6 +8,7 @@ export type FieldSpec = {
   type?: "text" | "decimal" | "month" | "textarea" | "select";
   rows?: number;
   options?: Record<string, string>;
+  readOnly?: boolean;
 };
 
 // 칸 하나: 라벨 → 입력 → 도움말 → 메시지. 길이는 막지 않고 넘으면 메시지로 알린다.
@@ -31,6 +32,7 @@ export function PlaceFormField({
     name: field.key,
     value,
     placeholder: field.placeholder,
+    readOnly: field.readOnly,
     "aria-invalid": Boolean(error),
     "aria-describedby": describedBy,
     onBlur,

@@ -83,7 +83,35 @@
   background: var(--color-paper);
 }
 
+.barActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
 .barStatus {
   margin: 0;
   color: var(--color-ink-secondary);
+}
+
+/* 잠긴 칸(공개 뒤 slug): 고칠 수 없다는 것을 글자색으로 */
+.form input:read-only {
+  color: var(--color-ink-secondary);
+}
+
+/* 미리보기: 공개 셸과 같은 너비로 가운데, 둘레에 선 */
+.previewHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.preview {
+  max-width: var(--shell-max-width);
+  margin: 0 auto;
+  border: var(--hairline) solid var(--color-line);
 }

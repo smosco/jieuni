@@ -1,5 +1,5 @@
 import type { Credit, Embed, Source } from "@/features/place/types";
-import type { Access, Photo, PlaceKind } from "@/shared/api/types";
+import type { Access, Photo, PlaceKind, PlaceTile } from "@/shared/api/types";
 
 // 관리자는 공개되지 않은 상태까지 전부 본다.
 export type AdminPlaceStatus = "suggested" | "draft" | "published" | "paused" | "closed" | "rejected";
@@ -41,6 +41,8 @@ export type AdminPlace = {
   sources: Source[];
   photos: AdminPhoto[];
   embeds: Embed[];
+  mapLinks: { naver: string; kakao: string };
+  relatedPlaces: PlaceTile[];
   suggestedBy: { id: number; nickname: string } | null;
   suggestionReason: string | null;
   suggestionLink: string | null;

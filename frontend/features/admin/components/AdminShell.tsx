@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useMe } from "@/features/me/queries";
 import { AdminNav } from "./AdminNav";
 import { AdminNotFound } from "./AdminNotFound";
+import { LeaveGuardProvider } from "./LeaveGuard";
 import styles from "./Admin.module.css";
 
 // 역할은 클라이언트에서 /api/me로 본다. 화면을 가리는 것뿐이고 실제 권한은 서버(/api/admin/** 403)가 지킨다.
@@ -22,9 +23,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }
   if (me?.role !== "admin") return <AdminNotFound />;
   return (
-    <div className={styles.shell}>
-      <AdminNav />
-      <main className={styles.main}>{children}</main>
-    </div>
+    <LeaveGuardProvider>
+      <div className={styles.shell}>
+        <AdminNav />
+        <main className={styles.main}>{children}</main>
+      </div>
+    </LeaveGuardProvider>
   );
 }
