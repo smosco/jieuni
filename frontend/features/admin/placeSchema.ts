@@ -212,9 +212,14 @@ export function isDirty(values: PlaceFormValues, place: AdminPlace): boolean {
 }
 
 // 공개 검증에 필요한 목록 모양. 입력 중인 줄(문자열 칸)도 그대로 넣을 수 있다.
-type PublishLists = { credits: { sourceUrl: string | null }[]; sources: unknown[]; embeds: unknown[] };
+type PublishLists = {
+  credits: { sourceUrl: string | null }[];
+  sources: unknown[];
+  embeds: unknown[];
+  photos?: { alt: string | null; credit: string | null; license: string; sourceUrl: string | null }[];
+};
 
-// 지금 입력으로 공개 검증. 목록을 넘기지 않으면 저장된 목록을 쓴다. 사진은 저장된 것만 있다.
+// 지금 입력으로 공개 검증. 목록을 넘기지 않으면 저장된 목록을 쓴다.
 // "비어 있음"은 정규화 전 문자열로 봐도 같다.
 export function publishErrors(values: PlaceFormValues, place: AdminPlace, lists?: PublishLists): Record<string, string> {
   const result = publishSchema.safeParse({ ...place, ...values, ...lists });

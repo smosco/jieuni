@@ -44,7 +44,7 @@ export function rowKey(): string {
   return `row-${next}`;
 }
 
-const optionalLink = z
+export const optionalLink = z
   .string()
   .trim()
   .max(500, "링크는 500자까지 쓸 수 있어요")
@@ -58,7 +58,7 @@ const requiredLink = z
   .max(500, "링크는 500자까지 쓸 수 있어요")
   .refine((value) => HTTP_URL.test(value), "http로 시작하는 링크를 넣어 주세요");
 
-function picked<const T extends readonly [string, ...string[]]>(values: T, message: string) {
+export function picked<const T extends readonly [string, ...string[]]>(values: T, message: string) {
   return z
     .union([z.literal(""), z.enum(values)])
     .refine((value) => value !== "", message)

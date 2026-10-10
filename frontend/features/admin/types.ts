@@ -1,5 +1,5 @@
 import type { Credit, Source, SourceType } from "@/features/place/types";
-import type { Access, CreditRole, Embed, MakerKind, Photo, PlaceKind, PlaceTile } from "@/shared/api/types";
+import type { Access, CreditRole, Embed, MakerKind, Photo, PhotoLicense, PlaceKind, PlaceTile } from "@/shared/api/types";
 
 // 관리자는 공개되지 않은 상태까지 전부 본다.
 export type AdminPlaceStatus = "suggested" | "draft" | "published" | "paused" | "closed" | "rejected";
@@ -77,6 +77,10 @@ export type PlaceEdit = Pick<
 export type CreditBody = { makerId: number; role: CreditRole; verified: boolean; sourceUrl: string | null };
 export type SourceBody = { title: string; url: string; type: SourceType };
 export type PlaceLists = { credits: CreditBody[]; sources: SourceBody[]; embeds: Embed[] };
+
+// POST /api/admin/places/{id}/photos와 PATCH 본문(네 칸 전부). 빈 값은 null.
+export type PhotoEdit = { alt: string | null; credit: string | null; license: PhotoLicense; sourceUrl: string | null };
+export type PhotoBody = { objectKey: string; width: number; height: number } & PhotoEdit;
 
 // GET /api/admin/makers 한 줄
 export type AdminMakerRow = {

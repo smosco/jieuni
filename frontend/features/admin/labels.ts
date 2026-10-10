@@ -1,4 +1,5 @@
 import type { SourceType } from "@/features/place/types";
+import type { PhotoLicense } from "@/shared/api/types";
 import type { AdminPlaceStatus } from "./types";
 
 // 목록 필터 순서와 문구. 문구는 SPEC 관리자 화면의 상태 필터와 같다.
@@ -18,6 +19,13 @@ export const SOURCE_TYPE_LABEL: Record<SourceType, string> = {
   video: "영상",
   instagram: "인스타그램",
   official: "공식 소개",
+};
+
+// 사진을 쓸 수 있는 근거. 직접 찍은 사진이 아니면 출처 링크가 필요하다.
+export const PHOTO_LICENSE_LABEL: Record<PhotoLicense, string> = {
+  own: "직접 찍음",
+  press: "언론·공식 배포용",
+  credited: "공개된 사진을 출처 표기로",
 };
 
 export function parseStatus(value: string | string[] | undefined): AdminPlaceStatus | null {

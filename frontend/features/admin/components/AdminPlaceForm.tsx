@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError } from "@/shared/api/client";
 import { ACCESS_LABEL, KIND_LABEL } from "@/shared/lib/labels";
 import form from "@/shared/ui/Form.module.css";
 import { SectionLabel } from "@/shared/ui/SectionLabel";
 import { STATUS_LABEL, updatedAtLabel } from "../labels";
-import { checkLists, toRows, type ListRows } from "../listSchema";
+import { checkLists, rowKey, toRows, type ListRows } from "../listSchema";
+import { checkPhotos, toPhotoRows, type PhotoRow } from "../photoSchema";
+import { PhotoUploadError, toWebp, uploadConverted } from "../photoUpload";
 import {
   draftSchema,
   isDirty,
@@ -20,7 +22,8 @@ import { useAdminPlace, useChangePlaceStatus, useSavePlace } from "../queries";
 import type { AdminPlace, AdminPlaceStatus, Senses } from "../types";
 import { AdminHead } from "./AdminHead";
 import { useLeaveGuard } from "./LeaveGuard";
-import { PhotosBlock, StatusBlock } from "./PlaceAttached";
+import { PhotosEditor } from "./PhotosEditor";
+import { StatusBlock } from "./PlaceAttached";
 import { PlaceFormField, type FieldSpec } from "./PlaceFormField";
 import { CreditsEditor, EmbedsEditor, SourcesEditor } from "./PlaceListEditors";
 import admin from "./Admin.module.css";
@@ -128,12 +131,20 @@ const TRANSITIONS: Partial<Record<AdminPlaceStatus, Transition[]>> = {
   paused: [{ to: "published", label: "다시 공개", done: "다시 공개했어요" }, CLOSE],
 };
 
+// 공개 페이지가 있는 상태. 고칠 때도 서버가 공개 검증을 한다.
+const HAS_PAGE: AdminPlaceStatus[] = ["published", "paused", "closed"];
+
 // 공개 검증 안내를 칸에 보일 상태. 제보·반려된 공간은 아직 공개와 상관없다.
 const CHECKS_PUBLISH: AdminPlaceStatus[] = ["draft", "published", "paused", "closed"];
 
 function PlaceForm({ place }: { place: AdminPlace }) {
   const [values, setValues] = useState(() => toFormValues(place));
   const [lists, setLists] = useState(() => toRows(place));
+  const [photos, setPhotos] = useState(() => toPhotoRows(place.photos));
+  // 큰 사진 여러 장을 한꺼번에 바꾸면 메모리를 많이 쓰므로 한 장씩 차례로 올린다.
+  const uploads = useRef(Promise.resolve());
+  // 방금 바꾼 사진의 미리보기 blob URL(줄 key → URL). 다시 올리거나 줄을 빼거나 폼을 떠날 때 해제한다.
+  const previews = useRef(new Map<string, string>());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -143,9 +154,10 @@ function PlaceForm({ place }: { place: AdminPlace }) {
   // 저장한 값은 쿼리 캐시의 place다(저장·전환 응답으로 바뀐다). 입력을 같은 모양으로 정규화해 비교한다.
   const scalarDirty = isDirty(values, place);
   const listCheck = checkLists(lists, place);
-  const dirty = scalarDirty || Object.values(listCheck.dirty).some(Boolean);
+  const photoCheck = checkPhotos(photos, place.photos);
+  const dirty = scalarDirty || Object.values(listCheck.dirty).some(Boolean) || photoCheck.dirty;
   useLeaveGuard(dirty);
-  const hints = CHECKS_PUBLISH.includes(place.status) ? publishErrors(values, place, lists) : {};
+  const hints = CHECKS_PUBLISH.includes(place.status) ? publishErrors(values, place, { ...lists, photos }) : {};
   const publishable = Object.keys(hints).length === 0;
   const busy = edit.isPending || transition.isPending;
   const transitions = TRANSITIONS[place.status] ?? [];
@@ -169,6 +181,81 @@ function PlaceForm({ place }: { place: AdminPlace }) {
     setErrors((e) => Object.fromEntries(Object.entries(e).filter(([key]) => !key.startsWith(`${name}[`))));
   }
 
+  useEffect(() => {
+    const urls = previews.current;
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+      urls.clear();
+    };
+  }, []);
+
+  function setPreview(key: string, blob: Blob): string {
+    const old = previews.current.get(key);
+    if (old) URL.revokeObjectURL(old);
+    const url = URL.createObjectURL(blob);
+    previews.current.set(key, url);
+    return url;
+  }
+
+  function changePhotos(rows: PhotoRow[]) {
+    const kept = new Set(rows.map((row) => row.key));
+    previews.current.forEach((url, key) => {
+      if (!kept.has(key)) {
+        URL.revokeObjectURL(url);
+        previews.current.delete(key);
+      }
+    });
+    setPhotos(rows);
+    setNotice(null);
+    setErrors((e) => Object.fromEntries(Object.entries(e).filter(([key]) => !key.startsWith("photos"))));
+  }
+
+  // 파일을 WebP 두 크기로 바꿔 저장소에 올린다. 그동안 줄은 상태만 바뀌고, 설명·출처는 계속 입력할 수 있다.
+  function upload(key: string, file: File) {
+    const set = (patch: Partial<PhotoRow>) =>
+      setPhotos((rows) => rows.map((row) => (row.key === key ? { ...row, ...patch } : row)));
+    set({ upload: "converting", uploadError: null });
+    uploads.current = uploads.current.then(async () => {
+      try {
+        const converted = await toWebp(file);
+        set({
+          upload: "uploading",
+          width: converted.width,
+          height: converted.height,
+          preview: setPreview(key, converted.w800),
+        });
+        set({ upload: "done", objectKey: await uploadConverted(place.id, converted), file: null });
+      } catch (err) {
+        set({ upload: "failed", uploadError: err instanceof PhotoUploadError ? err.message : "올리지 못했어요" });
+      }
+    });
+  }
+
+  function addFiles(files: File[]) {
+    const rows: PhotoRow[] = files.map((file) => ({
+      key: rowKey(),
+      objectKey: null,
+      width: 0,
+      height: 0,
+      preview: "",
+      upload: "converting",
+      uploadError: null,
+      file,
+      alt: "",
+      credit: "",
+      license: "",
+      sourceUrl: "",
+    }));
+    setPhotos((current) => [...current, ...rows]);
+    setNotice(null);
+    rows.forEach((row) => upload(row.key, row.file as File));
+  }
+
+  function retry(key: string) {
+    const file = photos.find((row) => row.key === key)?.file;
+    if (file) upload(key, file);
+  }
+
   // 칸을 떠날 때는 그 칸의 형식만 알린다. 메시지를 지우는 것은 고칠 때(서버가 준 메시지도 남겨 둔다).
   function check(key: FieldKey) {
     const message = draftErrors(values)[key];
@@ -189,8 +276,23 @@ function PlaceForm({ place }: { place: AdminPlace }) {
   function save(e: FormEvent) {
     e.preventDefault();
     if (busy) return;
+    if (photoCheck.busy || photoCheck.failed) {
+      setNotice(photoCheck.busy ? "사진을 올리는 중이에요. 끝난 뒤 저장해 주세요" : "올리지 못한 사진이 있어요. 다시 올리거나 빼 주세요");
+      return;
+    }
+    // 사진 삭제는 한 장씩 따로 커밋되고 파일도 지워진다. 공개 페이지가 있는 공간에서 사진·임베드가 모두 없어지는 저장은
+    // 서버가 마지막 삭제에서야 거절해 앞의 삭제만 남으므로 보내지 않는다(서버도 같은 이유로 이 저장 전체를 받아들이지 않는다).
+    if (HAS_PAGE.includes(place.status) && hints.photos) {
+      setErrors({ photos: hints.photos });
+      setNotice("공개된 공간이라 이 값은 비울 수 없어요");
+      return;
+    }
     const parsed = draftSchema.safeParse(values);
-    const formatErrors = { ...(parsed.success ? {} : toFieldErrors(parsed.error.issues)), ...listCheck.errors };
+    const formatErrors = {
+      ...(parsed.success ? {} : toFieldErrors(parsed.error.issues)),
+      ...listCheck.errors,
+      ...photoCheck.errors,
+    };
     if (!parsed.success || Object.keys(formatErrors).length > 0) {
       setErrors(formatErrors);
       setNotice("입력한 값을 확인해 주세요");
@@ -200,12 +302,12 @@ function PlaceForm({ place }: { place: AdminPlace }) {
     setNotice(null);
     setDone(null);
     edit.mutate(
-      { edit: scalarDirty ? parsed.data : undefined, lists: listCheck.changes },
+      { edit: scalarDirty ? parsed.data : undefined, lists: listCheck.changes, photos: photoCheck.changes },
       {
         onSuccess: (saved) => setDone(saved ? `저장했어요 · ${updatedAtLabel(saved.updatedAt)}` : "바뀐 것이 없어요"),
         onError: (err) => {
-          if (err instanceof ApiError && err.status === 409) {
-            // 이 저장의 409는 PATCH의 slug 중복과 공개 뒤 slug 변경뿐이다.
+          if (err instanceof ApiError && err.status === 409 && !err.fieldErrors) {
+            // 칸 정보가 없는 409는 PATCH의 slug 중복과 공개 뒤 slug 변경이다(사진 중복 등록은 그 줄 키를 단다).
             setErrors({ slug: err.message });
             setNotice("입력한 값을 확인해 주세요");
           } else {
@@ -298,7 +400,18 @@ function PlaceForm({ place }: { place: AdminPlace }) {
           <h3 className={`label-sm ${styles.subhead}`}>임베드</h3>
           <EmbedsEditor rows={lists.embeds} onChange={(rows) => changeList("embeds", rows)} errors={errors} />
         </section>
-        <PhotosBlock place={place} errors={attachedErrors} />
+        <section className={styles.group}>
+          <SectionLabel>사진</SectionLabel>
+          <PhotosEditor
+            rows={photos}
+            savedKeys={new Set(place.photos.map((photo) => photo.objectKey))}
+            onChange={changePhotos}
+            onFiles={addFiles}
+            onRetry={retry}
+            errors={attachedErrors}
+          />
+          <ListError message={attachedErrors.photos} />
+        </section>
         <section className={styles.group}>
           <SectionLabel>에세이</SectionLabel>
           {fields(ESSAY)}
