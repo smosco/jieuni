@@ -4,8 +4,8 @@ import { useState } from "react";
 import type { Photo } from "@/shared/api/types";
 import { BackButton } from "@/shared/ui/BackButton";
 import { PhotoImage } from "@/shared/ui/PhotoImage";
-import { embedSource } from "../embed";
-import type { Embed } from "../types";
+import type { Embed } from "@/shared/api/types";
+import { embedSource } from "@/shared/lib/embed";
 import styles from "./PlaceGallery.module.css";
 
 // 가로 넘기기는 라이브러리 없이 scroll-snap. 사진 뒤에 임베드가 이어진다.

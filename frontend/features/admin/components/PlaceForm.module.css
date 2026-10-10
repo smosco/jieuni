@@ -115,3 +115,117 @@
   margin: 0 auto;
   border: var(--hairline) solid var(--color-line);
 }
+
+/* 순서가 있는 목록(크레딧·출처·임베드): 줄마다 위아래 16px, 아래 1px 선 */
+.listBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-lg) 0;
+  border-top: var(--hairline) solid transparent;
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+/* 끌어 놓을 자리: 그 줄 위 선이 진해진다. 평소 위 선은 투명해 묶음 제목의 선과 겹쳐 보이지 않는다. */
+.dropTarget {
+  border-top-color: var(--color-ink);
+}
+
+.itemHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+.handle {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--color-ink-tertiary);
+  cursor: grab;
+  user-select: none;
+}
+
+.itemActions {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.textButton {
+  min-height: var(--touch-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+}
+
+.textButton:disabled {
+  color: var(--color-ink-tertiary);
+  cursor: default;
+}
+
+.rowFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.subhead {
+  margin: 0;
+  color: var(--color-ink-secondary);
+  font-weight: inherit;
+}
+
+/* 만든 사람 찾기: 입력칸 바로 아래에 목록이 뜬다 */
+.combobox {
+  position: relative;
+}
+
+.options {
+  position: absolute;
+  top: calc(var(--touch-min) + var(--space-xl));
+  right: 0;
+  left: 0;
+  z-index: 1;
+  max-height: calc(var(--touch-min) * 6);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  border: var(--hairline) solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  list-style: none;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+}
+
+.optionActive {
+  background: var(--color-paper-raised);
+}
+
+.createRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}

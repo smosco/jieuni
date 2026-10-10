@@ -1,8 +1,7 @@
-import type { Access, CreditRole, MakerKind, Photo, PlaceKind, PlaceTile } from "@/shared/api/types";
+import type { Access, CreditRole, Embed, MakerKind, Photo, PlaceKind, PlaceTile } from "@/shared/api/types";
 
 // GET /api/places/{slug}
 export type SourceType = "article" | "video" | "instagram" | "official";
-export type EmbedType = "youtube" | "instagram";
 
 export type Credit = {
   position: number;
@@ -11,8 +10,6 @@ export type Credit = {
   sourceUrl: string | null;
   maker: { id: number; slug: string | null; name: string; kind: MakerKind };
 };
-
-export type Embed = { type: EmbedType; url: string };
 
 export type Source = { title: string; url: string; type: SourceType };
 

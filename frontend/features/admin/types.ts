@@ -1,5 +1,5 @@
-import type { Credit, Embed, Source } from "@/features/place/types";
-import type { Access, Photo, PlaceKind, PlaceTile } from "@/shared/api/types";
+import type { Credit, Source, SourceType } from "@/features/place/types";
+import type { Access, CreditRole, Embed, MakerKind, Photo, PlaceKind, PlaceTile } from "@/shared/api/types";
 
 // 관리자는 공개되지 않은 상태까지 전부 본다.
 export type AdminPlaceStatus = "suggested" | "draft" | "published" | "paused" | "closed" | "rejected";
@@ -72,3 +72,48 @@ export type PlaceEdit = Pick<
   | "essay"
   | "visitedByEditorOn"
 >;
+
+// PUT /api/admin/places/{id}/credits|sources|embeds: 통째 교체, 배열 순서가 position.
+export type CreditBody = { makerId: number; role: CreditRole; verified: boolean; sourceUrl: string | null };
+export type SourceBody = { title: string; url: string; type: SourceType };
+export type PlaceLists = { credits: CreditBody[]; sources: SourceBody[]; embeds: Embed[] };
+
+// GET /api/admin/makers 한 줄
+export type AdminMakerRow = {
+  id: number;
+  slug: string | null;
+  name: string;
+  kind: MakerKind;
+  region: string | null;
+  placeCount: number;
+  updatedAt: string;
+};
+
+// GET /api/admin/makers/{id}
+export type AdminMaker = {
+  id: number;
+  slug: string | null;
+  name: string;
+  kind: MakerKind;
+  region: string | null;
+  intro: string | null;
+  website: string | null;
+  instagram: string | null;
+  affiliation: { id: number; slug: string | null; name: string } | null;
+  places: PlaceTile[];
+  slugLocked: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// POST·PATCH /api/admin/makers: 필드 전부. 빈 값은 null.
+export type MakerEdit = {
+  slug: string | null;
+  name: string;
+  kind: MakerKind;
+  region: string | null;
+  intro: string | null;
+  website: string | null;
+  instagram: string | null;
+  affiliationId: number | null;
+};

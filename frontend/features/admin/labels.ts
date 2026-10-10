@@ -1,3 +1,4 @@
+import type { SourceType } from "@/features/place/types";
 import type { AdminPlaceStatus } from "./types";
 
 // 목록 필터 순서와 문구. 문구는 SPEC 관리자 화면의 상태 필터와 같다.
@@ -10,6 +11,13 @@ export const STATUS_LABEL: Record<AdminPlaceStatus, string> = {
   paused: "휴업",
   closed: "폐업",
   rejected: "반려",
+};
+
+export const SOURCE_TYPE_LABEL: Record<SourceType, string> = {
+  article: "기사",
+  video: "영상",
+  instagram: "인스타그램",
+  official: "공식 소개",
 };
 
 export function parseStatus(value: string | string[] | undefined): AdminPlaceStatus | null {

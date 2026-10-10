@@ -1,11 +1,10 @@
 import type { ReactNode } from "react";
-import { ROLE_LABEL } from "@/shared/lib/labels";
 import { SectionLabel } from "@/shared/ui/SectionLabel";
 import { STATUS_LABEL, updatedAtLabel } from "../labels";
 import type { AdminPlace } from "../types";
 import styles from "./PlaceForm.module.css";
 
-// 크레딧·출처·임베드·사진은 아직 이 폼에서 고칠 수 없다. 지금 있는 것과 공개 검증 메시지만 보인다.
+// 사진은 아직 이 폼에서 고칠 수 없다. 지금 있는 것과 공개 검증 메시지만 보인다.
 
 function Block({ title, errors, children }: { title: string; errors: string[]; children: ReactNode }) {
   return (
@@ -46,37 +45,6 @@ function pick(errors: Record<string, string>, ...names: string[]): string[] {
 function photoNumber(key: string): string {
   const index = Number(key.match(/\[(\d+)\]/)?.[1]);
   return `사진 ${index + 1}:`;
-}
-
-export function CreditsBlock({ place, errors }: { place: AdminPlace; errors: Record<string, string> }) {
-  return (
-    <Block title="크레딧" errors={pick(errors, "credits")}>
-      <Lines
-        items={place.credits.map((credit) => ({
-          key: credit.position,
-          main: `${credit.maker.name} · ${ROLE_LABEL[credit.role]}`,
-          sub: credit.sourceUrl ? (credit.verified ? "확인됨 · 출처 있음" : "출처 있음") : "출처 없음",
-        }))}
-      />
-    </Block>
-  );
-}
-
-export function SourcesBlock({ place, errors }: { place: AdminPlace; errors: Record<string, string> }) {
-  return (
-    <Block title="출처와 임베드" errors={pick(errors, "sources")}>
-      <Lines
-        items={[
-          ...place.sources.map((source, i) => ({ key: `s${i}`, main: source.title, sub: source.url })),
-          ...place.embeds.map((embed, i) => ({
-            key: `e${i}`,
-            main: embed.type === "youtube" ? "유튜브 임베드" : "인스타그램 임베드",
-            sub: embed.url,
-          })),
-        ]}
-      />
-    </Block>
-  );
 }
 
 export function PhotosBlock({ place, errors }: { place: AdminPlace; errors: Record<string, string> }) {

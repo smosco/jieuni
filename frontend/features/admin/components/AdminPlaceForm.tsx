@@ -7,6 +7,7 @@ import { ACCESS_LABEL, KIND_LABEL } from "@/shared/lib/labels";
 import form from "@/shared/ui/Form.module.css";
 import { SectionLabel } from "@/shared/ui/SectionLabel";
 import { STATUS_LABEL, updatedAtLabel } from "../labels";
+import { checkLists, toRows, type ListRows } from "../listSchema";
 import {
   draftSchema,
   isDirty,
@@ -15,12 +16,13 @@ import {
   toFormValues,
   type PlaceFormValues,
 } from "../placeSchema";
-import { useAdminPlace, useChangePlaceStatus, useEditAdminPlace } from "../queries";
+import { useAdminPlace, useChangePlaceStatus, useSavePlace } from "../queries";
 import type { AdminPlace, AdminPlaceStatus, Senses } from "../types";
 import { AdminHead } from "./AdminHead";
 import { useLeaveGuard } from "./LeaveGuard";
-import { CreditsBlock, PhotosBlock, SourcesBlock, StatusBlock } from "./PlaceAttached";
+import { PhotosBlock, StatusBlock } from "./PlaceAttached";
 import { PlaceFormField, type FieldSpec } from "./PlaceFormField";
+import { CreditsEditor, EmbedsEditor, SourcesEditor } from "./PlaceListEditors";
 import admin from "./Admin.module.css";
 import styles from "./PlaceForm.module.css";
 
@@ -131,16 +133,19 @@ const CHECKS_PUBLISH: AdminPlaceStatus[] = ["draft", "published", "paused", "clo
 
 function PlaceForm({ place }: { place: AdminPlace }) {
   const [values, setValues] = useState(() => toFormValues(place));
+  const [lists, setLists] = useState(() => toRows(place));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
-  const edit = useEditAdminPlace(place.id);
+  const edit = useSavePlace(place.id);
   const transition = useChangePlaceStatus(place.id);
 
   // 저장한 값은 쿼리 캐시의 place다(저장·전환 응답으로 바뀐다). 입력을 같은 모양으로 정규화해 비교한다.
-  const dirty = isDirty(values, place);
+  const scalarDirty = isDirty(values, place);
+  const listCheck = checkLists(lists, place);
+  const dirty = scalarDirty || Object.values(listCheck.dirty).some(Boolean);
   useLeaveGuard(dirty);
-  const hints = CHECKS_PUBLISH.includes(place.status) ? publishErrors(values, place) : {};
+  const hints = CHECKS_PUBLISH.includes(place.status) ? publishErrors(values, place, lists) : {};
   const publishable = Object.keys(hints).length === 0;
   const busy = edit.isPending || transition.isPending;
   const transitions = TRANSITIONS[place.status] ?? [];
@@ -155,6 +160,13 @@ function PlaceForm({ place }: { place: AdminPlace }) {
         return next;
       });
     }
+  }
+
+  // 목록을 고치면 그 목록의 줄 메시지를 지운다(번호가 바뀌어 다른 줄을 가리킬 수 있다).
+  function changeList<K extends keyof ListRows>(name: K, rows: ListRows[K]) {
+    setLists((l) => ({ ...l, [name]: rows }));
+    setNotice(null);
+    setErrors((e) => Object.fromEntries(Object.entries(e).filter(([key]) => !key.startsWith(`${name}[`))));
   }
 
   // 칸을 떠날 때는 그 칸의 형식만 알린다. 메시지를 지우는 것은 고칠 때(서버가 준 메시지도 남겨 둔다).
@@ -178,26 +190,30 @@ function PlaceForm({ place }: { place: AdminPlace }) {
     e.preventDefault();
     if (busy) return;
     const parsed = draftSchema.safeParse(values);
-    if (!parsed.success) {
-      setErrors(toFieldErrors(parsed.error.issues));
+    const formatErrors = { ...(parsed.success ? {} : toFieldErrors(parsed.error.issues)), ...listCheck.errors };
+    if (!parsed.success || Object.keys(formatErrors).length > 0) {
+      setErrors(formatErrors);
       setNotice("입력한 값을 확인해 주세요");
       return;
     }
     setErrors({});
     setNotice(null);
     setDone(null);
-    edit.mutate(parsed.data, {
-      onSuccess: (saved) => setDone(`저장했어요 · ${updatedAtLabel(saved.updatedAt)}`),
-      onError: (err) => {
-        if (err instanceof ApiError && err.status === 409) {
-          // PATCH의 409는 slug 중복과 공개 뒤 slug 변경뿐이다.
-          setErrors({ slug: err.message });
-          setNotice("입력한 값을 확인해 주세요");
-        } else {
-          fail(err, "저장하지 못했어요. 다시 시도해 주세요");
-        }
+    edit.mutate(
+      { edit: scalarDirty ? parsed.data : undefined, lists: listCheck.changes },
+      {
+        onSuccess: (saved) => setDone(saved ? `저장했어요 · ${updatedAtLabel(saved.updatedAt)}` : "바뀐 것이 없어요"),
+        onError: (err) => {
+          if (err instanceof ApiError && err.status === 409) {
+            // 이 저장의 409는 PATCH의 slug 중복과 공개 뒤 slug 변경뿐이다.
+            setErrors({ slug: err.message });
+            setNotice("입력한 값을 확인해 주세요");
+          } else {
+            fail(err, "저장하지 못했어요. 다시 시도해 주세요");
+          }
+        },
       },
-    });
+    );
   }
 
   // 서버는 저장된 값으로 전환을 판단하므로, 저장하지 않은 변경이 있으면 버튼을 끈다.
@@ -269,8 +285,19 @@ function PlaceForm({ place }: { place: AdminPlace }) {
           <SectionLabel>감상과 감각</SectionLabel>
           {fields(FEELING)}
         </section>
-        <CreditsBlock place={place} errors={attachedErrors} />
-        <SourcesBlock place={place} errors={attachedErrors} />
+        <section className={styles.group}>
+          <SectionLabel>크레딧</SectionLabel>
+          <CreditsEditor rows={lists.credits} onChange={(rows) => changeList("credits", rows)} errors={errors} />
+          <ListError message={attachedErrors.credits} />
+        </section>
+        <section className={styles.group}>
+          <SectionLabel>출처와 임베드</SectionLabel>
+          <h3 className={`label-sm ${styles.subhead}`}>출처</h3>
+          <SourcesEditor rows={lists.sources} onChange={(rows) => changeList("sources", rows)} errors={errors} />
+          <ListError message={attachedErrors.sources} />
+          <h3 className={`label-sm ${styles.subhead}`}>임베드</h3>
+          <EmbedsEditor rows={lists.embeds} onChange={(rows) => changeList("embeds", rows)} errors={errors} />
+        </section>
         <PhotosBlock place={place} errors={attachedErrors} />
         <section className={styles.group}>
           <SectionLabel>에세이</SectionLabel>
@@ -335,4 +362,9 @@ function PlaceForm({ place }: { place: AdminPlace }) {
       </form>
     </>
   );
+}
+
+function ListError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className={`body-sm ${styles.error}`}>{message}</p>;
 }
