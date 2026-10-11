@@ -1,11 +1,11 @@
 import { ImageResponse } from "next/og";
 import { type ShareCard, SITE_NAME } from "@/shared/lib/site";
+import { CARD_COLOR as COLOR } from "./cardColor";
 
 export const SHARE_CARD_SIZE = { width: 1200, height: 630 };
 
 
-// ImageResponse는 CSS 변수를 읽지 못한다. tokens.css와 같은 값이고 배치는 DESIGN.md "공유 카드".
-const COLOR = { paper: "#F4F0E8", ink: "#2A2622", inkSecondary: "#6E665C", earth: "#8A5A3C" };
+// 색은 CARD_COLOR(토큰과 같은 값), 배치는 DESIGN.md "공유 카드".
 
 // 한글 글꼴 전체는 ImageResponse 번들 한도(500KB)를 넘는다. 카드에 쓰는 글자만 Google Fonts에서 받는다.
 // 브라우저 User-Agent 없이 부르면 CSS가 woff2가 아닌 TrueType 주소를 준다(satori는 woff2를 못 읽는다).
@@ -39,10 +39,10 @@ export async function shareCard({ kicker, title }: ShareCard): Promise<ImageResp
           fontFamily: "Sans",
         }}
       >
-        <div style={{ display: "flex", fontSize: 28, color: COLOR.inkSecondary }}>{SITE_NAME}</div>
+        <div style={{ display: "flex", fontSize: 28, color: COLOR["ink-secondary"] }}>{SITE_NAME}</div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ width: 48, height: 2, background: COLOR.earth, marginBottom: 32 }} />
-          <div style={{ display: "flex", fontSize: 28, color: COLOR.inkSecondary, marginBottom: 20 }}>{kicker}</div>
+          <div style={{ display: "flex", fontSize: 28, color: COLOR["ink-secondary"], marginBottom: 20 }}>{kicker}</div>
           <div style={{ display: "flex", fontFamily: "Serif", fontSize: 80, lineHeight: 1.25, color: COLOR.ink }}>
             {title}
           </div>

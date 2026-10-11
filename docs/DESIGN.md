@@ -436,6 +436,8 @@
 
 검색·메신저 미리보기용 1200×630 PNG. `next/og`가 만들고 CSS 변수를 읽지 못해 아래 값을 코드에 그대로 쓴다(값은 1절 색과 같다).
 
+카드 색은 `features/seo/cardColor.ts`에 값으로 들어 있고 `shareCard.tsx`가 쓴다(ImageResponse가 CSS 변수를 못 읽음). 토큰과 같은지는 테스트(`cardColor.test.ts`)가 확인한다.
+
 | 항목 | 규칙 |
 | --- | --- |
 | 바탕 | `paper`, 안쪽 여백 96px. 사진은 넣지 않는다(사진이 모두 WebP인데 카드 생성기가 WebP를 그리지 못한다) |
