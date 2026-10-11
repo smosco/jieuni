@@ -60,6 +60,12 @@ public class UserService {
 		return toResponse(user);
 	}
 
+	@Transactional
+	public void withdraw(LoginUser user) {
+		users.deleteSessionsOf(user.getName());
+		users.deleteUser(user.id());
+	}
+
 	@Transactional(readOnly = true)
 	public boolean isAdmin(long userId) {
 		return users.findRoleById(userId).filter(UserRole.ADMIN::equals).isPresent();

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- 종이색(paper) 바탕에 먹색(ink) 선 하나로 그린 아치 문. 글자는 기기 글꼴에 따라 달라져 도형으로 했다. -->
+  <rect width="32" height="32" rx="2" fill="#F4F0E8"/>
+  <path d="M10 25V15a6 6 0 0 1 12 0v10" fill="none" stroke="#2A2622" stroke-width="2"/>
+  <path d="M7 25h18" stroke="#2A2622" stroke-width="1"/>
+</svg>

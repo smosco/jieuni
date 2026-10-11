@@ -3,6 +3,7 @@ import { IBM_Plex_Sans_KR, Noto_Serif_KR } from "next/font/google";
 import { LoginProvider } from "@/features/auth/components/LoginProvider";
 import { QueryProvider } from "@/shared/api/QueryProvider";
 import { EntryPathRecorder } from "@/shared/lib/entry";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/shared/lib/site";
 import { ToastProvider } from "@/shared/ui/Toast";
 import "./tokens.css";
 import "./globals.css";
@@ -24,8 +25,13 @@ const sans = IBM_Plex_Sans_KR({
   variable: "--font-sans",
 });
 
+// 자식 경로에서 상대 경로로 쓴 canonical·og:url·공유 카드 주소가 이 주소에 붙는다.
+// title은 두지 않는다: 페이지마다 제목이 있고, 여기 두면 없는 주소의 404 화면에서 이 제목이 404 제목보다 먼저 나온다.
 export const metadata: Metadata = {
-  title: "공간의 지은이",
+  metadataBase: new URL(SITE_URL),
+  description: SITE_DESCRIPTION,
+  openGraph: { type: "website", siteName: SITE_NAME, locale: "ko_KR" },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

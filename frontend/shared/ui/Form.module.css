@@ -29,6 +29,13 @@
   resize: vertical;
 }
 
+/* iOS Safari는 글자가 16px 미만인 입력칸을 누르면 화면을 확대한다. 함께 붙는 글자 단계(body-md 14px)보다 앞서도록 요소 이름을 붙인다. */
+input.input,
+textarea.textarea,
+select.select {
+  font-size: var(--input-font-size);
+}
+
 .input:focus,
 .textarea:focus,
 .select:focus {
@@ -93,6 +100,6 @@
 .secondary:disabled {
   border-color: var(--color-line);
   background: none;
-  color: var(--color-ink-tertiary);
+  color: var(--color-ink-disabled);
   cursor: default;
 }

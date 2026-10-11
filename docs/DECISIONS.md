@@ -1,6 +1,6 @@
 # 공간의 지은이 — 기술 선택 기록 (DECISIONS v0.3)
 
-> 코드를 쓰기 전에 내린 결정들. 각 항목 끝의 "채택 / 포기한 것"이 결론이다 (2026-10-06, 9절만 보류).
+> 코드를 쓰기 전에 내린 결정들. 각 항목 끝의 "채택 / 포기한 것"이 결론이다 (2026-10-06. 9절 배포는 2026-10-11에 결정).
 > 근거는 `SPEC.md`(무엇을 만드는가)에서 끌어온다.
 
 ## 전제
@@ -25,7 +25,7 @@
 | 사진 | Cloudflare R2(개발·운영), 서명된 URL로 브라우저 직접 업로드 |
 | 예약 공개 | 조회 시점 계산 + 08:00 스케줄러가 홈 재생성 |
 | AI 초안 | Python 3.14 + FastAPI, Tavily 검색, Tool Calling 직접 구현 → LangGraph 이식, MCP 서버 |
-| 배포 | 프론트 Vercel, 백엔드·DB·AI 서비스는 서버 한 대에 Docker Compose (호스팅 보류) |
+| 배포 | 프론트 Vercel Hobby(`icn1`), 백엔드·DB는 EC2 한 대(서울)에 Docker Compose + Caddy, 사진 R2, 도메인 `jieuni.space` (2026-10-11) |
 | CI | GitHub Actions: 테스트, 타입 검사 |
 
 ---
@@ -203,11 +203,13 @@ v0.1은 공간을 저장소의 MDX 파일로 두는 안이었다.
 
 **2026-10-06 확인(즉시 반영 방법)**: Spring이 부르는 `app/api/revalidate` 라우트에서는 `revalidateTag(tag, { expire: 0 })`를 쓴다. Next 16은 두 번째 인자가 필수이고, `'max'` 같은 프로필을 주면 다음 요청이 옛 페이지를 먼저 받으므로(stale-while-revalidate) "관리자가 공개한 직후 새로고침 한 번에 보인다"가 되지 않는다. `updateTag`는 Server Action 전용이라 외부 호출 라우트에서 못 쓴다. `cacheComponents`는 켜지 않는다(빈 `generateStaticParams`가 빌드 오류가 됨). 출처는 "버전 기준" 표의 Next.js 행.
 
-**2026-10-07(B6b) 프록시 뒤 OAuth `redirect_uri`**: Next 16.3.8 rewrites 프록시는 Host를 백엔드 주소로 바꾸고 `X-Forwarded-Host`만 덧붙인다(`next/dist/server/lib/router-utils/proxy-request.js`, `X-Forwarded-Proto` 없음). 그래서 구글 `redirect_uri`를 요청에서 만들지 않고 `FRONTEND_URL/login/oauth2/code/google`로 고정한다. Security 7.1.1은 토큰 요청에 처음 저장한 `redirect_uri`를 쓰고 콜백 URL과 비교하지 않아(jar 확인) 고정값으로 충분하다. `server.forward-headers-strategy`는 켜지 않는다. 로컬 8080이 열려 있어 헤더를 믿을 수 없고, Security 문서도 신뢰할 프록시가 헤더를 덮어쓸 때만 쓰라고 한다([Proxy Server Configuration](https://docs.spring.io/spring-security/reference/features/exploits/http.html)). 운영 호스팅이 정해지면(D1) 다시 본다. 로그인 뒤 이동은 상대 경로 `Location`이라 브라우저가 있는 프론트 주소로 간다. Tomcat은 `sendRedirect`의 상대 경로를 Host로 절대 주소화해 `http://backend:8080/…`이 되므로 `server.tomcat.use-relative-redirects: true`를 켠다(curl로 확인, MockMvc에서는 드러나지 않는다). 돌아갈 경로는 ASCII로 퍼센트 인코딩해 보낸다. Tomcat은 ASCII 밖의 `Location`을 내보내지 않아 한글 경로에서 빈 화면이 됐다. fragment(`#` 뒤)는 잘라낸다. 남으면 뒤에 붙이는 `?login=error`가 fragment 안으로 들어갔다.
+**2026-10-07(B6b) 프록시 뒤 OAuth `redirect_uri`**: Next 16.3.8 rewrites 프록시는 Host를 백엔드 주소로 바꾸고 `X-Forwarded-Host`만 덧붙인다(`next/dist/server/lib/router-utils/proxy-request.js`, `X-Forwarded-Proto` 없음). 그래서 구글 `redirect_uri`를 요청에서 만들지 않고 `FRONTEND_URL/login/oauth2/code/google`로 고정한다. Security 7.1.1은 토큰 요청에 처음 저장한 `redirect_uri`를 쓰고 콜백 URL과 비교하지 않아(jar 확인) 고정값으로 충분하다. `server.forward-headers-strategy`는 **`prod`에서만 `native`**(2026-10-11, D1). 운영은 8080을 호스트에 열지 않아 같은 docker 네트워크의 Caddy만 Tomcat에 닿는다. Tomcat `RemoteIpValve`의 기본 내부 프록시 범위(사설망, `server.tomcat.remoteip.internal-proxies`)가 그 Caddy를 믿고, Caddy `reverse_proxy`는 들어온 `X-Forwarded-*`를 버리고 자기 값으로 덮어쓴다([reverse_proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)). 그래서 `X-Forwarded-Proto: https`로 `request.isSecure()`가 참이 되고, `CookieCsrfTokenRepository`가 그 값을 따라 `XSRF-TOKEN`에도 `Secure`를 붙인다(Security 7.1.1 소스, 운영 compose를 로컬에서 띄워 Caddy 경유는 `Secure`, 직접 호출은 없음을 curl로 확인). 구글 `redirect_uri`는 위처럼 `FRONTEND_URL` 고정이라 이 설정과 무관하다. 토큰 요청은 처음 저장한 값을 쓰고 콜백 URL은 비교하지 않는다(`DefaultOAuth2AuthorizationRequestResolver`는 템플릿에 `{baseUrl}` 같은 자리가 있을 때만 요청의 scheme을 쓴다, 소스 확인). 실제 값은 D2 구글 로그인에서 확인한다. 모든 헤더를 믿는 `framework`(`ForwardedHeaderFilter`)는 쓰지 않는다. dev·test는 8080이 호스트에 열려 있어 그대로 끈다. Security 문서도 신뢰할 프록시가 헤더를 덮어쓸 때만 쓰라고 한다([Proxy Server Configuration](https://docs.spring.io/spring-security/reference/features/exploits/http.html)). 로그인 뒤 이동은 상대 경로 `Location`이라 브라우저가 있는 프론트 주소로 간다. Tomcat은 `sendRedirect`의 상대 경로를 Host로 절대 주소화해 `http://backend:8080/…`이 되므로 `server.tomcat.use-relative-redirects: true`를 켠다(curl로 확인, MockMvc에서는 드러나지 않는다). 돌아갈 경로는 ASCII로 퍼센트 인코딩해 보낸다. Tomcat은 ASCII 밖의 `Location`을 내보내지 않아 한글 경로에서 빈 화면이 됐다. fragment(`#` 뒤)는 잘라낸다. 남으면 뒤에 붙이는 `?login=error`가 fragment 안으로 들어갔다.
 
 **2026-10-07(B6b) 구글 토큰은 저장하지 않는다**: `oauth2Login`의 기본 인가 클라이언트 저장소는 받은 액세스 토큰을 프로세스 메모리 맵에 로그인마다 쌓는다. 우리는 구글 API를 부르지 않으므로 아무것도 저장하지 않는 `NoStoreAuthorizedClientRepository`를 넣는다. 쓰지 않는 남의 서비스 토큰은 서버가 뚫렸을 때 노출될 정보만 늘린다. 구글 API가 필요해지면 그때 저장소를 정한다.
 
 **2026-10-10(B13) 재생성 호출**: 백엔드가 프론트를 부르는 주소(`REVALIDATE_URL`)를 공개 주소(`FRONTEND_URL`)와 나눈다. `FRONTEND_URL`은 구글 `redirect_uri`라 브라우저가 보는 주소여야 하는데, compose 안의 백엔드 컨테이너에서 `localhost:3000`은 자기 자신이다. 비우면 `FRONTEND_URL`을 쓴다. 호출은 커밋 직후 관리자 요청 스레드에서 한 번만 보낸다(연결 2초·읽기 5초). 재시도·큐·`@Async`를 두지 않는 이유는 1시간 주기 재생성이 이미 안전망이고(8절), 재시도는 관리자 응답만 늦추기 때문이다. 커밋 뒤 HTTP 호출 동안 DB 연결도 붙잡는다(최대 7초, 관리자 경로라 허용). JDK `HttpClient`는 HTTP/1.1로 고정한다. 기본값은 `http://`에도 h2c 업그레이드 헤더를 붙이는데, Next 서버가 그 요청을 응답 없이 끊었다(compose에서 curl `--http2`로 재현). 공휴일은 다루지 않는다. 편성이 평일만 따지고, 공휴일에 칸을 비워도 08:00에는 피드의 다음 공개 시각이 바뀌므로 재생성이 필요하다.
+
+**2026-10-11(F10) CSP는 nonce 없이**: `next.config.ts`의 `headers()`로 모든 경로에 CSP · `Referrer-Policy` · `X-Content-Type-Options` · `Permissions-Policy`를 단다. `script-src`는 `'self' 'unsafe-inline'`(개발 서버만 `'unsafe-eval'`): nonce를 쓰면 모든 페이지를 요청마다 그려야 해서 태그 캐시·정적 상세와 맞지 않는다(Next [CSP 안내](https://nextjs.org/docs/app/guides/content-security-policy) "Static vs Dynamic Rendering with CSP", "Without Nonces"). 사진 주소(`img-src`)는 빌드 환경 변수 `PHOTO_PUBLIC_BASE_URL`의 origin(없으면 개발 버킷의 `*.r2.dev`), 관리자 업로드(`connect-src`)는 `https://*.r2.cloudflarestorage.com`, 임베드(`frame-src`)는 youtube-nocookie·instagram. 헤더는 빌드 결과물에 굳으므로 사진 주소가 바뀌면 다시 빌드한다. Zod 4는 `new Function`을 시도해 막혀도 위반 보고가 남아서 `z.config({ jitless: true })`로 끈다. **포기한 것**: 인라인 스크립트 주입을 CSP로 막는 것(XSS 방어는 React 이스케이프·마크다운 허용 목록에 기댄다).
 
 **2026-10-10(M3) 관리자 화면의 작업용 숫자**: "숫자 표시 금지"(좋아요·저장 수·팔로워 수·조회수·랭킹)는 공개 화면과 공개 API가 대상이다. 관리자 화면의 작업용 숫자(만든 사람 목록·찾기 칸의 "공간 n곳", API의 `placeCount`)는 예외로 둔다. 인기나 순위가 아니라 크레딧을 정리할 때 같은 사람을 고르게 돕는 값이고, 관리자만 본다.
 
@@ -249,14 +251,33 @@ v0.1은 공간을 저장소의 MDX 파일로 두는 안이었다.
 
 ---
 
-## 9. 배포 — 보류
+## 9. 배포 — Vercel + EC2 한 대 + R2 (2026-10-11 결정)
 
-호스팅과 계정 문제는 보류했다. 확정된 것만 적는다.
+이전(보류 때)에 정해 둔 것: 프론트는 Vercel Hobby(비상업, 수익화하면 Pro), 백엔드와 PostgreSQL은 Docker Compose로 서버 한 대, HTTPS는 리버스 프록시의 자동 인증서, DB는 매일 `pg_dump` → R2 백업과 복원 한 번. 서버 후보는 EC2 · Lightsail · 무료 PaaS였다.
 
-- 프론트: Vercel Hobby(비상업). 수익화하면 Pro.
-- 백엔드, PostgreSQL, AI 초안 서비스는 **Docker Compose로 서버 한 대**에 올린다. 로컬의 `docker compose up` 구성을 그대로 운영으로 가져간다.
-- HTTPS는 리버스 프록시의 자동 인증서. DB는 매일 `pg_dump` → R2로 백업하고, 복원을 한 번 실제로 해 본다.
-- 서버 후보: AWS EC2(가장 널리 쓰임, 무료 기간 이후 월 2~3만 원 추정), AWS Lightsail(정액), 무료 PaaS + 무료 Postgres. **결정 마감: PLAN M4(AI 국면 끝, 10/13 — 2026-10-07 체크포인트로 10/20에서 앞당김).** D1이 이 결정에 의존한다.
+### 채택
+
+- **프론트**: Vercel Hobby, 함수 리전 `icn1`(서울). Hobby는 함수 리전을 하나만 고를 수 있고 비상업 용도만 허용한다([리전](https://vercel.com/docs/functions/configuring-functions/region) · [Hobby](https://vercel.com/docs/plans/hobby)). 백엔드가 서울이라 rewrites 프록시 왕복이 짧다.
+- **백엔드 + PostgreSQL**: AWS EC2 한 대(서울 `ap-northeast-2`), docker compose로 `db` · `backend` · `caddy`. 백엔드 이미지는 CI가 만들어 GHCR에 두고 서버는 받기만 한다. ARM(t4g) 이미지는 GitHub Actions `ubuntu-24.04-arm` 러너에서 그대로 빌드한다(2026-10-11, D1). `--platform=$BUILDPLATFORM` 안은 Gradle만 네이티브로 돌고 실행 단계의 `apt-get`(헬스체크용 curl)은 여전히 QEMU가 필요하다. arm64 러너는 Dockerfile을 바꾸지 않는다. 저장소가 비공개인 동안은 러너 시간이 무료 분에서 빠진다(arm64 Linux가 x64보다 싸다, [러너](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) · [과금](https://docs.github.com/en/billing/managing-billing-for-your-products/about-billing-for-github-actions)). `.github/workflows/release.yml`이 `main`의 `backend/**` 변경과 수동 실행에서 `ghcr.io/smosco/jieuni-backend:<짧은 sha>`를 만들고, `latest`는 `main`에서만 붙인다. 패키지는 **공개**로 바꿔 EC2가 로그인 없이 받는다. 컨테이너 레지스트리의 공개 패키지는 익명으로 받을 수 있고, 한 번 공개하면 비공개로 되돌릴 수 없다([가시성](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility)). 비밀값은 이미지에 없고 서버 `.env`에만 있다. 서버 구성은 `deploy/`, 운영 절차는 `docs/RUNBOOK.md`.
+- **사진**: R2 운영 버킷 `jieuni`(개발 `jieuni-dev`와 분리), 공개 읽기는 커스텀 도메인. 백업은 비공개 버킷 `jieuni-backup`(운영 버킷은 공개 읽기라서).
+- **도메인**: `jieuni.space`, Cloudflare에서 구입·DNS. 처음부터 운영 주소로 간다.
+  - `jieuni.space` → Vercel(DNS only).
+  - `api.jieuni.space` → EC2 Elastic IP, **Cloudflare 프록시 끔**. Caddy가 Let's Encrypt 인증서를 직접 받는다. 브라우저는 이 주소를 부르지 않는다(Vercel rewrites의 목적지, 6절 같은 출처 프록시).
+  - `photos.jieuni.space` → R2 커스텀 도메인. 같은 계정의 존이어야 한다는 조건을 Cloudflare 구입으로 채운다. r2.dev는 속도 제한이 있는 개발용이라 운영에서 끈다([공개 버킷](https://developers.cloudflare.com/r2/buckets/public-buckets/)).
+- **운영 값**: `FRONTEND_URL=https://jieuni.space`(구글 `redirect_uri`), `REVALIDATE_URL`은 비워 `FRONTEND_URL`로 부른다, Vercel `API_URL=https://api.jieuni.space`, `NEXT_PUBLIC_SITE_URL=https://jieuni.space`, `PHOTO_PUBLIC_BASE_URL=https://photos.jieuni.space`. 구글 리디렉트 URI `https://jieuni.space/login/oauth2/code/google`(구글은 HTTPS·공개 접미사 도메인만 허용하고 IP를 받지 않는다, [규칙](https://developers.google.com/identity/protocols/oauth2/web-server#uri-validation)). R2 CORS는 `https://jieuni.space`에서 `PUT`·`Content-Type`·`ETag`(서명 URL에도 CORS가 필요하다, [CORS](https://developers.cloudflare.com/r2/buckets/cors/)).
+- **AI 초안 서비스**: 공개 뒤에 만든다. 운영 compose에 `ai`가 없다.
+
+### 포기한 것
+
+- **도메인 전 임시 구성**(vercel.app 주소, EIP 평문 HTTP, r2.dev): 도메인이 생겨 필요 없다. 두면 구글 리디렉트·R2 CORS·서치 콘솔 등록을 두 번 해야 하고, Vercel ↔ EC2 구간이 잠시라도 평문이 된다.
+- **Cloudflare 프록시(주황 구름) 뒤의 API**: 켜면 인증서·실제 IP·`X-Forwarded-*`를 Cloudflare 기준으로 다시 맞춰야 한다. 브라우저가 부르지 않는 주소라 얻는 것이 적다.
+- **EC2에서 이미지 빌드**: 2GB 서버에서 Gradle 빌드는 빠듯하고 빌드 캐시가 서버에 남는다.
+- **비용 위험**: AWS Free Plan(2025-07-15 이후 계정)은 크레딧 최대 $200·최대 6개월이고, 만료되면 계정이 정지되고 90일 뒤 삭제된다([FAQ](https://aws.amazon.com/free/free-tier-faqs/)). 만료 전 Paid plan 전환 날짜를 `docs/RUNBOOK.md`에 둔다.
+
+### 같은 날 정한 것
+
+- **AI 국면(PLAN A1~A8·B14·M5)은 공개 뒤로** 옮긴다. 마무리·배포·첫 10곳 공개를 먼저 끝낸다. 첫 10곳은 AI 초안 없이 손으로 등록한다.
+- **글꼴 로컬화는 하지 않는다**(PLAN F2 메모 취소). 프론트는 Vercel에서 빌드되고 `next/font/google`은 빌드 때만 Google Fonts를 받아 자체 호스팅한다. 로컬 Docker 빌드가 그 요청에서 깨지면 재시도한다. Vercel 빌드가 반복해서 깨지면 공개 뒤에 다시 본다.
 
 ---
 
@@ -338,7 +359,7 @@ MinIO 커뮤니티 에디션은 저장소가 보관(archived) 처리됐고 Docke
 
 ## 확인이 필요한 결정
 
-1. **호스팅과 계정** (9절, 보류).
+1. ~~호스팅과 계정~~ → **Vercel + EC2 한 대 + R2, 도메인 `jieuni.space`** (9절, 2026-10-11).
 2. **Spring Boot vs NestJS**: Spring을 권한다. 생태계 크기와 써 본 경험 때문이다.
 3. **JPA vs JdbcTemplate**: JPA를 권한다. 두 방식을 비교해 말할 수 있게 된다.
 4. **AI 서비스를 Python으로**: LLM 앱 생태계가 Python 중심이라 권한다. 언어가 셋이 되는 부담이 있다.

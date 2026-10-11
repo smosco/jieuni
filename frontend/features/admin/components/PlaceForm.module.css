@@ -163,7 +163,9 @@
   gap: var(--space-lg);
 }
 
+/* 짧은 글자("위로", "넣기")는 보이는 폭을 두고 누르는 영역만 가로 44px까지 넓힌다. 버튼 사이 16px 안에서 반씩 겹친다. */
 .textButton {
+  position: relative;
   min-height: var(--touch-min);
   padding: 0;
   border: 0;
@@ -172,8 +174,14 @@
   cursor: pointer;
 }
 
+.textButton::before {
+  content: "";
+  position: absolute;
+  inset: 0 min(0px, calc((100% - var(--touch-min)) / 2));
+}
+
 .textButton:disabled {
-  color: var(--color-ink-tertiary);
+  color: var(--color-ink-disabled);
   cursor: default;
 }
 
@@ -224,7 +232,7 @@
 
 /* 고를 수 없는 줄(다른 날에 편성된 공간) */
 .optionOff {
-  color: var(--color-ink-tertiary);
+  color: var(--color-ink-disabled);
   cursor: default;
 }
 

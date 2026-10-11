@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod";
 import type { SourceType } from "@/features/place/types";
 import type { CreditRole } from "@/shared/api/types";
 import { embedSource, embedTypeOf } from "@/shared/lib/embed";

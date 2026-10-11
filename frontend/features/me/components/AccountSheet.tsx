@@ -24,6 +24,7 @@ export function AccountSheet({ open, me, onClose }: { open: boolean; me: Me; onC
 
 function Content({ titleId, me, onClose }: { titleId: string; me: Me; onClose: () => void }) {
   const [confirming, setConfirming] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [nickname, setNickname] = useState(me.nickname);
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -41,7 +42,7 @@ function Content({ titleId, me, onClose }: { titleId: string; me: Me; onClose: (
     }
   }
 
-  // 사용자별 캐시를 지우고 /api/me를 다시 받는다. 로그아웃·탈퇴 때 지워진 CSRF 쿠키도 이 응답으로 새로 받는다.
+  // 사용자별 캐시를 지우고 /api/me를 다시 받는다. 로그아웃 때 지워진 CSRF 쿠키도 이 응답으로 새로 받는다.
   async function signedOut() {
     forgetUser(queryClient);
     await queryClient.invalidateQueries({ queryKey: ["me"], exact: true });
@@ -58,10 +59,13 @@ function Content({ titleId, me, onClose }: { titleId: string; me: Me; onClose: (
     await signedOut();
   }
 
+  // 두 번 누르면 두 번째 요청이 이미 지운 세션으로 가서 실패 토스트가 뜬다.
   async function leave() {
+    setLeaving(true);
     try {
       await deleteMe();
     } catch {
+      setLeaving(false);
       toast("탈퇴하지 못했어요. 다시 시도해 주세요");
       return;
     }
@@ -81,7 +85,7 @@ function Content({ titleId, me, onClose }: { titleId: string; me: Me; onClose: (
           저장한 공간과 팔로우는 바로 지워져요. 소개한 공간은 남지만 누가 소개했는지는 지워져요.
         </p>
         <div className={styles.sheetButtons}>
-          <button type="button" className={`label-md ${form.primary}`} onClick={leave}>
+          <button type="button" className={`label-md ${form.primary}`} disabled={leaving} onClick={leave}>
             탈퇴하기
           </button>
           <button type="button" className={`label-md ${form.secondary}`} onClick={() => setConfirming(false)}>
@@ -128,8 +132,7 @@ function Content({ titleId, me, onClose }: { titleId: string; me: Me; onClose: (
           로그아웃
         </button>
       </div>
-      {/* 탈퇴 API가 생기면 켠다. */}
-      <button type="button" className={`label-md ${styles.textButton}`} disabled onClick={() => setConfirming(true)}>
+      <button type="button" className={`label-md ${styles.textButton}`} onClick={() => setConfirming(true)}>
         탈퇴
       </button>
     </>

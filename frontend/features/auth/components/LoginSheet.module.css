@@ -37,7 +37,7 @@
 .google:disabled,
 .dev:disabled {
   border-color: var(--color-line);
-  color: var(--color-ink-tertiary);
+  color: var(--color-ink-disabled);
   cursor: default;
 }
 

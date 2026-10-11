@@ -17,7 +17,7 @@ export function PhotoImage({
     <img
       className={className}
       src={photo.url.w800}
-      srcSet={`${photo.url.w800} 800w, ${photo.url.w1600} 1600w`}
+      srcSet={srcSet(photo)}
       sizes={sizes}
       width={photo.width}
       height={photo.height}
@@ -26,4 +26,13 @@ export function PhotoImage({
       fetchPriority={priority ? "high" : undefined}
     />
   );
+}
+
+// width는 큰 파일의 실제 너비다. 작은 사진은 키우지 않고 올려서 파일 너비가 이름(1600·800)보다 작을 수 있다.
+// 두 파일 너비가 같으면(800 이하) 하나만 적는다.
+function srcSet(photo: Photo): string {
+  const small = Math.min(photo.width, 800);
+  return small === photo.width
+    ? `${photo.url.w800} ${small}w`
+    : `${photo.url.w800} ${small}w, ${photo.url.w1600} ${photo.width}w`;
 }

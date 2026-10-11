@@ -24,7 +24,7 @@ export function TabBar() {
           <Link
             key={tab.href}
             href={tab.href}
-            className={`label-md ${styles.tab} ${active ? styles.active : ""}`}
+            className={`label-md hit-area ${styles.tab} ${active ? styles.active : ""}`}
             aria-current={active ? "page" : undefined}
           >
             <span className={styles.label}>{tab.label}</span>

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod";
 import type { Access, PlaceKind } from "@/shared/api/types";
 import type { AdminPlace, PlaceEdit, Senses } from "./types";
 

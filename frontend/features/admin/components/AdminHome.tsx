@@ -48,13 +48,13 @@ export function AdminHome() {
             <div className={styles.count}>
               <dt className={`label-sm ${styles.meta}`}>검토 대기 제보</dt>
               <dd className="display-md">
-                <Link href="/admin/suggestions">{data.pendingSuggestions}건</Link>
+                <Link href="/admin/suggestions" className="hit-area">{data.pendingSuggestions}건</Link>
               </dd>
             </div>
             <div className={styles.count}>
               <dt className={`label-sm ${styles.meta}`}>작성 중인 공간</dt>
               <dd className="display-md">
-                <Link href="/admin/places?status=draft">{data.draftCount}곳</Link>
+                <Link href="/admin/places?status=draft" className="hit-area">{data.draftCount}곳</Link>
               </dd>
             </div>
             <div className={styles.count}>

@@ -1,6 +1,16 @@
+import { notFound } from "next/navigation";
+import { ApiError } from "@/shared/api/client";
 import { serverFetch } from "@/shared/api/server";
+import { assertSlug } from "@/shared/lib/slug";
 import type { PlaceDetail } from "./types";
 
-export function getPlace(slug: string): Promise<PlaceDetail> {
-  return serverFetch<PlaceDetail>(`/api/places/${encodeURIComponent(slug)}`, { tags: [`place:${slug}`] });
+// 페이지·메타데이터·공유 카드가 같이 부른다. 같은 렌더 안의 같은 fetch는 Next가 한 번만 보낸다.
+export async function loadPlace(slug: string): Promise<PlaceDetail> {
+  assertSlug(slug);
+  return serverFetch<PlaceDetail>(`/api/places/${encodeURIComponent(slug)}`, { tags: [`place:${slug}`] }).catch(
+    (e: unknown) => {
+      if (e instanceof ApiError && e.status === 404) notFound();
+      throw e;
+    },
+  );
 }

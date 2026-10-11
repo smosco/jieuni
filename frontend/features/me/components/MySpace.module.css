@@ -183,7 +183,7 @@
 
 .smallButton:disabled {
   border-color: var(--color-line);
-  color: var(--color-ink-tertiary);
+  color: var(--color-ink-disabled);
   cursor: default;
 }
 
@@ -200,9 +200,4 @@
   background: none;
   color: var(--color-ink-secondary);
   cursor: pointer;
-}
-
-.textButton:disabled {
-  color: var(--color-ink-tertiary);
-  cursor: default;
 }

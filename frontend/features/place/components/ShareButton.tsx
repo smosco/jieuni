@@ -23,7 +23,7 @@ export function ShareButton({ title }: { title: string }) {
   }
 
   return (
-    <button type="button" className={`label-md ${styles.textButton}`} onClick={share}>
+    <button type="button" className={`label-md hit-area ${styles.textButton}`} onClick={share}>
       공유
     </button>
   );

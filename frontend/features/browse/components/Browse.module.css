@@ -28,7 +28,7 @@
   display: none;
 }
 
-/* 보이는 칩은 26px로 두고 터치 영역만 위아래로 44px까지 늘린다(줄의 위아래 16px 여백 안에 들어간다) */
+/* 보이는 칩은 26px로 두고 터치 영역만 위아래로 44px까지 늘린다(줄의 위아래 16px 여백 안에 들어간다). 한 글자 칩은 가로도 */
 .chip {
   position: relative;
   flex: none;
@@ -43,7 +43,7 @@
 .chip::before {
   content: "";
   position: absolute;
-  inset: calc((var(--touch-min) - 100%) / -2) 0;
+  inset: calc((var(--touch-min) - 100%) / -2) min(0px, calc((100% - var(--touch-min)) / 2));
 }
 
 .chipOn {
