@@ -28,9 +28,9 @@ class HttpRevalidateClient implements RevalidateClient {
 	private final RestClient http;
 
 	@Autowired
-	HttpRevalidateClient(@Value("${jieuni.revalidate.url:}") String url,
+	HttpRevalidateClient(@Value("${REVALIDATE_URL:}") String revalidateUrl, @Value("${FRONTEND_URL:}") String frontendUrl,
 			@Value("${jieuni.revalidate.secret:}") String secret) {
-		this(RestClient.builder().requestFactory(requestFactory()), url, secret);
+		this(RestClient.builder().requestFactory(requestFactory()), RevalidateClient.url(revalidateUrl, frontendUrl), secret);
 	}
 
 	HttpRevalidateClient(RestClient.Builder builder, String url, String secret) {

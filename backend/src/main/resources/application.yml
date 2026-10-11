@@ -49,7 +49,6 @@ jieuni:
     access-key: ${S3_ACCESS_KEY}
     secret-key: ${S3_SECRET_KEY}
   admin-emails: ${ADMIN_EMAILS:}
-  # 백엔드가 프론트의 재생성 라우트를 부를 주소. compose 안에서는 공개 주소(FRONTEND_URL)로 프론트에 닿지 않는다.
+  # 재생성 주소는 HttpRevalidateClient가 REVALIDATE_URL·FRONTEND_URL에서 고른다. 중첩 기본값은 빈 REVALIDATE_URL을 그대로 써서 두지 않는다.
   revalidate:
-    url: ${REVALIDATE_URL:${FRONTEND_URL:}}
     secret: ${REVALIDATE_SECRET:}

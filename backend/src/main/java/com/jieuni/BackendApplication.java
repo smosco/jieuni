@@ -1,5 +1,6 @@
 package com.jieuni;
 
+import com.jieuni.common.RevalidateClient;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.core.env.Environment;
@@ -33,9 +34,7 @@ public class BackendApplication {
 				"REVALIDATE_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET")
 				.filter(name -> !StringUtils.hasText(env.getProperty(name)))
 				.toList());
-		// 재생성 주소는 따로 주지 않으면 공개 주소를 쓴다.
-		if (!StringUtils.hasText(env.getProperty("REVALIDATE_URL"))
-				&& !StringUtils.hasText(env.getProperty("FRONTEND_URL"))) {
+		if (!StringUtils.hasText(RevalidateClient.url(env.getProperty("REVALIDATE_URL"), env.getProperty("FRONTEND_URL")))) {
 			missing.add("REVALIDATE_URL 또는 FRONTEND_URL");
 		}
 		return missing;

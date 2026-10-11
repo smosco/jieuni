@@ -43,12 +43,6 @@ class ProdProfileTest {
 		assertThat(clock.instant()).isAfter(Instant.parse("2026-01-01T00:00:00Z"));
 	}
 
-	// 재생성 주소를 따로 주지 않으면 공개 주소로 부른다.
-	@Test
-	void revalidateUrlFallsBackToFrontendUrl() {
-		assertThat(context.getEnvironment().getProperty("jieuni.revalidate.url")).isEqualTo("https://example.test");
-	}
-
 	// Caddy가 주는 X-Forwarded-Proto를 믿어야 XSRF-TOKEN 쿠키에도 Secure가 붙는다.
 	@Test
 	void trustsForwardedHeadersFromProxy() {
@@ -72,6 +66,7 @@ class ProdProfileTest {
 	@Test
 	void prodRequiresSomeRevalidateUrl() {
 		assertThat(BackendApplication.missingProdEnv(prodEnv())).isEmpty();
+		assertThat(BackendApplication.missingProdEnv(prodEnv().withProperty("REVALIDATE_URL", ""))).isEmpty();
 		assertThat(BackendApplication.missingProdEnv(prodEnv().withProperty("FRONTEND_URL", "")
 				.withProperty("REVALIDATE_URL", "http://frontend:3000"))).isEmpty();
 		assertThat(BackendApplication.missingProdEnv(prodEnv().withProperty("FRONTEND_URL", "")))
