@@ -1,6 +1,6 @@
 # 공간의 지은이 — 기술 선택 기록 (DECISIONS v0.3)
 
-> 코드를 쓰기 전에 내린 결정들. 각 항목 끝의 "채택 / 포기한 것"이 결론이다 (2026-10-06, 9절만 보류).
+> 코드를 쓰기 전에 내린 결정들. 각 항목 끝의 "채택 / 포기한 것"이 결론이다 (2026-10-06. 9절 배포는 2026-10-11에 결정).
 > 근거는 `SPEC.md`(무엇을 만드는가)에서 끌어온다.
 
 ## 전제
@@ -25,7 +25,7 @@
 | 사진 | Cloudflare R2(개발·운영), 서명된 URL로 브라우저 직접 업로드 |
 | 예약 공개 | 조회 시점 계산 + 08:00 스케줄러가 홈 재생성 |
 | AI 초안 | Python 3.14 + FastAPI, Tavily 검색, Tool Calling 직접 구현 → LangGraph 이식, MCP 서버 |
-| 배포 | 프론트 Vercel, 백엔드·DB·AI 서비스는 서버 한 대에 Docker Compose (호스팅 보류) |
+| 배포 | 프론트 Vercel Hobby(`icn1`), 백엔드·DB는 EC2 한 대(서울)에 Docker Compose + Caddy, 사진 R2, 도메인 `jieuni.space` (2026-10-11) |
 | CI | GitHub Actions: 테스트, 타입 검사 |
 
 ---
@@ -249,14 +249,33 @@ v0.1은 공간을 저장소의 MDX 파일로 두는 안이었다.
 
 ---
 
-## 9. 배포 — 보류
+## 9. 배포 — Vercel + EC2 한 대 + R2 (2026-10-11 결정)
 
-호스팅과 계정 문제는 보류했다. 확정된 것만 적는다.
+이전(보류 때)에 정해 둔 것: 프론트는 Vercel Hobby(비상업, 수익화하면 Pro), 백엔드와 PostgreSQL은 Docker Compose로 서버 한 대, HTTPS는 리버스 프록시의 자동 인증서, DB는 매일 `pg_dump` → R2 백업과 복원 한 번. 서버 후보는 EC2 · Lightsail · 무료 PaaS였다.
 
-- 프론트: Vercel Hobby(비상업). 수익화하면 Pro.
-- 백엔드, PostgreSQL, AI 초안 서비스는 **Docker Compose로 서버 한 대**에 올린다. 로컬의 `docker compose up` 구성을 그대로 운영으로 가져간다.
-- HTTPS는 리버스 프록시의 자동 인증서. DB는 매일 `pg_dump` → R2로 백업하고, 복원을 한 번 실제로 해 본다.
-- 서버 후보: AWS EC2(가장 널리 쓰임, 무료 기간 이후 월 2~3만 원 추정), AWS Lightsail(정액), 무료 PaaS + 무료 Postgres. **결정 마감: PLAN M4(AI 국면 끝, 10/13 — 2026-10-07 체크포인트로 10/20에서 앞당김).** D1이 이 결정에 의존한다.
+### 채택
+
+- **프론트**: Vercel Hobby, 함수 리전 `icn1`(서울). Hobby는 함수 리전을 하나만 고를 수 있고 비상업 용도만 허용한다([리전](https://vercel.com/docs/functions/configuring-functions/region) · [Hobby](https://vercel.com/docs/plans/hobby)). 백엔드가 서울이라 rewrites 프록시 왕복이 짧다.
+- **백엔드 + PostgreSQL**: AWS EC2 한 대(서울 `ap-northeast-2`), docker compose로 `db` · `backend` · `caddy`. 백엔드 이미지는 CI가 만들어 GHCR에 두고 서버는 받기만 한다. ARM(t4g) 이미지를 QEMU로 빌드하지 않는 방법(빌드 단계 `--platform=$BUILDPLATFORM` 또는 arm64 러너)은 D1 승인 때 고른다.
+- **사진**: R2 운영 버킷 `jieuni`(개발 `jieuni-dev`와 분리), 공개 읽기는 커스텀 도메인. 백업은 비공개 버킷 `jieuni-backup`(운영 버킷은 공개 읽기라서).
+- **도메인**: `jieuni.space`, Cloudflare에서 구입·DNS. 처음부터 운영 주소로 간다.
+  - `jieuni.space` → Vercel(DNS only).
+  - `api.jieuni.space` → EC2 Elastic IP, **Cloudflare 프록시 끔**. Caddy가 Let's Encrypt 인증서를 직접 받는다. 브라우저는 이 주소를 부르지 않는다(Vercel rewrites의 목적지, 6절 같은 출처 프록시).
+  - `photos.jieuni.space` → R2 커스텀 도메인. 같은 계정의 존이어야 한다는 조건을 Cloudflare 구입으로 채운다. r2.dev는 속도 제한이 있는 개발용이라 운영에서 끈다([공개 버킷](https://developers.cloudflare.com/r2/buckets/public-buckets/)).
+- **운영 값**: `FRONTEND_URL=https://jieuni.space`(구글 `redirect_uri`), `REVALIDATE_URL`은 비워 `FRONTEND_URL`로 부른다, Vercel `API_URL=https://api.jieuni.space`, `NEXT_PUBLIC_SITE_URL=https://jieuni.space`, `PHOTO_PUBLIC_BASE_URL=https://photos.jieuni.space`. 구글 리디렉트 URI `https://jieuni.space/login/oauth2/code/google`(구글은 HTTPS·공개 접미사 도메인만 허용하고 IP를 받지 않는다, [규칙](https://developers.google.com/identity/protocols/oauth2/web-server#uri-validation)). R2 CORS는 `https://jieuni.space`에서 `PUT`·`Content-Type`·`ETag`(서명 URL에도 CORS가 필요하다, [CORS](https://developers.cloudflare.com/r2/buckets/cors/)).
+- **AI 초안 서비스**: 공개 뒤에 만든다. 운영 compose에 `ai`가 없다.
+
+### 포기한 것
+
+- **도메인 전 임시 구성**(vercel.app 주소, EIP 평문 HTTP, r2.dev): 도메인이 생겨 필요 없다. 두면 구글 리디렉트·R2 CORS·서치 콘솔 등록을 두 번 해야 하고, Vercel ↔ EC2 구간이 잠시라도 평문이 된다.
+- **Cloudflare 프록시(주황 구름) 뒤의 API**: 켜면 인증서·실제 IP·`X-Forwarded-*`를 Cloudflare 기준으로 다시 맞춰야 한다. 브라우저가 부르지 않는 주소라 얻는 것이 적다.
+- **EC2에서 이미지 빌드**: 2GB 서버에서 Gradle 빌드는 빠듯하고 빌드 캐시가 서버에 남는다.
+- **비용 위험**: AWS Free Plan(2025-07-15 이후 계정)은 크레딧 최대 $200·최대 6개월이고, 만료되면 계정이 정지되고 90일 뒤 삭제된다([FAQ](https://aws.amazon.com/free/free-tier-faqs/)). 만료 전 Paid plan 전환 날짜를 `docs/RUNBOOK.md`에 둔다.
+
+### 같은 날 정한 것
+
+- **AI 국면(PLAN A1~A8·B14·M5)은 공개 뒤로** 옮긴다. 마무리·배포·첫 10곳 공개를 먼저 끝낸다. 첫 10곳은 AI 초안 없이 손으로 등록한다.
+- **글꼴 로컬화는 하지 않는다**(PLAN F2 메모 취소). 프론트는 Vercel에서 빌드되고 `next/font/google`은 빌드 때만 Google Fonts를 받아 자체 호스팅한다. 로컬 Docker 빌드가 그 요청에서 깨지면 재시도한다. Vercel 빌드가 반복해서 깨지면 공개 뒤에 다시 본다.
 
 ---
 
@@ -338,7 +357,7 @@ MinIO 커뮤니티 에디션은 저장소가 보관(archived) 처리됐고 Docke
 
 ## 확인이 필요한 결정
 
-1. **호스팅과 계정** (9절, 보류).
+1. ~~호스팅과 계정~~ → **Vercel + EC2 한 대 + R2, 도메인 `jieuni.space`** (9절, 2026-10-11).
 2. **Spring Boot vs NestJS**: Spring을 권한다. 생태계 크기와 써 본 경험 때문이다.
 3. **JPA vs JdbcTemplate**: JPA를 권한다. 두 방식을 비교해 말할 수 있게 된다.
 4. **AI 서비스를 Python으로**: LLM 앱 생태계가 Python 중심이라 권한다. 언어가 셋이 되는 부담이 있다.
