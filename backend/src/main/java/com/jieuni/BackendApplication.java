@@ -30,7 +30,7 @@ public class BackendApplication {
 	static List<String> missingProdEnv(Environment env) {
 		List<String> missing = new ArrayList<>(Stream.of("DB_URL", "POSTGRES_USER", "POSTGRES_PASSWORD",
 				"PHOTO_PUBLIC_BASE_URL", "S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY",
-				"REVALIDATE_SECRET")
+				"REVALIDATE_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET")
 				.filter(name -> !StringUtils.hasText(env.getProperty(name)))
 				.toList());
 		// 재생성 주소는 따로 주지 않으면 공개 주소를 쓴다.

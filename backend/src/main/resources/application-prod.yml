@@ -4,9 +4,11 @@ spring:
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
 
-# TLS를 앞단(호스팅)이 끝내도 쿠키에 Secure가 붙게 한다.
 server:
+  # TLS는 Caddy가 끝낸다. 8080은 docker 네트워크 안에만 열려 Tomcat 기본 내부 프록시 범위(사설망)의 Caddy만 X-Forwarded-*를 믿게 된다.
+  forward-headers-strategy: native
   servlet:
     session:
       cookie:
+        # 프록시 헤더와 무관하게 세션 쿠키는 항상 Secure.
         secure: true
