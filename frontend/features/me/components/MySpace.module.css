@@ -201,8 +201,3 @@
   color: var(--color-ink-secondary);
   cursor: pointer;
 }
-
-.textButton:disabled {
-  color: var(--color-ink-tertiary);
-  cursor: default;
-}
