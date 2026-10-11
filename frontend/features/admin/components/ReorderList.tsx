@@ -94,7 +94,7 @@ export function ReorderList<T extends { key: string }>({
                     className={`label-sm ${styles.textButton}`}
                     disabled={i === 0}
                     onClick={() => onChange(move(rows, i, i - 1))}
-                    aria-label={`${i + 1}번째를 위로`}
+                    aria-label={`${label} ${i + 1}번째를 위로`}
                   >
                     위로
                   </button>
@@ -103,7 +103,7 @@ export function ReorderList<T extends { key: string }>({
                     className={`label-sm ${styles.textButton}`}
                     disabled={i === rows.length - 1}
                     onClick={() => onChange(move(rows, i, i + 1))}
-                    aria-label={`${i + 1}번째를 아래로`}
+                    aria-label={`${label} ${i + 1}번째를 아래로`}
                   >
                     아래로
                   </button>
@@ -111,7 +111,7 @@ export function ReorderList<T extends { key: string }>({
                     type="button"
                     className={`label-sm ${styles.textButton}`}
                     onClick={() => onChange(rows.filter((r) => r.key !== row.key))}
-                    aria-label={`${i + 1}번째 빼기`}
+                    aria-label={`${label} ${i + 1}번째 빼기`}
                   >
                     빼기
                   </button>

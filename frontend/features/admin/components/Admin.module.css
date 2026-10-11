@@ -59,7 +59,7 @@
 }
 
 .menuOff {
-  color: var(--color-ink-tertiary);
+  color: var(--color-ink-disabled);
   cursor: default;
 }
 

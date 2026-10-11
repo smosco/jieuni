@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod";
 import type { MakerKind } from "@/shared/api/types";
 import type { AdminMaker, MakerEdit } from "./types";
 

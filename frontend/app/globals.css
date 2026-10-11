@@ -32,6 +32,18 @@ button {
   white-space: nowrap;
 }
 
+/* 작은 글자 링크·버튼: 보이는 크기는 두고 누르는 영역만 가로·세로 44px까지 넓힌다.
+   44px보다 큰 쪽은 줄이지 않는다(min). ::before를 이미 쓰는 요소에는 붙이지 않는다. */
+.hit-area {
+  position: relative;
+}
+
+.hit-area::before {
+  content: "";
+  position: absolute;
+  inset: min(0px, calc((100% - var(--touch-min)) / 2));
+}
+
 /* 시트가 열려 있으면 뒤 화면이 스크롤되지 않게 */
 html:has(dialog[open]) {
   overflow: hidden;

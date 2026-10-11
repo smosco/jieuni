@@ -14,12 +14,14 @@
   border-top: var(--hairline) solid var(--color-line);
 }
 
+/* 위쪽 여백은 켜진 탭의 선(1px)과 간격(6px)만큼: 선·간격·글자를 한 덩어리로 세로 가운데에 두어(DESIGN 미리보기) 글자가 3.5px 내려간다. */
 .tab {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--space-xs);
   min-height: var(--touch-min);
+  padding-top: calc(var(--hairline) + var(--tab-indicator-gap));
   color: var(--color-ink-tertiary);
   transition: color var(--duration-state) var(--ease-out);
 }

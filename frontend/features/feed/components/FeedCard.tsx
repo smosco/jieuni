@@ -71,7 +71,7 @@ export function FeedCard({
           <div className={styles.makerRow}>
             <span className={`label-sm ${styles.role}`}>{ROLE_LABEL[firstMaker.role]}</span>
             {firstMaker.slug ? (
-              <Link href={`/makers/${firstMaker.slug}`} className={`body-md ${styles.interactive}`} onClick={onLeave}>
+              <Link href={`/makers/${firstMaker.slug}`} className={`body-md hit-area ${styles.interactive}`} onClick={onLeave}>
                 {firstMaker.name}
               </Link>
             ) : (

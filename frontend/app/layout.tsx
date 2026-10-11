@@ -26,9 +26,9 @@ const sans = IBM_Plex_Sans_KR({
 });
 
 // 자식 경로에서 상대 경로로 쓴 canonical·og:url·공유 카드 주소가 이 주소에 붙는다.
+// title은 두지 않는다: 페이지마다 제목이 있고, 여기 두면 없는 주소의 404 화면에서 이 제목이 404 제목보다 먼저 나온다.
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: SITE_NAME,
   description: SITE_DESCRIPTION,
   openGraph: { type: "website", siteName: SITE_NAME, locale: "ko_KR" },
   twitter: { card: "summary_large_image" },

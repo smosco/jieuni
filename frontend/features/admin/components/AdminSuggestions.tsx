@@ -110,7 +110,7 @@ function PlaceSuggestionRow({ item }: { item: PlaceSuggestion }) {
         <dt className={`label-sm ${admin.meta}`}>참고 링크</dt>
         <dd className="body-md">
           {item.link ? (
-            <a href={item.link} target="_blank" rel="noopener noreferrer" className={styles.link}>
+            <a href={item.link} target="_blank" rel="noopener noreferrer" className={`hit-area ${styles.link}`}>
               {item.link}
             </a>
           ) : (
@@ -164,7 +164,7 @@ function CreditSuggestionRow({ item }: { item: CreditSuggestion }) {
         <dt className={`label-sm ${admin.meta}`}>출처</dt>
         <dd className="body-md">
           {item.sourceUrl ? (
-            <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className={styles.link}>
+            <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className={`hit-area ${styles.link}`}>
               {item.sourceUrl}
             </a>
           ) : (

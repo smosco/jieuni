@@ -5,8 +5,9 @@
   --color-paper-raised: #EBE5DA;
   --color-photo-placeholder: #D9CFBF;
   --color-line: #D8D0C3;
-  --color-ink-tertiary: #A39B8F;   /* 2.4:1 — 10~12px 라벨과 보조 정보에만 */
-  --color-ink-secondary: #6E665C;  /* 5.0:1 */
+  --color-ink-disabled: #A39B8F;   /* 2.4:1 — 꺼진 버튼·링크 전용. WCAG는 꺼진 컨트롤을 대비 기준에서 뺀다 */
+  --color-ink-tertiary: #746C5F;   /* 4.6:1 — 라벨과 보조 정보 */
+  --color-ink-secondary: #565048;  /* 7.0:1 */
   --color-ink: #2A2622;            /* 13.2:1 */
   --color-earth: #8A5A3C;          /* 5.1:1, 유일한 포인트 색 */
   --color-on-photo: #F7F4EE;
@@ -72,6 +73,7 @@
   --tile-size: 124px;
   --tile-gap: 1.5px;
   --touch-min: 44px;
+  --input-font-size: 16px;
   --sheet-padding: 12px 24px 40px;
   --sheet-gap: 20px;
   --sheet-handle-width: 32px;

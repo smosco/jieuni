@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
-import { SITE_NAME } from "@/shared/lib/site";
+import { type ShareCard, SITE_NAME } from "@/shared/lib/site";
 
 export const SHARE_CARD_SIZE = { width: 1200, height: 630 };
+
 
 // ImageResponse는 CSS 변수를 읽지 못한다. tokens.css와 같은 값이고 배치는 DESIGN.md "공유 카드".
 const COLOR = { paper: "#F4F0E8", ink: "#2A2622", inkSecondary: "#6E665C", earth: "#8A5A3C" };
@@ -19,7 +20,7 @@ async function loadFont(family: string, weight: number, text: string): Promise<A
 }
 
 // 실패하면 그대로 던진다. 한글이 빈 네모로 그려진 카드가 캐시에 남는 것보다 카드가 없는 편이 낫다.
-export async function shareCard({ kicker, title }: { kicker: string; title: string }): Promise<ImageResponse> {
+export async function shareCard({ kicker, title }: ShareCard): Promise<ImageResponse> {
   const [serif, sans] = await Promise.all([
     loadFont("Noto Serif KR", 300, title),
     loadFont("IBM Plex Sans KR", 400, SITE_NAME + kicker),

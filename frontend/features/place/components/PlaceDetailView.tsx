@@ -81,7 +81,7 @@ export function PlaceDetailView({ place }: { place: PlaceDetail }) {
                 <span className={`label-sm ${styles.role}`}>{ROLE_LABEL[credit.role]}</span>
                 <span className={styles.who}>
                   {credit.maker.slug ? (
-                    <Link href={`/makers/${credit.maker.slug}`} className="body-md">
+                    <Link href={`/makers/${credit.maker.slug}`} className={`body-md hit-area ${styles.creditName}`}>
                       {credit.maker.name}
                     </Link>
                   ) : (
@@ -131,11 +131,11 @@ export function PlaceDetailView({ place }: { place: PlaceDetail }) {
             <div className={`${styles.row} ${styles.visitRow}`}>
               <dt className={`label-sm ${styles.visitLabel}`}>지도</dt>
               <dd className="body-md">
-                <a href={place.mapLinks.naver} target="_blank" rel="noopener noreferrer">
+                <a href={place.mapLinks.naver} target="_blank" rel="noopener noreferrer" className="hit-area">
                   네이버지도
                 </a>
                 {" · "}
-                <a href={place.mapLinks.kakao} target="_blank" rel="noopener noreferrer">
+                <a href={place.mapLinks.kakao} target="_blank" rel="noopener noreferrer" className="hit-area">
                   카카오맵
                 </a>
               </dd>
@@ -160,7 +160,7 @@ function CreditStatus({ verified, sourceUrl }: { verified: boolean; sourceUrl: s
   if (!verified) return <span className={className}>확인 중</span>;
   if (!sourceUrl) return <span className={className}>출처 확인됨</span>;
   return (
-    <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className={className} aria-label="출처 확인됨, 출처를 새 창으로 열기">
+    <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className={`${className} hit-area ${styles.creditSource}`} aria-label="출처 확인됨, 출처를 새 창으로 열기">
       출처 확인됨 <span aria-hidden="true">↗</span>
     </a>
   );
@@ -180,7 +180,7 @@ function Encounter({ place }: { place: PlaceDetail }) {
   if (!source) return null;
   return (
     <p className={styles.encounter}>
-      <a href={source.url} target="_blank" rel="noopener noreferrer" className={`body-sm ${styles.encounterLink}`}>
+      <a href={source.url} target="_blank" rel="noopener noreferrer" className={`body-sm hit-area ${styles.encounterLink}`}>
         {ENCOUNTER_LABEL[source.type]}
       </a>
     </p>

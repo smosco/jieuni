@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod";
 import type { PhotoLicense } from "@/shared/api/types";
 import { optionalLink, picked, rowKey } from "./listSchema";
 import { toFieldErrors } from "./placeSchema";

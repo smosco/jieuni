@@ -209,6 +209,8 @@ v0.1은 공간을 저장소의 MDX 파일로 두는 안이었다.
 
 **2026-10-10(B13) 재생성 호출**: 백엔드가 프론트를 부르는 주소(`REVALIDATE_URL`)를 공개 주소(`FRONTEND_URL`)와 나눈다. `FRONTEND_URL`은 구글 `redirect_uri`라 브라우저가 보는 주소여야 하는데, compose 안의 백엔드 컨테이너에서 `localhost:3000`은 자기 자신이다. 비우면 `FRONTEND_URL`을 쓴다. 호출은 커밋 직후 관리자 요청 스레드에서 한 번만 보낸다(연결 2초·읽기 5초). 재시도·큐·`@Async`를 두지 않는 이유는 1시간 주기 재생성이 이미 안전망이고(8절), 재시도는 관리자 응답만 늦추기 때문이다. 커밋 뒤 HTTP 호출 동안 DB 연결도 붙잡는다(최대 7초, 관리자 경로라 허용). JDK `HttpClient`는 HTTP/1.1로 고정한다. 기본값은 `http://`에도 h2c 업그레이드 헤더를 붙이는데, Next 서버가 그 요청을 응답 없이 끊었다(compose에서 curl `--http2`로 재현). 공휴일은 다루지 않는다. 편성이 평일만 따지고, 공휴일에 칸을 비워도 08:00에는 피드의 다음 공개 시각이 바뀌므로 재생성이 필요하다.
 
+**2026-10-11(F10) CSP는 nonce 없이**: `next.config.ts`의 `headers()`로 모든 경로에 CSP · `Referrer-Policy` · `X-Content-Type-Options` · `Permissions-Policy`를 단다. `script-src`는 `'self' 'unsafe-inline'`(개발 서버만 `'unsafe-eval'`): nonce를 쓰면 모든 페이지를 요청마다 그려야 해서 태그 캐시·정적 상세와 맞지 않는다(Next [CSP 안내](https://nextjs.org/docs/app/guides/content-security-policy) "Static vs Dynamic Rendering with CSP", "Without Nonces"). 사진 주소(`img-src`)는 빌드 환경 변수 `PHOTO_PUBLIC_BASE_URL`의 origin(없으면 개발 버킷의 `*.r2.dev`), 관리자 업로드(`connect-src`)는 `https://*.r2.cloudflarestorage.com`, 임베드(`frame-src`)는 youtube-nocookie·instagram. 헤더는 빌드 결과물에 굳으므로 사진 주소가 바뀌면 다시 빌드한다. Zod 4는 `new Function`을 시도해 막혀도 위반 보고가 남아서 `z.config({ jitless: true })`로 끈다. **포기한 것**: 인라인 스크립트 주입을 CSP로 막는 것(XSS 방어는 React 이스케이프·마크다운 허용 목록에 기댄다).
+
 **2026-10-10(M3) 관리자 화면의 작업용 숫자**: "숫자 표시 금지"(좋아요·저장 수·팔로워 수·조회수·랭킹)는 공개 화면과 공개 API가 대상이다. 관리자 화면의 작업용 숫자(만든 사람 목록·찾기 칸의 "공간 n곳", API의 `placeCount`)는 예외로 둔다. 인기나 순위가 아니라 크레딧을 정리할 때 같은 사람을 고르게 돕는 값이고, 관리자만 본다.
 
 ---
