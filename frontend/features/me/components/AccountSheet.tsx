@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useId, useState, type FormEvent } from "react";
 import { ApiError } from "@/shared/api/client";
 import { BottomSheet } from "@/shared/ui/BottomSheet";
+import { PolicyLinks } from "@/shared/ui/PolicyLinks";
 import { useToast } from "@/shared/ui/Toast";
 import { changeNickname, deleteMe, logout } from "../api";
 import { forgetUser } from "../cache";
@@ -135,6 +136,7 @@ function Content({ titleId, me, onClose }: { titleId: string; me: Me; onClose: (
       <button type="button" className={`label-md ${styles.textButton}`} onClick={() => setConfirming(true)}>
         탈퇴
       </button>
+      <PolicyLinks onNavigate={onClose} />
     </>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { track } from "@/shared/lib/track";
+import { PolicyLinks } from "@/shared/ui/PolicyLinks";
 import { endScreenCopy, weekPosition } from "../copy";
 import type { FeedResponse } from "../types";
 import styles from "./Feed.module.css";
@@ -39,6 +40,7 @@ export function FeedEnd({ feed, onLeave }: { feed: FeedResponse; onLeave: () => 
             </a>
           )}
         </div>
+        <PolicyLinks onNavigate={onLeave} />
       </div>
     </section>
   );

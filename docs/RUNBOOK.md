@@ -121,7 +121,7 @@ Free plan이 끝나면 계정이 자동으로 닫히고 리소스에 접근할 �
 20. **Branding** 먼저: 앱 이름 `공간의 지은이`, 지원 이메일, **Authorized domains**에 `jieuni.space`. 로고는 올리지 않는다(올리면 브랜드 검증 대상이 된다).
 21. **Clients → Create client** → Application type **Web application**, 이름 `jieuni-prod`. **Authorized redirect URIs**에 `https://jieuni.space/login/oauth2/code/google` 하나만. Authorized JavaScript origins는 비운다(서버 쪽 흐름). Client ID · Client secret을 23단계에 쓴다.
 22. **Audience**: Publishing status가 Testing이면 테스트 사용자만 로그인된다 → **Publish app**. 범위가 `openid email profile`뿐이라 검토 없이 In production이 되어야 한다.
-    - Publish가 홈페이지·개인정보처리방침 URL을 요구하면: **Testing을 유지**하고 **Test users → Add users**에 관리자 계정을 넣어 운영 확인(11절)을 먼저 끝낸다. `/privacy`가 생긴 뒤(D4) Branding에 홈페이지 `https://jieuni.space`·개인정보처리방침 `https://jieuni.space/privacy`를 넣고 Publish한다. 그 전에는 다른 사람이 로그인하지 못한다.
+    - Publish가 홈페이지·개인정보처리방침 URL을 요구하면: **Testing을 유지**하고 **Test users → Add users**에 관리자 계정을 넣어 운영 확인(11절)을 먼저 끝낸다. Publish는 `/privacy`·`/terms`를 배포한 뒤 34~38단계로 한다. 그 전에는 다른 사람이 로그인하지 못한다.
 
 **서버 `.env` 실제 값**
 
@@ -169,6 +169,18 @@ Free plan이 끝나면 계정이 자동으로 닫히고 리소스에 접근할 �
 31. 작업 브랜치를 `main`에 머지한다. `backend/**`가 바뀌었으면 Release가 `latest`를 만들고(1단계), Vercel은 운영으로 다시 배포한다.
 32. 서버 `.env`에서 `BACKEND_TAG`를 비운다(→ `latest`). `REVALIDATE_URL`에 값을 넣어 두었다면 그것도 비운다(비우면 `FRONTEND_URL`로 부른다). 그다음 4절대로 받고 띄운다.
 33. 11절 운영 확인.
+
+**공개 전: 문의 메일 · 동의 화면 게시 · 검색 등록**
+
+`/about`·`/terms`·`/privacy`가 배포된 뒤에 한다. 순서대로: 구글 브랜딩은 Search Console에서 소유를 확인한 도메인만 받으므로 서치 콘솔이 먼저다.
+
+34. 운영 배포에서 `/privacy`·`/terms`·`/about`이 200인지, 홈 피드 마지막 화면에 세 링크가 있는지 본다.
+35. **문의 메일**: Cloudflare → 존 `jieuni.space` → **Email → Email Routing** → 켜기(MX·SPF 레코드를 Cloudflare가 넣는다) → **Destination addresses**에 받을 개인 메일을 넣고 확인 메일의 링크를 누른다 → **Routing rules → Custom address** `hello@jieuni.space` → 그 개인 메일로 Send to. 다른 메일에서 `hello@jieuni.space`로 보내 도착하는지 본다.
+36. **구글 서치 콘솔**: [search.google.com/search-console](https://search.google.com/search-console) → 속성 추가 → **도메인** `jieuni.space` → 나오는 TXT 값을 Cloudflare **DNS → Records**에 Type `TXT`, Name `@`로 넣고 확인. 동의 화면 프로젝트의 소유자 계정으로 한다(브랜딩의 도메인 확인에 쓰인다). **Sitemaps**에 `https://jieuni.space/sitemap.xml` 제출.
+37. **Google Auth Platform → Branding**: App home page `https://jieuni.space`, Privacy policy `https://jieuni.space/privacy`, Terms of service `https://jieuni.space/terms`. Authorized domains에 `jieuni.space`가 있는지 본다. 로고는 계속 올리지 않는다. 동의 화면은 개발·운영 클라이언트가 같이 쓴다(DECISIONS 9절).
+38. **Audience → Publish app** → In production. 테스트 사용자가 아닌 구글 계정으로 `https://jieuni.space`에서 로그인해 본다(만 14세 확인 → 동의 화면 → 홈).
+39. **네이버 서치어드바이저**: [searchadvisor.naver.com](https://searchadvisor.naver.com) → 웹마스터 도구 → 사이트 등록 `https://jieuni.space` → 소유확인 **HTML 태그** → `content` 값을 `frontend/app/layout.tsx`의 `metadata.verification.other["naver-site-verification"]`에 넣고 배포(공개되는 값이라 비밀값이 아니다) → 소유확인. **요청 → 사이트맵 제출**에 `https://jieuni.space/sitemap.xml`.
+40. 카카오톡 공유 미리보기: [developers.kakao.com/tool/debugger/sharing](https://developers.kakao.com/tool/debugger/sharing)에 운영 공간 주소를 넣어 카드가 나오는지 본다(캐시가 남아 있으면 "캐시 초기화").
 
 ## 4. 새 이미지 배포
 

@@ -1,0 +1,102 @@
+/* 머리는 만든 사람 프로필 머리와 같다 */
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--top-offset) var(--page-gutter) var(--detail-body-top);
+}
+
+.back {
+  margin-bottom: var(--space-xl);
+}
+
+.label,
+.title,
+.date {
+  margin: 0;
+}
+
+.label,
+.date {
+  color: var(--color-ink-tertiary);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+  padding: 0 var(--page-gutter) var(--space-3xl);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.sectionTitle,
+.text,
+.list {
+  margin: 0;
+}
+
+/* 한글이 낱말 중간에서 줄을 바꾸지 않게 */
+.text,
+.list {
+  color: var(--color-ink-secondary);
+  word-break: keep-all;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: 0;
+  list-style: none;
+}
+
+.list li {
+  position: relative;
+  padding-left: var(--space-lg);
+}
+
+.list li::before {
+  content: "·";
+  position: absolute;
+  left: 0;
+}
+
+.body a {
+  color: var(--color-ink);
+  text-decoration: underline;
+}
+
+/* 소개의 마지막: 짧은 선 → 링크 줄 */
+.end {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.rule {
+  width: var(--end-rule-width);
+  height: var(--hairline);
+  margin: 0;
+  border: 0;
+  background: var(--color-ink);
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.body .linkRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-min);
+  color: var(--color-ink);
+  text-decoration: none;
+}
