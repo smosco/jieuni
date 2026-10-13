@@ -265,6 +265,9 @@ v0.1은 공간을 저장소의 MDX 파일로 두는 안이었다.
   - `api.jieuni.space` → EC2 Elastic IP, **Cloudflare 프록시 끔**. Caddy가 Let's Encrypt 인증서를 직접 받는다. 브라우저는 이 주소를 부르지 않는다(Vercel rewrites의 목적지, 6절 같은 출처 프록시).
   - `photos.jieuni.space` → R2 커스텀 도메인. 같은 계정의 존이어야 한다는 조건을 Cloudflare 구입으로 채운다. r2.dev는 속도 제한이 있는 개발용이라 운영에서 끈다([공개 버킷](https://developers.cloudflare.com/r2/buckets/public-buckets/)).
 - **운영 값**: `FRONTEND_URL=https://jieuni.space`(구글 `redirect_uri`), `REVALIDATE_URL`은 비워 `FRONTEND_URL`로 부른다, Vercel `API_URL=https://api.jieuni.space`, `NEXT_PUBLIC_SITE_URL=https://jieuni.space`, `PHOTO_PUBLIC_BASE_URL=https://photos.jieuni.space`. 구글 리디렉트 URI `https://jieuni.space/login/oauth2/code/google`(구글은 HTTPS·공개 접미사 도메인만 허용하고 IP를 받지 않는다, [규칙](https://developers.google.com/identity/protocols/oauth2/web-server#uri-validation)). R2 CORS는 `https://jieuni.space`에서 `PUT`·`Content-Type`·`ETag`(서명 URL에도 CORS가 필요하다, [CORS](https://developers.cloudflare.com/r2/buckets/cors/)).
+- **Vercel 빌드 설정은 저장소에**(2026-10-13, D2): Node 버전은 `frontend/package.json`의 `engines.node: "24.x"`로 둔다. Vercel은 `.nvmrc`가 아니라 이 값을 읽고 프로젝트 설정보다 앞세운다([Node.js 버전](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions) "Version overrides in package.json"). 콘솔 값은 바뀌어도 기록이 남지 않는다.
+- **구글 운영 클라이언트는 개발과 따로**(2026-10-13, D2): 같은 프로젝트에 운영용 웹 클라이언트를 새로 만들고 리디렉트 URI는 운영 주소 하나만 둔다. 운영 클라이언트에는 localhost 주소가 없고, 개발 설정을 바꿔도 운영 로그인에 영향이 없다. 운영 사용자가 아직 없어 바꿔도 잃는 것이 없다. 동의 화면(Branding·Audience)은 프로젝트 단위라 공유한다.
+- **프리뷰 배포**(2026-10-13, D2): 프리뷰 환경 변수는 `API_URL`·`PHOTO_PUBLIC_BASE_URL`만. 없으면 프리뷰 빌드가 `next.config.ts`에서 멈춘다. 프리뷰는 운영 백엔드의 공개 GET만 읽고, 로그인하면 운영(`FRONTEND_URL`)으로 돌아간다. `REVALIDATE_SECRET`은 넣지 않고, `NEXT_PUBLIC_SITE_URL`이 없어 canonical이 `localhost`여도 Vercel이 프리뷰에 `X-Robots-Tag: noindex`를 붙인다([프리뷰 색인](https://vercel.com/kb/guide/are-vercel-preview-deployment-indexed-by-search-engines)).
 - **AI 초안 서비스**: 공개 뒤에 만든다. 운영 compose에 `ai`가 없다.
 
 ### 포기한 것

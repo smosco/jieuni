@@ -6,13 +6,14 @@
 
 | 주소 | 어디 | 무엇 |
 | --- | --- | --- |
-| `jieuni.space` | Vercel | 프론트. `/api/**`·`/oauth2/**`·`/login/oauth2/**`를 `api.jieuni.space`로 넘긴다 |
+| `jieuni.space` | Vercel(함수 리전 `icn1`) | 프론트. `/api/**`·`/oauth2/**`·`/login/oauth2/**`를 `api.jieuni.space`로 넘긴다. `www`는 여기로 308 |
 | `api.jieuni.space` | EC2 한 대(서울, t4g.small) | `~/jieuni/deploy`의 compose: `caddy`(80·443, 인증서) → `backend`(8080) → `db`(5432) |
-| `photos.jieuni.space` | R2 운영 버킷 `jieuni` | 사진 공개 읽기 |
+| `photos.jieuni.space` | R2 운영 버킷 `jieuni` | 사진 공개 읽기. r2.dev 주소는 꺼 둔다 |
 
 - 8080·5432는 호스트에 열지 않는다. 밖에서는 Caddy의 80·443만 보인다.
 - 백엔드 이미지는 `.github/workflows/release.yml`이 만든다: `ghcr.io/smosco/jieuni-backend:<짧은 sha>`, `main`이면 `latest`도. 서버는 빌드하지 않고 받기만 한다.
-- 서버의 `deploy/.env`가 비밀값의 유일한 자리다. 이름은 `deploy/.env.example`.
+- 프론트는 Vercel이 `main` push마다 빌드해 운영에 배포한다. 다른 브랜치는 프리뷰.
+- 백엔드 비밀값은 서버의 `deploy/.env`, 프론트 비밀값은 Vercel 환경 변수에만 있다. 이름은 `deploy/.env.example`과 아래 Vercel 표.
 
 ## 2. 날짜
 
@@ -30,7 +31,7 @@ Free plan이 끝나면 계정이 자동으로 닫히고 리소스에 접근할 �
 
 **GitHub**
 
-1. Actions → Release → Run workflow(브랜치 선택). 끝나면 Packages에 `jieuni-backend`가 생긴다. 태그(짧은 sha)를 적어 둔다.
+1. Release는 `main`에 `backend/**`가 머지되면 자동으로 돈다. Actions → Release → Run workflow 버튼은 워크플로 파일이 기본 브랜치(`main`)에 있어야 보이므로, 머지 뒤 같은 커밋을 다시 돌릴 때만 쓴다. 끝나면 Packages에 `jieuni-backend`가 생긴다. 태그(짧은 sha)를 적어 둔다.
 2. 패키지 `jieuni-backend` → Package settings → Danger Zone → Change visibility → Public. 되돌릴 수 없다. 이후 서버는 로그인 없이 받는다.
 
 **AWS 콘솔**
@@ -70,11 +71,11 @@ Free plan이 끝나면 계정이 자동으로 닫히고 리소스에 접근할 �
     ```
     `BACKEND_TAG`에 1단계의 태그를 넣는다(`main`에 병합되어 `latest`가 생기기 전까지). 나머지 값은 아래처럼 채운다. 비어 있으면 백엔드 시작 검사가 멈추고 빠진 이름을 모두 로그에 남긴다.
 
-    - **새로 만드는 운영 비밀값**: `POSTGRES_PASSWORD`, `REVALIDATE_SECRET`. 개발 값을 쓰지 않고 각각 새로 만든다. `REVALIDATE_SECRET`은 D2에서 Vercel 환경 변수에 같은 값을 넣는다.
+    - **새로 만드는 운영 비밀값**: `POSTGRES_PASSWORD`, `REVALIDATE_SECRET`. 개발 값을 쓰지 않고 각각 새로 만든다. `REVALIDATE_SECRET`은 27단계에서 Vercel 환경 변수에 같은 값을 넣는다.
       ```
       openssl rand -hex 32
       ```
-    - **D2 전까지 임시값**: 이 시점에는 운영 R2 토큰, 사진 도메인, 구글 운영 리디렉트가 아직 없다. 아래 값을 넣어 두고 D2에서 실제 값으로 바꾼 뒤 8절대로 다시 띄운다. 그동안 사진 업로드와 구글 로그인은 동작하지 않는다.
+    - **임시값(23단계 전까지)**: 이 시점에는 운영 R2 토큰, 사진 도메인, 구글 운영 클라이언트가 아직 없다. 아래 값을 넣어 두고 23단계에서 실제 값으로 바꾼다. 그동안 사진 업로드와 구글 로그인은 동작하지 않는다.
       ```
       S3_ENDPOINT=https://pending.invalid
       PHOTO_PUBLIC_BASE_URL=https://pending.invalid
@@ -97,6 +98,76 @@ Free plan이 끝나면 계정이 자동으로 닫히고 리소스에 접근할 �
 13. `cd ~/jieuni/deploy && docker compose up -d`, 이어서 `docker compose logs -f caddy`에서 인증서 발급(`certificate obtained successfully`)을 본다.
 14. 9절 확인 명령.
 
+여기부터는 프론트·사진·로그인이다. R2와 구글 값을 먼저 만들어 서버 `.env`를 한 번에 바꾸고, 도메인은 Vercel 빌드가 통과한 뒤에 붙인다. 화면에 한 번만 나오는 키는 바로 서버 `.env`나 Vercel에 옮기고 다른 곳(채팅·메모·저장소)에 적지 않는다.
+
+**R2(Cloudflare → R2 Object Storage)**
+
+15. **Create bucket**: 이름 `jieuni`, Location Automatic(위치 힌트 Asia-Pacific), Default storage class Standard.
+16. 버킷 → **Settings → Custom Domains → Add** → `photos.jieuni.space` → Continue → **Connect Domain**. Cloudflare가 DNS 레코드를 직접 만든다. 이 레코드는 고치지 않는다(R2 커스텀 도메인은 Cloudflare 프록시를 거치므로 이것만 주황 구름이 정상). 상태가 Active가 될 때까지 기다린다([공개 버킷](https://developers.cloudflare.com/r2/buckets/public-buckets/)).
+17. 같은 화면 **Public Development URL → Disable** → `disallow` 입력 → **Disallow**.
+18. **Settings → CORS Policy → Add CORS policy**:
+    ```json
+    [{"AllowedOrigins":["https://jieuni.space"],"AllowedMethods":["PUT"],"AllowedHeaders":["Content-Type"],"ExposeHeaders":["ETag"],"MaxAgeSeconds":3600}]
+    ```
+    서명 URL은 `Content-Type`만 서명하므로 허용 헤더는 이것 하나다.
+19. R2 → **Manage API tokens → Create API token**: 이름 `jieuni-prod`, 권한 **Object Read & Write**, **Apply to specific buckets only → `jieuni`**, TTL Forever. 나오는 Access Key ID · Secret Access Key와 S3 endpoint(`https://<계정ID>.r2.cloudflarestorage.com`)를 23단계에 쓴다.
+
+**구글(Google Cloud 콘솔 → Google Auth Platform)**
+
+운영 클라이언트는 개발 클라이언트와 따로 만든다(DECISIONS 9절).
+
+20. **Branding** 먼저: 앱 이름 `공간의 지은이`, 지원 이메일, **Authorized domains**에 `jieuni.space`. 로고는 올리지 않는다(올리면 브랜드 검증 대상이 된다).
+21. **Clients → Create client** → Application type **Web application**, 이름 `jieuni-prod`. **Authorized redirect URIs**에 `https://jieuni.space/login/oauth2/code/google` 하나만. Authorized JavaScript origins는 비운다(서버 쪽 흐름). Client ID · Client secret을 23단계에 쓴다.
+22. **Audience**: Publishing status가 Testing이면 테스트 사용자만 로그인된다 → **Publish app**. 범위가 `openid email profile`뿐이라 검토 없이 In production이 되어야 한다.
+    - Publish가 홈페이지·개인정보처리방침 URL을 요구하면: **Testing을 유지**하고 **Test users → Add users**에 관리자 계정을 넣어 운영 확인(11절)을 먼저 끝낸다. `/privacy`가 생긴 뒤(D4) Branding에 홈페이지 `https://jieuni.space`·개인정보처리방침 `https://jieuni.space/privacy`를 넣고 Publish한다. 그 전에는 다른 사람이 로그인하지 못한다.
+
+**서버 `.env` 실제 값**
+
+23. 서버에서 백업부터:
+    ```
+    cd ~/jieuni/deploy && cp .env .env.bak && chmod 600 .env.bak
+    ```
+    `.env`에서 바꿀 값:
+    - `S3_ENDPOINT`(19단계 endpoint), `S3_REGION=auto`, `S3_BUCKET=jieuni`, `S3_ACCESS_KEY`·`S3_SECRET_KEY`(19단계 토큰)
+    - `PHOTO_PUBLIC_BASE_URL=https://photos.jieuni.space`
+    - `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET`(21단계)
+    - `FRONTEND_URL`·`REVALIDATE_SECRET`·`ADMIN_EMAILS`·DB 값·`BACKEND_TAG`는 그대로.
+24. `docker compose up -d backend`, `docker compose logs -f backend`에 `prod 필수 환경 변수` 오류가 없고 9절 health가 200인지 본다. 문제가 생기면 `cp .env.bak .env` 후 다시 `up -d backend`.
+
+**Vercel**
+
+25. **Add New → Project → Import** 저장소 `smosco/jieuni`. Framework Next.js(자동), **Root Directory `frontend`**. Node 버전은 `frontend/package.json`의 `engines.node`(24.x)를 Vercel이 읽으므로 고르지 않는다([Node.js 버전](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions)). 같은 화면 **Environment Variables**에 27단계 값을 넣고 Deploy. 처음부터 넣어야 첫 빌드가 멈추지 않는다.
+26. **Settings → Functions → Function Regions**에서 **Seoul (`icn1`)** 하나만(기본은 `iad1`, Hobby는 한 리전). 저장 후 **Deployments → 최신 배포 → Redeploy**.
+27. **Settings → Environment Variables**. 모두 빌드 때 굳으므로 값을 바꾸면 Redeploy한다.
+
+    | 이름 | 값 / 출처 | 환경 |
+    | --- | --- | --- |
+    | `API_URL` | `https://api.jieuni.space` | Production, Preview |
+    | `PHOTO_PUBLIC_BASE_URL` | `https://photos.jieuni.space`(16단계). CSP `img-src`. 없으면 운영 빌드가 멈춘다 | Production, Preview |
+    | `NEXT_PUBLIC_SITE_URL` | `https://jieuni.space`. canonical·공유 카드·sitemap의 바탕 | Production |
+    | `REVALIDATE_SECRET` | 서버 `.env`와 같은 값. **Sensitive** 체크 | Production |
+    | `NEXT_PUBLIC_NEWSLETTER_URL` | 메일리 폼 주소. 비우면 피드 끝 구독 링크가 안 보인다 | Production |
+
+    `REVALIDATE_SECRET`은 서버에서 자기 터미널로만 꺼내 붙인다: `grep '^REVALIDATE_SECRET=' ~/jieuni/deploy/.env | cut -d= -f2-`.
+
+    **프리뷰**: 프리뷰에는 `API_URL`·`PHOTO_PUBLIC_BASE_URL`만 둔다(`API_URL`이 없으면 빌드가 멈춘다). 프리뷰는 운영 백엔드의 공개 데이터를 읽고, 프리뷰에서 구글 로그인하면 운영(`FRONTEND_URL`)으로 돌아간다. canonical이 `localhost`로 나오지만 Vercel이 프리뷰에 `X-Robots-Tag: noindex`를 붙인다.
+
+**도메인(Vercel + Cloudflare)**
+
+28. Vercel **Settings → Domains → Add Domain** → `jieuni.space`. `www`를 함께 추가하라는 제안을 받고 **`www.jieuni.space` → `jieuni.space`(308)** 리디렉트로 둔다. apex가 정식 주소다(`FRONTEND_URL`·`NEXT_PUBLIC_SITE_URL`과 같게).
+29. Cloudflare → 존 `jieuni.space` → **DNS → Records → Add record**, 값은 Vercel 도메인 카드에 나온 그대로:
+    - Type `A`, Name `@`, IPv4 = 카드의 값, Proxy status **DNS only(회색 구름)**
+    - Type `CNAME`, Name `www`, Target = 카드의 값(프로젝트마다 다르다), **DNS only**
+    
+    같은 이름의 다른 A·AAAA·CNAME은 지운다. CAA 레코드가 있으면 `letsencrypt.org`를 허용하는지 본다(Vercel 인증서).
+30. Vercel Domains에서 두 도메인이 Valid Configuration이 되고 인증서가 나올 때까지 기다린다.
+
+**머지 뒤**
+
+31. 작업 브랜치를 `main`에 머지한다. `backend/**`가 바뀌었으면 Release가 `latest`를 만들고(1단계), Vercel은 운영으로 다시 배포한다.
+32. 서버 `.env`에서 `BACKEND_TAG`를 비운다(→ `latest`). `REVALIDATE_URL`에 값을 넣어 두었다면 그것도 비운다(비우면 `FRONTEND_URL`로 부른다). 그다음 4절대로 받고 띄운다.
+33. 11절 운영 확인.
+
 ## 4. 새 이미지 배포
 
 `main`에 `backend/**`가 병합되면 Release가 `latest`를 새로 만든다. 서버에서:
@@ -108,6 +179,8 @@ docker image prune -af
 ```
 
 `prune -af`는 돌고 있지 않은 이미지를 모두 지운다. 되돌릴 때는 GHCR에서 다시 받으면 된다(7절).
+
+프론트는 따로 할 일이 없다. `main` push마다 Vercel이 빌드해 운영에 배포하고, 진행은 Vercel → Deployments에서 본다.
 
 ## 5. 로그
 
@@ -134,11 +207,15 @@ docker compose down && docker compose up -d   # 전체
 2. `.env`의 `BACKEND_TAG=<sha>`로 바꾸고 `docker compose up -d backend`. 지운 이미지는 이때 GHCR에서 다시 받는다.
 3. 고친 커밋이 `main`에 들어가 새 `latest`가 생기면 `BACKEND_TAG`를 비우고 4절대로 배포한다.
 
+프론트는 Vercel → Deployments → 되돌릴 배포의 ⋯ → **Instant Rollback**. 그 뒤 `main` push가 와도 자동 배포가 멈춰 있으므로, 고친 커밋이 들어가면 그 배포를 **Promote**해 되살린다.
+
 **마이그레이션과 되돌리기**: Flyway 기본 `ignoreMigrationPatterns`가 `*:future`라 DB가 이전 이미지보다 앞선 마이그레이션을 갖고 있어도 이전 이미지는 멈추지 않고 뜬다. 위험은 파괴적 마이그레이션(열 삭제·이름 변경) 뒤에 되돌리는 경우다. 이전 코드가 없어진 열을 찾으면서 쿼리가 깨진다. 엔티티가 매핑한 열이면 `ddl-auto: validate`에서 시작부터 멈춘다. 그래서 열 삭제·이름 변경은 "새 열 추가 → 코드 전환 배포 → 다음 배포에서 옛 열 삭제" 두 단계로 나눈다.
 
 ## 8. 환경 변수 바꾸기
 
 `.env`를 고친 뒤 `docker compose up -d backend`. compose가 바뀐 값을 보고 컨테이너를 다시 만든다. `restart`는 새 값을 읽지 않는다.
+
+Vercel 환경 변수는 빌드 때 굳는다. 바꾼 뒤 Deployments → 최신 배포 → **Redeploy**.
 
 ## 9. 확인 명령
 
@@ -171,10 +248,66 @@ curl -s -b /tmp/j -H "X-XSRF-TOKEN: $T" -o /dev/null -w "%{http_code}\n" -X POST
 - **서버 재부팅 뒤 백엔드가 한두 번 재시작한다**: 재부팅 때는 restart 정책이 `depends_on` 순서를 따르지 않아 DB보다 먼저 뜰 수 있다. 저절로 맞춰진다.
 - **SSH가 안 된다**: 집 IP가 바뀌었을 가능성이 크다. EC2 → Security Groups → 인스턴스의 보안 그룹 → Edit inbound rules → SSH 규칙의 Source를 **My IP**로 다시 고르고 저장.
 - **이미지를 못 받는다**: 패키지가 공개인지(3절 2단계), 태그가 있는지 Packages에서 확인.
+- **구글 `redirect_uri_mismatch`**: 21단계 URI와 11절 명령이 보여 주는 `redirect_uri`를 글자 그대로 대조한다. 콘솔 변경은 반영까지 몇 분 걸릴 수 있다.
+- **구글 `access_denied`(앱이 테스트 중)**: Audience가 Testing이고 그 계정이 테스트 사용자가 아니다(22단계).
+- **사진 업로드가 CORS로 막힌다**: R2 CORS 정책(18단계)의 origin이 `https://jieuni.space`인지, `www`로 접속하지 않았는지.
+- **사진이 안 보인다**: 응답 헤더의 CSP `img-src`에 `https://photos.jieuni.space`가 있는지(없으면 Vercel `PHOTO_PUBLIC_BASE_URL` 넣고 Redeploy), R2 Custom Domains가 Active인지.
+- **공개해도 페이지가 안 바뀐다**: Vercel Logs에서 `POST /api/revalidate`가 401이면 `REVALIDATE_SECRET` 불일치, 호출 자체가 없으면 백엔드 로그의 `재생성 호출 실패`·`재생성 주소나 비밀이 없어`.
 
-## 11. D2 이후 채울 것
+## 11. 운영 확인
 
-- 구글 로그인 확인: `https://jieuni.space`에서 로그인을 누르면 가는 구글 주소의 `redirect_uri`가 `https://jieuni.space/login/oauth2/code/google`이어야 한다. 이 값은 `FRONTEND_URL`로 고정되어 있고 프록시 헤더와 무관하다.
-- 로그인 뒤 `SESSION`·`XSRF-TOKEN` 쿠키 둘 다 `Secure`인지(브라우저 개발자 도구 → Application → Cookies).
-- Vercel 프리뷰 배포에서 구글 로그인하면 운영(`FRONTEND_URL`)으로 돌아간다.
-- 백업과 복원(D3).
+프론트·사진·로그인을 바꾼 뒤(3절 15단계 이후, 비밀값 교체, 도메인 변경) 위에서부터 한 번씩.
+
+**헤더와 라우트**(로컬에서):
+
+```
+curl -sI https://jieuni.space | grep -iE '^HTTP|content-security'
+# HTTP/2 200, img-src에 https://photos.jieuni.space
+
+curl -sI https://www.jieuni.space | grep -iE '^HTTP|location'
+# 308, location: https://jieuni.space/
+
+curl -s -X POST https://jieuni.space/api/revalidate
+# {"message":"재생성 비밀이 맞지 않아요"} (401, Next 라우트)
+```
+
+마지막 명령이 403·404면 요청이 Next 라우트가 아니라 rewrites를 타고 백엔드로 간 것이다(백엔드는 CSRF 토큰이 없어 403). 그러면 재생성이 동작하지 않는다.
+
+**구글 로그인**:
+
+```
+curl -s -o /dev/null -w '%{redirect_url}\n' https://jieuni.space/oauth2/authorization/google
+# https://accounts.google.com/...&redirect_uri=https%3A%2F%2Fjieuni.space%2Flogin%2Foauth2%2Fcode%2Fgoogle...
+```
+
+`redirect_uri`는 `FRONTEND_URL`로 고정되어 있고 프록시 헤더와 무관하다. 이어서 브라우저에서 로그아웃 상태로 공간 저장 → 로그인 시트 → 구글 → 돌아와 저장이 이어서 끝나고 내 공간에 보이는지.
+
+**쿠키**: 개발자 도구 → Application → Cookies → `https://jieuni.space`. `SESSION`은 Secure · HttpOnly · SameSite=Lax, `XSRF-TOKEN`은 Secure.
+
+**재생성**: 관리자에서 공개된 공간의 요약을 고쳐 저장 → 그 공간 상세를 **한 번** 새로고침하면 바뀐 글이 보인다. Vercel → Logs에서 `POST /api/revalidate` 200, 백엔드 로그에 `재생성 호출 실패`·`재생성 주소나 비밀이 없어`가 없다(성공은 로그를 남기지 않는다).
+
+**사진**: 관리자에서 사진 업로드 → 개발자 도구 Network에서 `<계정ID>.r2.cloudflarestorage.com`으로 가는 PUT이 200이고 CORS 오류가 없다 → 상세에 `photos.jieuni.space` 주소로 보인다. `curl -sI https://photos.jieuni.space/<키>`가 200 · `content-type: image/webp`.
+
+**CSP**: 홈 · 피드 · 상세(임베드 있는 공간) · 프로필 · 내 공간 · 관리자 사진 업로드에서 Console에 `Content-Security-Policy` 위반이 없다.
+
+**검색·공유**:
+
+```
+curl -s https://jieuni.space/places/<slug> | grep -oE '<(meta property="og:|link rel="canonical")[^>]*>'
+curl -s https://jieuni.space/sitemap.xml | head
+curl -s https://jieuni.space/robots.txt
+```
+
+og·canonical·sitemap 주소가 모두 `https://jieuni.space/...`. 공유 카드 이미지 주소가 200이고 1200×630. 카카오 [공유 디버거](https://developers.kakao.com/tool/debugger/sharing)와 Facebook [Sharing Debugger](https://developers.facebook.com/tools/debug/)로 미리보기.
+
+**프리뷰와 vercel.app 주소**:
+- `main`이 아닌 브랜치를 push하면 프리뷰 빌드가 통과한다(`NEXT_PUBLIC_SITE_URL` 없이).
+- 프리뷰 응답 헤더에 `X-Robots-Tag: noindex`. 프리뷰에 Deployment Protection이 켜져 있으면 curl은 Vercel 로그인 화면을 받으므로, Vercel에 로그인한 브라우저의 Network에서 본다.
+- 운영 배포의 `*.vercel.app` 주소에서도 canonical이 `https://jieuni.space/...`:
+  ```
+  curl -s https://<프로젝트>.vercel.app/places/<slug> | grep -o '<link rel="canonical"[^>]*>'
+  ```
+
+**서버**: 9절 명령.
+
+**아직 남은 것**: 백업과 복원(D3).
