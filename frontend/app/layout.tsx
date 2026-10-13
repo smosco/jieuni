@@ -32,6 +32,8 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   openGraph: { type: "website", siteName: SITE_NAME, locale: "ko_KR" },
   twitter: { card: "summary_large_image" },
+  // 네이버 서치어드바이저 소유 확인.
+  verification: { other: { "naver-site-verification": "eb5807c3de9b05433c83e248f0d39aeb549e81f7" } },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
