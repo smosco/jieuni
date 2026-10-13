@@ -219,6 +219,8 @@ docker compose down && docker compose up -d   # 전체
 
 Vercel 환경 변수는 빌드 때 굳는다. 바꾼 뒤 Deployments → 최신 배포 → **Redeploy**.
 
+바꾼 뒤 서버 밖에 보관한 `.env` 사본도 같이 갱신한다(3절 10단계).
+
 ## 9. 확인 명령
 
 로컬에서:
@@ -351,7 +353,7 @@ docker compose run --rm -T backup copy r2:jieuni-backup/<파일> /data/
 docker compose stop backend
 docker compose exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner --exit-on-error' < backups/<파일>
 docker compose up -d backend
-rm backups/<파일>
+rm -f backups/<파일>
 ```
 
 `--clean --if-exists`는 덤프에 있는 테이블을 지우고 다시 만들어 채운다. 복원하는 동안 `backend`를 멈춰 두는 것은 그사이 쓰기가 섞이지 않게 하려는 것이다. 볼륨(`db-data`)째 잃었으면 `docker compose up -d db`가 빈 DB를 새로 만들고, 같은 명령으로 채운 뒤 `backend`를 띄운다.
@@ -373,7 +375,7 @@ docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At 
 docker exec jieuni-restore psql -U jieuni -d jieuni -At -c "$Q" > /tmp/restored.txt
 diff /tmp/live.txt /tmp/restored.txt && echo "diff 없음"
 
-docker rm -f jieuni-restore && rm "backups/$F"
+docker rm -f jieuni-restore && rm -f "backups/$F"
 ```
 
 `diff 없음`이면 된 것이다. 세션 테이블은 덤프에 데이터가 없으니 비교에서 뺀다. 날짜와 결과를 PLAN D3 메모에 적는다.
