@@ -88,6 +88,8 @@ Free plan이 끝나면 계정이 자동으로 닫히고 리소스에 접근할 �
       `S3_ENDPOINT`와 `PHOTO_PUBLIC_BASE_URL`은 `https://` 주소 모양이어야 한다. `S3_ENDPOINT=pending`처럼 scheme이 없으면 S3 클라이언트를 만들 때 `The URI scheme of endpointOverride must not be null`로 시작이 멈춘다. `.invalid`는 실제로 해석되지 않는 예약 도메인이다.
     - **그대로 넣는 값**: `FRONTEND_URL=https://jieuni.space`. `REVALIDATE_URL`은 비운다. `ADMIN_EMAILS`에는 관리자 구글 이메일을 넣는다.
 
+    다 채운 `.env` 전체를 비밀번호 관리자 등 서버 밖 한 곳에 보관하고, 값을 바꿀 때마다 갱신한다. 서버를 잃으면 이 값들도 함께 사라진다(12절).
+
 **Cloudflare**
 
 11. 존 `jieuni.space` → DNS → Records → Add record: Type `A`, Name `api`, IPv4 `<EIP>`, Proxy status **끔(DNS only, 회색 구름)**.
@@ -217,6 +219,8 @@ docker compose down && docker compose up -d   # 전체
 
 Vercel 환경 변수는 빌드 때 굳는다. 바꾼 뒤 Deployments → 최신 배포 → **Redeploy**.
 
+바꾼 뒤 서버 밖에 보관한 `.env` 사본도 같이 갱신한다(3절 10단계).
+
 ## 9. 확인 명령
 
 로컬에서:
@@ -310,4 +314,72 @@ og·canonical·sitemap 주소가 모두 `https://jieuni.space/...`. 공유 카�
 
 **서버**: 9절 명령.
 
-**아직 남은 것**: 백업과 복원(D3).
+## 12. 백업과 복원
+
+매일 04:00 KST에 서버 cron이 `deploy/backup.sh`를 부른다. `db` 컨테이너 안에서 `pg_dump -Fc` → compose의 `backup` 서비스(rclone 공식 이미지)가 R2 비공개 버킷 `jieuni-backup`에 올리고 서버의 파일은 지운다. 보관은 버킷 수명 규칙(7일)이 맡는다. 덤프가 AWS 밖에 있어 계정이 닫혀도 남는다.
+
+`spring_session`·`spring_session_attributes`는 데이터를 빼고 구조만 덤프한다. 세션 ID는 로그인 토큰이라 백업에 남기지 않는다. 복원하면 모두 로그아웃된 상태가 된다.
+
+**처음 한 번**
+
+1. R2 → **Create bucket**: 이름 `jieuni-backup`, Location Automatic. 커스텀 도메인·Public Development URL·CORS는 켜지 않는다(운영 버킷 `jieuni`는 공개 읽기라 덤프를 거기 두지 않는다).
+2. 버킷 → **Settings → Object lifecycle rules → Add rule**: 이름 `expire-7d`, 버킷 전체, **Delete uploaded objects after 7 days**.
+3. R2 → **Manage API tokens → Create API token**: 이름 `jieuni-backup`, **Object Read & Write**, **Apply to specific buckets only → `jieuni-backup`**. 운영 토큰(`jieuni-prod`)과 따로 둔다.
+4. 서버 `.env`에 `BACKUP_S3_ACCESS_KEY`·`BACKUP_S3_SECRET_KEY`(3단계 값). 엔드포인트는 같은 계정이라 `S3_ENDPOINT`를 그대로 쓴다.
+5. 로컬에서 바뀐 파일 복사: `scp -i <키>.pem deploy/docker-compose.yml deploy/backup.sh ubuntu@<EIP>:~/jieuni/deploy/`, 서버에서 `chmod +x ~/jieuni/deploy/backup.sh`.
+6. 손으로 한 번: `~/jieuni/deploy/backup.sh`. 마지막 줄이 `… ok jieuni-<시각>.dump <크기>`면 된 것이다. 이어서 아래 "복원 확인"을 한 번.
+7. cron(`crontab -e`). 서버 시간대가 UTC라 19:00 UTC = 04:00 KST:
+   ```
+   0 19 * * * $HOME/jieuni/deploy/backup.sh >> $HOME/jieuni/backup.log 2>&1
+   ```
+8. (선택) 성공 핑: [healthchecks.io](https://healthchecks.io) 같은 곳에 하루 주기 체크를 만들고 주소를 `.env`의 `BACKUP_PING_URL`에. 백업이 끝날 때마다 부르고, 하루 넘게 안 오면 그쪽이 메일을 보낸다. 비우면 부르지 않는다.
+9. 서버 `.env` 전체를 비밀번호 관리자 등 서버 밖 한 곳에 보관한다(3절 10단계에서 이미 했다면 4·8단계 값을 넣어 갱신). R2 운영·백업 토큰, 구글 시크릿, `REVALIDATE_SECRET`, `POSTGRES_PASSWORD`는 서버에만 있어 서버를 잃으면 함께 사라진다. 덤프가 R2에 있어도 백업 토큰이 없으면 받을 수 없다. 이후 `.env`를 바꿀 때마다(8절) 사본도 갱신한다.
+
+**주 1회 확인**
+
+```
+tail -n 7 ~/jieuni/backup.log
+cd ~/jieuni/deploy && docker compose run --rm -T backup lsl r2:jieuni-backup
+```
+
+날마다 `ok` 한 줄, 버킷에 7개 안팎. `ok`가 없는 날은 그 위 줄이 오류다. 성공 핑을 넣었으면 그쪽 알림이 먼저 온다.
+
+**복원(실제 사고)**
+
+```
+cd ~/jieuni/deploy
+docker compose run --rm -T backup lsf r2:jieuni-backup          # 파일 고르기
+docker compose run --rm -T backup copy r2:jieuni-backup/<파일> /data/
+docker compose stop backend
+docker compose exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner --exit-on-error' < backups/<파일>
+docker compose up -d backend
+rm -f backups/<파일>
+```
+
+`--clean --if-exists`는 덤프에 있는 테이블을 지우고 다시 만들어 채운다. 복원하는 동안 `backend`를 멈춰 두는 것은 그사이 쓰기가 섞이지 않게 하려는 것이다. 볼륨(`db-data`)째 잃었으면 `docker compose up -d db`가 빈 DB를 새로 만들고, 같은 명령으로 채운 뒤 `backend`를 띄운다.
+
+**복원 확인(처음 한 번, 이후 분기마다)**
+
+임시 컨테이너에 최신 덤프를 복원해 테이블별 행 수를 운영 DB와 비교한다. 운영 DB는 건드리지 않는다. 백업 직후에 해야 차이가 없다.
+
+```
+cd ~/jieuni/deploy && ./backup.sh
+F=$(docker compose run --rm -T backup lsf r2:jieuni-backup | sort | tail -1)
+docker compose run --rm -T backup copy "r2:jieuni-backup/$F" /data/
+docker run -d --name jieuni-restore -e POSTGRES_USER=jieuni -e POSTGRES_DB=jieuni -e POSTGRES_PASSWORD=restore postgres:18
+until docker exec jieuni-restore pg_isready -U jieuni -d jieuni; do sleep 1; done; sleep 2
+docker exec -i jieuni-restore pg_restore -U jieuni -d jieuni --no-owner --exit-on-error < "backups/$F"
+
+Q="select table_name, (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from public.%I', table_name), false, true, '')))[1]::text from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE' and table_name not like 'spring\_session%' order by 1"
+docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -c "$1"' _ "$Q" > /tmp/live.txt
+docker exec jieuni-restore psql -U jieuni -d jieuni -At -c "$Q" > /tmp/restored.txt
+diff /tmp/live.txt /tmp/restored.txt && echo "diff 없음"
+
+docker rm -f jieuni-restore && rm -f "backups/$F"
+```
+
+`diff 없음`이면 된 것이다. 세션 테이블은 덤프에 데이터가 없으니 비교에서 뺀다. 날짜와 결과를 PLAN D3 메모에 적는다.
+
+**AWS 계정이 닫히거나 서버를 잃으면**
+
+덤프·사진(R2)·프론트(Vercel)·DNS(Cloudflare)는 AWS와 무관해 그대로다. 새 계정(또는 새 인스턴스)에서 3절 3~10단계(10단계의 `.env`는 새로 채우지 않고 "처음 한 번" 9단계에서 서버 밖에 보관한 사본을 그대로 쓴다. 토큰·시크릿이 그대로라 R2·구글·Vercel 쪽은 바꿀 것이 없다) → `docker compose up -d db` → 위 "복원"의 받기·`pg_restore` → `docker compose up -d` → EIP가 바뀌었으면 3절 11~12단계로 `api` 레코드를 고친다. 2절 날짜 전에 Paid plan으로 올리는 것이 먼저다.

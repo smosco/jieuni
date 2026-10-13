@@ -9,3 +9,4 @@ __pycache__/
 .venv/
 docs/NOTES.md
 docs/PLAN.md
+deploy/backups/
