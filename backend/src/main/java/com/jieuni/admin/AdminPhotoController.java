@@ -20,7 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static com.jieuni.admin.AdminPlaceController.HTTP_URL;
+import static com.jieuni.admin.AdminPlaceController.HTTPS_URL;
+import static com.jieuni.admin.AdminPlaceController.HTTPS_URL_MESSAGE;
 import static com.jieuni.admin.AdminPlaceController.clean;
 
 // 사진 파일은 브라우저가 서명 URL로 올리고(/api/admin/uploads), 여기서는 그 키를 공간에 등록한다.
@@ -41,7 +42,7 @@ class AdminPhotoController {
 			@Size(max = 200, message = "200자까지 쓸 수 있어요") String alt,
 			@Size(max = 100, message = "100자까지 쓸 수 있어요") String credit,
 			@NotNull(message = "사진 종류를 골라 주세요") PhotoLicense license,
-			@Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTP_URL, message = "http로 시작하는 링크를 넣어 주세요") String sourceUrl) {
+			@Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTPS_URL, message = HTTPS_URL_MESSAGE) String sourceUrl) {
 
 		AddRequest {
 			objectKey = clean(objectKey);
@@ -56,7 +57,7 @@ class AdminPhotoController {
 			@Size(max = 200, message = "200자까지 쓸 수 있어요") String alt,
 			@Size(max = 100, message = "100자까지 쓸 수 있어요") String credit,
 			@NotNull(message = "사진 종류를 골라 주세요") PhotoLicense license,
-			@Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTP_URL, message = "http로 시작하는 링크를 넣어 주세요") String sourceUrl) {
+			@Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTPS_URL, message = HTTPS_URL_MESSAGE) String sourceUrl) {
 
 		EditRequest {
 			alt = clean(alt);

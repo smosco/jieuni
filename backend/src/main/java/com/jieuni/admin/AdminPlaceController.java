@@ -11,8 +11,6 @@ import com.jieuni.place.PlaceSource;
 import com.jieuni.place.PlaceStatus;
 import com.jieuni.place.SourceType;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -29,7 +27,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -39,8 +36,9 @@ class AdminPlaceController {
 
 	// DB CHECK(ck_places_slug)와 같은 식.
 	static final String SLUG = "^[a-z0-9]+(-[a-z0-9]+)*$";
-	// 공개 화면에서 눌리는 링크라 http·https만 받는다(javascript: 같은 주소를 막는다).
-	static final String HTTP_URL = "^https?://\\S+$";
+	// 공개 화면에서 눌리는 링크라 https만 받는다(javascript: 같은 주소와 섞인 콘텐츠를 막는다).
+	static final String HTTPS_URL = "^https://\\S+$";
+	static final String HTTPS_URL_MESSAGE = "https://로 시작하는 주소를 넣어 주세요";
 	// 목록 본문에 null 원소가 섞였을 때(키는 "embeds[1]").
 	private static final String ITEM_REQUIRED = "빈 항목은 보낼 수 없어요";
 
@@ -60,7 +58,7 @@ class AdminPlaceController {
 		}
 	}
 
-	// 임시저장: 스칼라 필드 전부를 보낸다. 빠지거나 null·빈 칸이면 비운다. 공개에 필요한 값인지는 공개할 때 따진다.
+	// 임시저장: 좌표를 뺀 스칼라 필드 전부를 보낸다. 빠지거나 null·빈 칸이면 비운다. 공개에 필요한 값인지는 공개할 때 따진다.
 	// 문자열은 생성자에서 정리하므로 @Size·@Pattern은 정리된 값을 검사한다.
 	record EditRequest(
 			@Size(max = 80, message = "주소(slug)는 80자까지 쓸 수 있어요") @Pattern(regexp = SLUG, message = "영문 소문자·숫자·하이픈만 쓸 수 있어요") String slug,
@@ -68,8 +66,6 @@ class AdminPlaceController {
 			PlaceKind kind,
 			@Size(max = 50, message = "지역은 50자까지 쓸 수 있어요") String region,
 			@Size(max = 200, message = "주소는 200자까지 쓸 수 있어요") String address,
-			@DecimalMin(value = "-90", message = "위도는 -90에서 90 사이예요") @DecimalMax(value = "90", message = "위도는 -90에서 90 사이예요") BigDecimal lat,
-			@DecimalMin(value = "-180", message = "경도는 -180에서 180 사이예요") @DecimalMax(value = "180", message = "경도는 -180에서 180 사이예요") BigDecimal lng,
 			Access access,
 			@Size(max = 100, message = "100자까지 쓸 수 있어요") String visitNote,
 			@Size(max = 60, message = "60자까지 쓸 수 있어요") String summary,
@@ -113,7 +109,7 @@ class AdminPlaceController {
 			@NotNull(message = "만든 사람을 골라 주세요") Long makerId,
 			@NotNull(message = "역할을 골라 주세요") CreditRole role,
 			boolean verified,
-			@Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTP_URL, message = "http로 시작하는 링크를 넣어 주세요") String sourceUrl) {
+			@Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTPS_URL, message = HTTPS_URL_MESSAGE) String sourceUrl) {
 
 		CreditItem {
 			sourceUrl = clean(sourceUrl);
@@ -122,7 +118,7 @@ class AdminPlaceController {
 
 	record SourceItem(
 			@NotBlank(message = "제목을 입력해 주세요") @Size(max = 200, message = "제목은 200자까지 쓸 수 있어요") String title,
-			@NotBlank(message = "링크를 입력해 주세요") @Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTP_URL, message = "http로 시작하는 링크를 넣어 주세요") String url,
+			@NotBlank(message = "링크를 입력해 주세요") @Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTPS_URL, message = HTTPS_URL_MESSAGE) String url,
 			@NotNull(message = "종류를 골라 주세요") SourceType type) {
 
 		SourceItem {
@@ -133,7 +129,7 @@ class AdminPlaceController {
 
 	record EmbedItem(
 			@NotNull(message = "종류를 골라 주세요") EmbedType type,
-			@NotBlank(message = "링크를 입력해 주세요") @Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTP_URL, message = "http로 시작하는 링크를 넣어 주세요") String url) {
+			@NotBlank(message = "링크를 입력해 주세요") @Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTPS_URL, message = HTTPS_URL_MESSAGE) String url) {
 
 		EmbedItem {
 			url = clean(url);
@@ -187,7 +183,7 @@ class AdminPlaceController {
 	AdminPlace edit(@PathVariable long id, @Valid @RequestBody EditRequest body) {
 		Senses senses = body.senses();
 		return adminPlaceService.edit(id, new PlaceEdit(body.slug(), body.name(), body.kind(), body.region(),
-				body.address(), body.lat(), body.lng(), body.access(), body.visitNote(), body.summary(),
+				body.address(), body.access(), body.visitNote(), body.summary(),
 				body.impression(), senses.light(), senses.sound(), senses.scent(), senses.touch(), body.essay(),
 				body.visitedByEditorOn() == null ? null : body.visitedByEditorOn().atDay(1)));
 	}

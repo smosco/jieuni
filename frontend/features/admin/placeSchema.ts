@@ -42,40 +42,18 @@ function choice<const T extends readonly [string, ...string[]]>(values: T) {
   return z.union([z.literal(""), z.enum(values)]).transform((value) => value || null);
 }
 
-function coordinate(limit: number, rangeMessage: string) {
-  return z
-    .string()
-    .trim()
-    .transform((value, ctx) => {
-      if (value === "") return null;
-      const number = Number(value);
-      // 서버는 숫자가 아닌 값을 칸 이름 없는 400으로 돌려주므로 여기서 막는다.
-      if (!Number.isFinite(number)) {
-        ctx.addIssue("숫자로 입력해 주세요");
-        return z.NEVER;
-      }
-      if (Math.abs(number) > limit) {
-        ctx.addIssue(rangeMessage);
-        return z.NEVER;
-      }
-      return number;
-    });
-}
-
 const sense = text(60, "60자까지 쓸 수 있어요");
 
-// 임시저장: 형식만. 백엔드 PATCH 요청의 검증과 같은 길이·문구.
+// 저장: 이름만 있으면 된다. 나머지는 형식만 본다(백엔드 PATCH 요청의 검증과 같은 길이·문구).
 export const draftSchema = z.object({
   slug: text(80, "주소(slug)는 80자까지 쓸 수 있어요").refine(
     (value) => value === null || SLUG.test(value),
     "영문 소문자·숫자·하이픈만 쓸 수 있어요",
   ),
-  name: z.string().trim().min(1, "공간 이름을 입력해 주세요").max(100, "공간 이름은 100자까지 쓸 수 있어요"),
+  name: z.string().trim().min(1, "이름이 있어야 저장돼요").max(100, "공간 이름은 100자까지 쓸 수 있어요"),
   kind: choice(KINDS),
   region: text(50, "지역은 50자까지 쓸 수 있어요"),
   address: text(200, "주소는 200자까지 쓸 수 있어요"),
-  lat: coordinate(90, "위도는 -90에서 90 사이예요"),
-  lng: coordinate(180, "경도는 -180에서 180 사이예요"),
   access: choice(ACCESSES),
   visitNote: text(100, "100자까지 쓸 수 있어요"),
   summary: text(60, "60자까지 쓸 수 있어요"),
@@ -106,39 +84,102 @@ function blank(value: unknown): boolean {
   return value === null || value === undefined || (typeof value === "string" && value.trim() === "");
 }
 
-// 공개 시 검증: API.md의 PublishRules 표를 키·조건·문구·순서 그대로 옮겼다.
+type PublishPhoto = { alt: string | null; credit: string | null; license: string; sourceUrl: string | null };
+
+// 공개 시 검증: API.md의 PublishRules 표를 키·조건·문구·순서 그대로 옮겼다. 검증·남은 칸 수·라벨 * 이 모두 이 표를 본다.
+// item은 "공개까지 n칸"에서 한 칸으로 세는 단위다.
+const FIELD_RULES: { key: keyof PlaceEdit; item: string; message: string }[] = [
+  { key: "slug", item: "주소(slug)", message: "주소(slug)를 정해 주세요" },
+  { key: "name", item: "공간 이름", message: "공간 이름을 입력해 주세요" },
+  { key: "kind", item: "종류", message: "종류를 골라 주세요" },
+  { key: "region", item: "지역", message: "지역을 입력해 주세요" },
+  { key: "address", item: "주소", message: "주소를 입력해 주세요" },
+  { key: "access", item: "방문 방식", message: "방문 방식을 골라 주세요" },
+  { key: "summary", item: "한 줄 소개", message: "한 줄 소개를 입력해 주세요" },
+  { key: "impression", item: "감상", message: "감상을 입력해 주세요" },
+];
+
+const GROUP_RULES: { key: "credits" | "sources" | "photos"; item: string; message: string; missing: (place: PublishInput) => boolean }[] = [
+  {
+    key: "credits",
+    item: "출처가 있는 크레딧",
+    message: "출처가 있는 크레딧이 1개 이상 필요해요",
+    missing: (place) => !place.credits.some((credit) => !blank(credit.sourceUrl)),
+  },
+  {
+    key: "sources",
+    item: "머물러 본 달 또는 출처",
+    message: "머물러 본 날이 없으면 출처가 1개 이상 필요해요",
+    missing: (place) => blank(place.visitedByEditorOn) && place.sources.length === 0,
+  },
+  {
+    key: "photos",
+    item: "사진 또는 임베드",
+    message: "사진 또는 임베드가 1개 이상 필요해요",
+    missing: (place) => place.photos.length === 0 && place.embeds.length === 0,
+  },
+];
+
+const PHOTO_ITEM = "사진 설명·출처";
+const PHOTO_RULES: { field: keyof PublishPhoto; message: string; applies: (photo: PublishPhoto) => boolean }[] = [
+  { field: "alt", message: "사진 설명을 입력해 주세요", applies: () => true },
+  { field: "credit", message: "사진 출처(이름)를 입력해 주세요", applies: () => true },
+  { field: "sourceUrl", message: "출처 링크를 입력해 주세요", applies: (photo) => photo.license !== "own" },
+];
+
 export const publishSchema = z.custom<PublishInput>().superRefine((place, ctx) => {
   const fail = (path: (string | number)[], message: string) => ctx.addIssue({ code: "custom", path, message });
-  const need = (key: keyof PlaceEdit, message: string) => {
-    if (blank(place[key])) fail([key], message);
-  };
-
-  need("slug", "주소(slug)를 정해 주세요");
-  need("name", "공간 이름을 입력해 주세요");
-  need("kind", "종류를 골라 주세요");
-  need("region", "지역을 입력해 주세요");
-  need("address", "주소를 입력해 주세요");
-  need("lat", "좌표를 입력해 주세요");
-  need("lng", "좌표를 입력해 주세요");
-  need("access", "방문 방식을 골라 주세요");
-  need("summary", "한 줄 소개를 입력해 주세요");
-  need("impression", "감상을 입력해 주세요");
-
-  if (!place.credits.some((credit) => !blank(credit.sourceUrl))) {
-    fail(["credits"], "출처가 있는 크레딧이 1개 이상 필요해요");
+  for (const rule of FIELD_RULES) {
+    if (blank(place[rule.key])) fail([rule.key], rule.message);
   }
-  if (blank(place.visitedByEditorOn) && place.sources.length === 0) {
-    fail(["sources"], "머물러 본 날이 없으면 출처가 1개 이상 필요해요");
-  }
-  if (place.photos.length === 0 && place.embeds.length === 0) {
-    fail(["photos"], "사진 또는 임베드가 1개 이상 필요해요");
+  for (const rule of GROUP_RULES) {
+    if (rule.missing(place)) fail([rule.key], rule.message);
   }
   place.photos.forEach((photo, i) => {
-    if (blank(photo.alt)) fail(["photos", i, "alt"], "사진 설명을 입력해 주세요");
-    if (blank(photo.credit)) fail(["photos", i, "credit"], "사진 출처(이름)를 입력해 주세요");
-    if (photo.license !== "own" && blank(photo.sourceUrl)) fail(["photos", i, "sourceUrl"], "출처 링크를 입력해 주세요");
+    for (const rule of PHOTO_RULES) {
+      if (rule.applies(photo) && blank(photo[rule.field])) fail(["photos", i, rule.field], rule.message);
+    }
   });
 });
+
+// 라벨에 * 을 붙일 칸.
+export const PUBLISH_FIELDS: ReadonlySet<string> = new Set(FIELD_RULES.map((rule) => rule.key));
+
+export function photoPublishFields(photo: PublishPhoto): ReadonlySet<string> {
+  return new Set(PHOTO_RULES.filter((rule) => rule.applies(photo)).map((rule) => rule.field));
+}
+
+const GROUP_KEYS: ReadonlySet<string> = new Set(GROUP_RULES.map((rule) => rule.key));
+
+// 칸 아래에 보일 공개 안내. 한 칸 규칙은 짧게, 묶음 규칙은 무엇이 필요한지 문장 그대로.
+export function hintText(key: string, message: string): string {
+  return GROUP_KEYS.has(key) ? message : "공개하려면 필요해요";
+}
+
+// 공개까지 남은 칸 수. 같은 item은 한 칸, 사진 줄들의 설명·출처는 모두 합쳐 한 칸으로 센다.
+export function publishMissingCount(errors: Record<string, string>): number {
+  const missing = new Set<string>();
+  for (const rule of [...FIELD_RULES, ...GROUP_RULES]) {
+    if (errors[rule.key] !== undefined) missing.add(rule.item);
+  }
+  if (Object.keys(errors).some((key) => key.startsWith("photos["))) missing.add(PHOTO_ITEM);
+  return missing.size;
+}
+
+// 빈 * 칸 표시를 켤지. 새로 만든 공간을 처음 열 때만 숨긴다: 한 번 저장했거나(수정 시각이 다름),
+// 이름 말고 채운 값이 있거나(제보로 만든 공간), 이번 화면에서 저장을 눌렀으면 보인다.
+export function marksVisible(place: AdminPlace, submitted: boolean): boolean {
+  if (submitted || place.updatedAt !== place.createdAt) return true;
+  const filled = Object.entries(toEdit(place)).some(([key, value]) =>
+    key === "name" ? false : key === "senses" ? Object.values(value as object).some((v) => !blank(v)) : !blank(value),
+  );
+  return filled || place.credits.length + place.sources.length + place.embeds.length + place.photos.length > 0;
+}
+
+// 아래 줄의 큰 버튼. 작성 중이고 공개 조건이 다 찼을 때만 저장과 공개를 한 번에 한다.
+export function saveLabel(status: AdminPlace["status"], missing: number): "저장" | "저장하고 공개" {
+  return status === "draft" && missing === 0 ? "저장하고 공개" : "저장";
+}
 
 // Zod 경로를 서버 fieldErrors 키 모양으로: ["senses","touch"] → "senses.touch", ["photos",1,"alt"] → "photos[1].alt".
 // 칸마다 첫 메시지만 둔다(서버와 같다).
@@ -155,15 +196,13 @@ export function toFieldErrors(issues: readonly z.core.$ZodIssue[]): Record<strin
 
 // 서버 값 → 입력칸 값. null은 빈 칸.
 export function toFormValues(place: AdminPlace): PlaceFormValues {
-  const str = (value: string | number | null) => (value === null ? "" : String(value));
+  const str = (value: string | null) => (value === null ? "" : String(value));
   return {
     slug: str(place.slug),
     name: place.name,
     kind: str(place.kind),
     region: str(place.region),
     address: str(place.address),
-    lat: str(place.lat),
-    lng: str(place.lng),
     access: str(place.access),
     visitNote: str(place.visitNote),
     summary: str(place.summary),
@@ -187,8 +226,6 @@ export function toEdit(place: AdminPlace): PlaceEdit {
     kind: place.kind,
     region: place.region,
     address: place.address,
-    lat: place.lat,
-    lng: place.lng,
     access: place.access,
     visitNote: place.visitNote,
     summary: place.summary,

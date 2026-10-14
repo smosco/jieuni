@@ -5,6 +5,7 @@ import type { MakerKind } from "@/shared/api/types";
 import { MAKER_KIND_LABEL } from "@/shared/lib/labels";
 import form from "@/shared/ui/Form.module.css";
 import { useCreateAdminMaker, useMakerSearch } from "../queries";
+import { FieldLabel } from "./PlaceFormField";
 import styles from "./PlaceForm.module.css";
 
 export type PickedMaker = { id: number | null; name: string };
@@ -20,6 +21,7 @@ export function MakerCombobox({
   error,
   allowCreate = false,
   excludeId,
+  onBlur,
 }: {
   id: string;
   name: string;
@@ -29,6 +31,7 @@ export function MakerCombobox({
   error?: string;
   allowCreate?: boolean;
   excludeId?: number;
+  onBlur?: () => void;
 }) {
   const listId = useId();
   const [open, setOpen] = useState(false);
@@ -101,9 +104,7 @@ export function MakerCombobox({
 
   return (
     <div className={`${form.field} ${styles.combobox}`}>
-      <label htmlFor={id} className={`label-sm ${form.label}`}>
-        {label}
-      </label>
+      <FieldLabel htmlFor={id} label={label} />
       <input
         id={id}
         name={name}
@@ -117,7 +118,7 @@ export function MakerCombobox({
         aria-describedby={describedBy}
         value={text}
         placeholder="이름으로 찾기"
-        className={`body-md ${form.input}`}
+        className={`body-md ${form.input} ${form.raised}`}
         onChange={(e) => {
           onChange({ id: null, name: e.target.value });
           setOpen(true);
@@ -125,7 +126,10 @@ export function MakerCombobox({
           setCreating(false);
         }}
         onFocus={() => setOpen(true)}
-        onBlur={() => setOpen(false)}
+        onBlur={() => {
+          setOpen(false);
+          onBlur?.();
+        }}
         onKeyDown={key}
       />
       {open && count > 0 && (
@@ -169,7 +173,7 @@ export function MakerCombobox({
           <select
             id={`${id}-kind`}
             value={kind}
-            className={`body-md ${form.select}`}
+            className={`body-md ${form.select} ${form.raised}`}
             onChange={(e) => setKind(e.target.value as MakerKind | "")}
           >
             <option value="">종류를 골라 주세요</option>

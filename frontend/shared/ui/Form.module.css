@@ -1,4 +1,4 @@
-/* 입력 폼과 큰 버튼. 내 공간 설정·공간 소개하기·크레딧 알려주기가 같이 쓴다. */
+/* 입력 폼과 큰 버튼. 내 공간 설정·공간 소개하기·크레딧 알려주기·관리자 폼이 같이 쓴다. */
 
 .field {
   display: flex;
@@ -43,6 +43,13 @@ select.select {
   outline: none;
 }
 
+/* 오류 칸은 포커스 중에도 밑줄을 오류 색으로 둔다(굵기는 그대로 1px). */
+.input[aria-invalid="true"],
+.textarea[aria-invalid="true"],
+.select[aria-invalid="true"] {
+  border-bottom-color: var(--color-error);
+}
+
 .select {
   min-height: var(--touch-min);
   padding: 0;
@@ -60,7 +67,22 @@ select.select {
 
 .error {
   margin: 0;
-  color: var(--color-ink-secondary);
+  color: var(--color-error);
+}
+
+/* 관리자 폼: 칸 이름은 한 단계 진하게(label-md·ink), 입력칸은 옅게 들어간 바탕 + 밑줄로 제목과 구분한다. */
+.strongLabel {
+  color: var(--color-ink);
+}
+
+.raised {
+  padding-inline: var(--space-md);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background-color: var(--color-paper-raised);
+}
+
+textarea.raised {
+  padding-block: var(--space-sm);
 }
 
 .check {
@@ -96,8 +118,11 @@ select.select {
   color: var(--color-ink);
 }
 
+/* aria-disabled: 꺼진 모양이지만 눌러서 이유를 들을 수 있는 버튼 */
 .primary:disabled,
-.secondary:disabled {
+.secondary:disabled,
+.primary[aria-disabled="true"],
+.secondary[aria-disabled="true"] {
   border-color: var(--color-line);
   background: none;
   color: var(--color-ink-disabled);

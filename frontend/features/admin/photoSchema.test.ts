@@ -25,6 +25,7 @@ const fresh = (over: Partial<PhotoRow> = {}): PhotoRow => ({
   width: 800,
   height: 1200,
   preview: "blob:x",
+  full: "blob:y",
   upload: "done",
   uploadError: null,
   file: null,
@@ -92,7 +93,7 @@ describe("사진 검증", () => {
       "photos[0].alt": "200자까지 쓸 수 있어요",
       "photos[0].credit": "100자까지 쓸 수 있어요",
       "photos[0].license": "사진 종류를 골라 주세요",
-      "photos[0].sourceUrl": "http로 시작하는 링크를 넣어 주세요",
+      "photos[0].sourceUrl": "https://로 시작하는 주소를 넣어 주세요",
     });
   });
 });

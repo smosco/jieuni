@@ -25,12 +25,17 @@ export function useConfirmLeave() {
 }
 
 // 새로고침·창 닫기·주소 입력은 브라우저 기본 확인창으로 막는다(문구는 브라우저가 정한다).
+// 뒤로 가기는 막지 않는다. 폼이 입력을 브라우저에 보관해 다시 열면 불러올 수 있다.
 export function useLeaveGuard(dirty: boolean) {
   const { setDirty } = useContext(GuardContext);
   useEffect(() => {
     setDirty(dirty);
     if (!dirty) return;
-    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // preventDefault만으로는 확인창을 띄우지 않는 브라우저가 있다(MDN beforeunload, 레거시 지원).
+      e.returnValue = "";
+    };
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => {
       setDirty(false);

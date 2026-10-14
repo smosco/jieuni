@@ -15,7 +15,9 @@ export type PhotoRow = {
   objectKey: string | null;
   width: number;
   height: number;
+  // 줄 미리보기(800px)와 누르면 여는 확대(1600px). 아직 없으면 빈 문자열.
   preview: string;
+  full: string;
   upload: UploadState;
   uploadError: string | null;
   file: File | null;
@@ -50,6 +52,7 @@ export function toPhotoRows(photos: AdminPhoto[]): PhotoRow[] {
     width: photo.width,
     height: photo.height,
     preview: photo.url.w800,
+    full: photo.url.w1600,
     upload: "done",
     uploadError: null,
     file: null,

@@ -92,15 +92,12 @@ public class PlaceService {
 		return kinds;
 	}
 
-	// 카카오는 공식 URL 형식(link/map, link/search), 네이버는 웹 형식 공식 문서가 없어 검색 주소로 둔다.
+	// 둘 다 "이름 지역" 검색 주소다.
+	// 카카오는 공식 URL 형식(link/search/검색어), 네이버는 웹 형식 공식 문서가 없어 검색 주소로 둔다.
 	public PlaceDetailResponse.MapLinks mapLinks(Place place) {
-		// 카카오 link/map은 쉼표로 이름·위도·경도를 나누므로 이름 안의 쉼표도 인코딩한다.
-		String name = encode(place.getName()).replace(",", "%2C");
-		String kakao = place.getLat() != null && place.getLng() != null
-				? "https://map.kakao.com/link/map/" + name + "," + place.getLat() + "," + place.getLng()
-				: "https://map.kakao.com/link/search/" + name;
-		String naverQuery = place.getRegion() == null ? place.getName() : place.getName() + " " + place.getRegion();
-		return new PlaceDetailResponse.MapLinks("https://map.naver.com/p/search/" + encode(naverQuery), kakao);
+		String query = encode(place.getRegion() == null ? place.getName() : place.getName() + " " + place.getRegion());
+		return new PlaceDetailResponse.MapLinks("https://map.naver.com/p/search/" + query,
+				"https://map.kakao.com/link/search/" + query);
 	}
 
 	private static String encode(String value) {

@@ -1,11 +1,12 @@
 import { z } from "./zod";
 import type { MakerKind } from "@/shared/api/types";
+import { HTTPS_URL_MESSAGE } from "./listSchema";
 import type { AdminMaker, MakerEdit } from "./types";
 
 const KINDS = ["person", "studio", "owner"] as const satisfies readonly MakerKind[];
 // 백엔드 검사와 같은 식
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const HTTP_URL = /^https?:\/\/\S+$/;
+const HTTPS_URL = /^https:\/\/\S+$/;
 const INSTAGRAM = /^[A-Za-z0-9._]{1,30}$/;
 
 export type MakerFormValues = Omit<{ [K in keyof MakerEdit]: string }, "affiliationId"> & {
@@ -35,8 +36,8 @@ export const makerSchema = z
     region: text(50, "지역은 50자까지 쓸 수 있어요"),
     intro: text(200, "소개는 200자까지 쓸 수 있어요"),
     website: text(500, "링크는 500자까지 쓸 수 있어요").refine(
-      (value) => value === null || HTTP_URL.test(value),
-      "http로 시작하는 링크를 넣어 주세요",
+      (value) => value === null || HTTPS_URL.test(value),
+      HTTPS_URL_MESSAGE,
     ),
     // 서버처럼 앞의 @는 지우고 아이디만 남긴다.
     instagram: z

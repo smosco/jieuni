@@ -21,8 +21,6 @@ class PublishRules {
 		require(errors, "kind", place.getKind(), "종류를 골라 주세요");
 		require(errors, "region", place.getRegion(), "지역을 입력해 주세요");
 		require(errors, "address", place.getAddress(), "주소를 입력해 주세요");
-		require(errors, "lat", place.getLat(), "좌표를 입력해 주세요");
-		require(errors, "lng", place.getLng(), "좌표를 입력해 주세요");
 		require(errors, "access", place.getAccess(), "방문 방식을 골라 주세요");
 		require(errors, "summary", place.getSummary(), "한 줄 소개를 입력해 주세요");
 		require(errors, "impression", place.getImpression(), "감상을 입력해 주세요");

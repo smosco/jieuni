@@ -21,8 +21,9 @@ const ROLES = [
 
 const SOURCE_TYPES = ["article", "video", "instagram", "official"] as const satisfies readonly SourceType[];
 
-// 백엔드와 같은 식: 공개 화면에서 눌리는 링크라 http·https만.
-const HTTP_URL = /^https?:\/\/\S+$/;
+// 백엔드와 같은 식: 공개 화면에서 눌리는 링크라 https만.
+const HTTPS_URL = /^https:\/\/\S+$/;
+export const HTTPS_URL_MESSAGE = "https://로 시작하는 주소를 넣어 주세요";
 
 // 입력 중인 한 줄. key는 순서를 바꿔도 React가 같은 줄로 알아보게 붙이는 화면용 값이다.
 export type CreditRow = {
@@ -48,7 +49,7 @@ export const optionalLink = z
   .string()
   .trim()
   .max(500, "링크는 500자까지 쓸 수 있어요")
-  .refine((value) => value === "" || HTTP_URL.test(value), "http로 시작하는 링크를 넣어 주세요")
+  .refine((value) => value === "" || HTTPS_URL.test(value), HTTPS_URL_MESSAGE)
   .transform((value) => value || null);
 
 const requiredLink = z
@@ -56,7 +57,7 @@ const requiredLink = z
   .trim()
   .min(1, "링크를 입력해 주세요")
   .max(500, "링크는 500자까지 쓸 수 있어요")
-  .refine((value) => HTTP_URL.test(value), "http로 시작하는 링크를 넣어 주세요");
+  .refine((value) => HTTPS_URL.test(value), HTTPS_URL_MESSAGE);
 
 export function picked<const T extends readonly [string, ...string[]]>(values: T, message: string) {
   return z
@@ -134,6 +135,21 @@ export function savedLists(place: AdminPlace): PlaceLists {
   };
 }
 
+// 아무것도 입력하지 않은 줄. 저장 때 보내지 않고 오류도 내지 않는다(반쯤 채운 줄만 오류).
+const BLANK: { [K in ListName]: (row: ListRows[K][number]) => boolean } = {
+  credits: (row) => row.makerId === null && !row.makerName.trim() && !row.role && !row.verified && !row.sourceUrl.trim(),
+  sources: (row) => !row.title.trim() && !row.url.trim() && !row.type,
+  embeds: (row) => !row.url.trim(),
+};
+
+export function withoutBlankRows(rows: ListRows): ListRows {
+  return {
+    credits: rows.credits.filter((row) => !BLANK.credits(row)),
+    sources: rows.sources.filter((row) => !BLANK.sources(row)),
+    embeds: rows.embeds.filter((row) => !BLANK.embeds(row)),
+  };
+}
+
 export type ListCheck = {
   // 형식이 맞고 저장된 것과 다른 목록만. 임시저장이 이것만 PUT한다.
   changes: Partial<PlaceLists>;
@@ -146,12 +162,16 @@ export function checkLists(rows: ListRows, place: AdminPlace): ListCheck {
   const saved = savedLists(place);
   const changes: Partial<PlaceLists> = {};
   const dirty = { credits: false, sources: false, embeds: false };
-  let errors: Record<string, string> = {};
+  const errors: Record<string, string> = {};
   for (const name of LIST_NAMES) {
-    const result = SCHEMAS[name].safeParse({ [name]: rows[name] });
+    // 빈 줄을 뺀 뒤 검사하고, 오류 키의 번호는 화면 줄 번호로 되돌린다.
+    const kept = rows[name].flatMap((row, i) => ((BLANK[name] as (r: typeof row) => boolean)(row) ? [] : [i]));
+    const result = SCHEMAS[name].safeParse({ [name]: kept.map((i) => rows[name][i]) });
     if (!result.success) {
       dirty[name] = true;
-      errors = { ...errors, ...toFieldErrors(result.error.issues) };
+      for (const [key, message] of Object.entries(toFieldErrors(result.error.issues))) {
+        errors[key.replace(/^(\w+)\[(\d+)\]/, (_, list, n) => `${list}[${kept[Number(n)]}]`)] = message;
+      }
       continue;
     }
     const body = (result.data as PlaceLists)[name];

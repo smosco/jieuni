@@ -64,8 +64,6 @@ export type PlaceEdit = Pick<
   | "kind"
   | "region"
   | "address"
-  | "lat"
-  | "lng"
   | "access"
   | "visitNote"
   | "summary"
