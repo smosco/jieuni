@@ -72,11 +72,19 @@ export function editAdminMaker(id: number, body: MakerEdit): Promise<AdminMaker>
 }
 
 // 사진 파일은 서버를 거치지 않는다: 서명 URL을 받아 브라우저가 저장소에 직접 PUT하고, 키를 등록한다.
-export function requestUpload(placeId: number): Promise<{ objectKey: string; uploadUrls: { w1600: string; w800: string } }> {
-  return apiFetch("/api/admin/uploads", { method: "POST", body: JSON.stringify({ placeId, contentType: "image/webp" }) });
+// 두 파일의 바이트 수가 서명에 들어가 서버가 크기 한도를 본다.
+export function requestUpload(
+  placeId: number,
+  sizes: { w1600: number; w800: number },
+): Promise<{ objectKey: string; uploadUrls: { w1600: string; w800: string } }> {
+  return apiFetch("/api/admin/uploads", {
+    method: "POST",
+    body: JSON.stringify({ placeId, contentType: "image/webp", sizes }),
+  });
 }
 
 // 저장소(R2)는 다른 출처라 apiFetch(쿠키·XSRF)를 쓰지 않는다. Content-Type이 서명에 들어 있어 같은 값을 보내야 한다.
+// Content-Length도 서명에 들어 있고, 브라우저가 blob 크기로 채운다.
 export async function putToStorage(url: string, blob: Blob): Promise<void> {
   const res = await fetch(url, { method: "PUT", headers: { "Content-Type": "image/webp" }, body: blob });
   if (!res.ok) throw new Error(`upload ${res.status}`);

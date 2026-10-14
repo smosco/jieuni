@@ -6,7 +6,7 @@ import form from "@/shared/ui/Form.module.css";
 import { SOURCE_TYPE_LABEL } from "../labels";
 import { rowKey, type CreditRow, type EmbedRow, type SourceRow } from "../listSchema";
 import { MakerCombobox } from "./MakerCombobox";
-import { PlaceFormField } from "./PlaceFormField";
+import { fieldId, PlaceFormField } from "./PlaceFormField";
 import { ReorderList } from "./ReorderList";
 import styles from "./PlaceForm.module.css";
 
@@ -14,13 +14,15 @@ type Editor<T> = {
   rows: T[];
   onChange: (rows: T[]) => void;
   errors: Record<string, string>;
+  // 칸을 떠날 때 그 칸(서버 키) 메시지를 띄운다.
+  onBlur: (key: string) => void;
 };
 
 function update<T extends { key: string }>(rows: T[], key: string, patch: Partial<T>): T[] {
   return rows.map((row) => (row.key === key ? { ...row, ...patch } : row));
 }
 
-export function CreditsEditor({ rows, onChange, errors }: Editor<CreditRow>) {
+export function CreditsEditor({ rows, onChange, errors, onBlur }: Editor<CreditRow>) {
   return (
     <ReorderList
       label="크레딧"
@@ -36,9 +38,10 @@ export function CreditsEditor({ rows, onChange, errors }: Editor<CreditRow>) {
           <div className={styles.rowFields}>
             <div className={styles.pair}>
               <MakerCombobox
-                id={`credit-${row.key}-maker`}
+                id={fieldId(at("makerId"))}
                 name={at("makerId")}
                 label="만든 사람"
+                onBlur={() => onBlur(at("makerId"))}
                 value={{ id: row.makerId, name: row.makerName }}
                 onChange={(maker) => onChange(update(rows, row.key, { makerId: maker.id, makerName: maker.name }))}
                 error={errors[at("makerId")]}
@@ -48,6 +51,7 @@ export function CreditsEditor({ rows, onChange, errors }: Editor<CreditRow>) {
                 field={{ key: at("role"), label: "역할", type: "select", options: ROLE_LABEL }}
                 value={row.role}
                 error={errors[at("role")]}
+                onBlur={() => onBlur(at("role"))}
                 onChange={(role) => onChange(update(rows, row.key, { role: role as CreditRow["role"] }))}
               />
             </div>
@@ -56,6 +60,7 @@ export function CreditsEditor({ rows, onChange, errors }: Editor<CreditRow>) {
               value={row.sourceUrl}
               error={errors[at("sourceUrl")]}
               onChange={(sourceUrl) => onChange(update(rows, row.key, { sourceUrl }))}
+              onBlur={() => onBlur(at("sourceUrl"))}
             />
             <label className={`body-md ${form.check}`}>
               <input
@@ -73,7 +78,7 @@ export function CreditsEditor({ rows, onChange, errors }: Editor<CreditRow>) {
   );
 }
 
-export function SourcesEditor({ rows, onChange, errors }: Editor<SourceRow>) {
+export function SourcesEditor({ rows, onChange, errors, onBlur }: Editor<SourceRow>) {
   return (
     <ReorderList
       label="출처"
@@ -89,6 +94,7 @@ export function SourcesEditor({ rows, onChange, errors }: Editor<SourceRow>) {
               field={{ key: at("title"), label: "제목", help: "200자까지" }}
               value={row.title}
               error={errors[at("title")]}
+              onBlur={() => onBlur(at("title"))}
               onChange={(title) => onChange(update(rows, row.key, { title }))}
             />
             <div className={styles.pair}>
@@ -96,12 +102,14 @@ export function SourcesEditor({ rows, onChange, errors }: Editor<SourceRow>) {
                 field={{ key: at("url"), label: "링크", placeholder: "https://" }}
                 value={row.url}
                 error={errors[at("url")]}
+                onBlur={() => onBlur(at("url"))}
                 onChange={(url) => onChange(update(rows, row.key, { url }))}
               />
               <PlaceFormField
                 field={{ key: at("type"), label: "종류", type: "select", options: SOURCE_TYPE_LABEL }}
                 value={row.type}
                 error={errors[at("type")]}
+                onBlur={() => onBlur(at("type"))}
                 onChange={(type) => onChange(update(rows, row.key, { type: type as SourceRow["type"] }))}
               />
             </div>
@@ -114,7 +122,7 @@ export function SourcesEditor({ rows, onChange, errors }: Editor<SourceRow>) {
 
 const EMBED_LABEL = { youtube: "유튜브 영상", instagram: "인스타그램 게시물" } as const;
 
-export function EmbedsEditor({ rows, onChange, errors }: Editor<EmbedRow>) {
+export function EmbedsEditor({ rows, onChange, errors, onBlur }: Editor<EmbedRow>) {
   return (
     <ReorderList
       label="임베드"
@@ -134,6 +142,7 @@ export function EmbedsEditor({ rows, onChange, errors }: Editor<EmbedRow>) {
             }}
             value={row.url}
             error={errors[`embeds[${i}].url`]}
+            onBlur={() => onBlur(`embeds[${i}].url`)}
             onChange={(url) => onChange(update(rows, row.key, { url }))}
           />
         );

@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   draftSchema,
+  hintText,
   isDirty,
+  marksVisible,
+  photoPublishFields,
+  publishMissingCount,
   publishErrors as formPublishErrors,
   publishSchema,
+  saveLabel,
   toFieldErrors,
   toFormValues,
   type PlaceFormValues,
@@ -17,8 +22,6 @@ const EMPTY: PlaceFormValues = {
   kind: "",
   region: "",
   address: "",
-  lat: "",
-  lng: "",
   access: "",
   visitNote: "",
   summary: "",
@@ -52,8 +55,6 @@ const PUBLISHABLE: PublishInput = {
   kind: "cafe",
   region: "경기 양평군",
   address: "주소",
-  lat: 37.5,
-  lng: 127.5,
   access: "walk_in",
   visitNote: null,
   summary: "한 줄",
@@ -83,8 +84,8 @@ function publishErrors(place: Partial<PublishInput>) {
 
 describe("임시저장 형식 검증", () => {
   it("빈 칸은 null로, 앞뒤 공백은 지워서 보낸다", () => {
-    const result = draftSchema.parse({ ...EMPTY, name: "  마루 ", summary: "   ", lat: " 37.5 ", kind: "cafe" });
-    expect(result).toMatchObject({ name: "마루", summary: null, lat: 37.5, kind: "cafe", slug: null, access: null });
+    const result = draftSchema.parse({ ...EMPTY, name: "  마루 ", summary: "   ", kind: "cafe" });
+    expect(result).toMatchObject({ name: "마루", summary: null, kind: "cafe", slug: null, access: null });
     expect(result.senses).toEqual({ light: null, sound: null, scent: null, touch: null });
   });
 
@@ -114,7 +115,7 @@ describe("임시저장 형식 검증", () => {
   });
 
   it("이름은 비울 수 없다", () => {
-    expect(draftErrors({ name: "  " })).toEqual({ name: "공간 이름을 입력해 주세요" });
+    expect(draftErrors({ name: "  " })).toEqual({ name: "이름이 있어야 저장돼요" });
   });
 
   it.each(["Maru", "ma ru", "-maru", "maru-", "ma--ru", "마루"])("slug 형식 %s", (slug) => {
@@ -123,15 +124,6 @@ describe("임시저장 형식 검증", () => {
 
   it("slug는 소문자·숫자·하이픈이면 통과", () => {
     expect(draftErrors({ slug: "maru-2" })).toEqual({});
-  });
-
-  it("좌표는 숫자이고 범위 안", () => {
-    expect(draftErrors({ lat: "abc", lng: "181" })).toEqual({
-      lat: "숫자로 입력해 주세요",
-      lng: "경도는 -180에서 180 사이예요",
-    });
-    expect(draftErrors({ lat: "-90.1" })).toEqual({ lat: "위도는 -90에서 90 사이예요" });
-    expect(draftErrors({ lat: "-90", lng: "180" })).toEqual({});
   });
 
   it("머물러 본 달은 년-월", () => {
@@ -153,8 +145,6 @@ describe("공개 시 검증", () => {
     ["kind", "종류를 골라 주세요"],
     ["region", "지역을 입력해 주세요"],
     ["address", "주소를 입력해 주세요"],
-    ["lat", "좌표를 입력해 주세요"],
-    ["lng", "좌표를 입력해 주세요"],
     ["access", "방문 방식을 골라 주세요"],
     ["summary", "한 줄 소개를 입력해 주세요"],
     ["impression", "감상을 입력해 주세요"],
@@ -198,8 +188,8 @@ describe("공개 시 검증", () => {
   });
 
   it("여러 개가 함께 실패하면 서버와 같은 순서", () => {
-    const errors = publishErrors({ address: null, lat: null, credits: [] });
-    expect(Object.keys(errors)).toEqual(["address", "lat", "credits"]);
+    const errors = publishErrors({ address: null, summary: null, credits: [] });
+    expect(Object.keys(errors)).toEqual(["address", "summary", "credits"]);
   });
 });
 
@@ -215,6 +205,8 @@ const SAVED: AdminPlace = {
   suggestionReason: null,
   suggestionLink: null,
   suggestionMakerHint: null,
+  lat: null,
+  lng: null,
   createdAt: "2026-10-10T00:00:00Z",
   updatedAt: "2026-10-10T00:00:00Z",
   slugLocked: false,
@@ -227,7 +219,7 @@ describe("저장 안 된 변경", () => {
 
   it("앞뒤 공백·공백뿐인 칸은 변경 아님", () => {
     const values = toFormValues(SAVED);
-    expect(isDirty({ ...values, visitNote: "  주말은 예약 ", essay: "   ", lat: "37.50" }, SAVED)).toBe(false);
+    expect(isDirty({ ...values, visitNote: "  주말은 예약 ", essay: "   " }, SAVED)).toBe(false);
   });
 
   it("값을 바꾸거나 비우면 변경", () => {
@@ -238,16 +230,16 @@ describe("저장 안 된 변경", () => {
   });
 
   it("형식이 틀린 입력은 변경", () => {
-    expect(isDirty({ ...toFormValues(SAVED), lat: "abc" }, SAVED)).toBe(true);
+    expect(isDirty({ ...toFormValues(SAVED), visitedByEditorOn: "2026-13" }, SAVED)).toBe(true);
   });
 });
 
 describe("폼 입력으로 공개 검증", () => {
   it("빈 칸·공백뿐인 칸을 없음으로 본다", () => {
     const values = toFormValues(SAVED);
-    expect(formPublishErrors({ ...values, address: "  ", lat: "" }, SAVED)).toEqual({
+    expect(formPublishErrors({ ...values, address: "  ", summary: "" }, SAVED)).toEqual({
       address: "주소를 입력해 주세요",
-      lat: "좌표를 입력해 주세요",
+      summary: "한 줄 소개를 입력해 주세요",
     });
   });
 
@@ -255,5 +247,83 @@ describe("폼 입력으로 공개 검증", () => {
     expect(formPublishErrors(toFormValues(SAVED), { ...SAVED, photos: [] })).toEqual({
       photos: "사진 또는 임베드가 1개 이상 필요해요",
     });
+  });
+});
+
+describe("공개까지 남은 칸", () => {
+  const count = (place: Partial<PublishInput>) => publishMissingCount(publishErrors(place));
+
+  it("다 채우면 0칸", () => {
+    expect(count({})).toBe(0);
+  });
+
+  it("이름만 있는 새 공간은 10칸: 칸 7개 + 사진 또는 임베드 + 출처 있는 크레딧 + 머물러 본 달 또는 출처", () => {
+    const empty = {
+      slug: null, kind: null, region: null, address: null, access: null, summary: null, impression: null,
+      credits: [], sources: [], photos: [], embeds: [], visitedByEditorOn: null,
+    };
+    expect(count(empty)).toBe(10);
+  });
+
+  it("빈 칸 두 개면 2칸", () => {
+    expect(count({ slug: null, impression: null })).toBe(2);
+  });
+
+  it("사진 줄들의 설명·출처는 몇 줄이 비어도 한 칸", () => {
+    const photos = [
+      { ...PHOTO, alt: "" },
+      { ...PHOTO, credit: "", license: "press" as const, sourceUrl: null },
+    ];
+    expect(count({ photos })).toBe(1);
+  });
+});
+
+describe("공개 안내와 라벨 표시", () => {
+  it("한 칸 규칙은 짧은 문구, 묶음 규칙은 규칙 문장 그대로", () => {
+    expect(hintText("summary", "한 줄 소개를 입력해 주세요")).toBe("공개하려면 필요해요");
+    expect(hintText("photos[0].alt", "사진 설명을 입력해 주세요")).toBe("공개하려면 필요해요");
+    expect(hintText("credits", "출처가 있는 크레딧이 1개 이상 필요해요")).toBe("출처가 있는 크레딧이 1개 이상 필요해요");
+  });
+
+  it("직접 찍은 사진은 출처 링크가 공개에 필요 없다", () => {
+    expect([...photoPublishFields({ ...PHOTO, license: "own" })]).toEqual(["alt", "credit"]);
+    expect([...photoPublishFields({ ...PHOTO, license: "credited" })]).toEqual(["alt", "credit", "sourceUrl"]);
+  });
+});
+
+describe("빈 * 칸 표시", () => {
+  const fresh: AdminPlace = {
+    ...SAVED,
+    slug: null, kind: null, region: null, address: null, access: null, visitNote: null, summary: null,
+    impression: null, senses: { light: null, sound: null, scent: null, touch: null }, essay: null,
+    visitedByEditorOn: null, credits: [], sources: [], photos: [], embeds: [],
+    createdAt: "2026-10-10T00:00:00Z", updatedAt: "2026-10-10T00:00:00Z",
+  };
+
+  it("새로 만든 공간을 처음 열면 숨긴다", () => {
+    expect(marksVisible(fresh, false)).toBe(false);
+  });
+
+  it("한 번 저장한 공간(수정 시각이 다름)은 열 때부터 보인다", () => {
+    expect(marksVisible({ ...fresh, updatedAt: "2026-10-10T00:05:00Z" }, false)).toBe(true);
+  });
+
+  it("이번 화면에서 저장을 눌렀으면 보인다", () => {
+    expect(marksVisible(fresh, true)).toBe(true);
+  });
+
+  it("수정 시각이 같아도 이름 말고 채운 값이 있으면 보인다(제보로 만든 공간)", () => {
+    expect(marksVisible({ ...fresh, region: "경기 양평군" }, false)).toBe(true);
+    expect(marksVisible({ ...fresh, senses: { ...fresh.senses, light: "빛" } }, false)).toBe(true);
+    expect(marksVisible({ ...fresh, sources: [{ title: "기사", url: "https://e.com", type: "article" }] }, false)).toBe(true);
+  });
+});
+
+describe("큰 버튼", () => {
+  it("작성 중이고 공개 조건이 다 찼을 때만 저장하고 공개", () => {
+    expect(saveLabel("draft", 0)).toBe("저장하고 공개");
+    expect(saveLabel("draft", 2)).toBe("저장");
+    expect(saveLabel("published", 0)).toBe("저장");
+    expect(saveLabel("paused", 0)).toBe("저장");
   });
 });

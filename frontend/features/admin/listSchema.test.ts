@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { embedTypeOf } from "@/shared/lib/embed";
-import { checkLists, move, rowKey, saveOrder, toRows, type ListRows } from "./listSchema";
+import { checkLists, move, rowKey, saveOrder, toRows, withoutBlankRows, type ListRows } from "./listSchema";
 import type { AdminPlace } from "./types";
 
 const PLACE = {
@@ -60,12 +60,12 @@ describe("크레딧 검증", () => {
     expect(checkLists(rows, PLACE).errors).toEqual({ "credits[1].sourceUrl": "확인됨이면 출처 링크가 필요해요" });
   });
 
-  it("만든 사람·역할을 골라야 하고 링크는 http만", () => {
+  it("만든 사람·역할을 골라야 하고 링크는 https만", () => {
     const rows = { ...toRows(PLACE), credits: [credit({ makerId: null, role: "", verified: false, sourceUrl: "javascript:x" })] };
     expect(checkLists(rows, PLACE).errors).toEqual({
       "credits[0].makerId": "만든 사람을 골라 주세요",
       "credits[0].role": "역할을 골라 주세요",
-      "credits[0].sourceUrl": "http로 시작하는 링크를 넣어 주세요",
+      "credits[0].sourceUrl": "https://로 시작하는 주소를 넣어 주세요",
     });
   });
 
@@ -78,13 +78,17 @@ describe("크레딧 검증", () => {
 });
 
 describe("출처·임베드 검증", () => {
-  it("출처는 제목·링크·종류", () => {
-    const rows = { ...toRows(PLACE), sources: [{ key: rowKey(), title: "", url: "", type: "" as const }] };
+  it("반쯤 채운 출처 줄은 빈 칸마다 오류", () => {
+    const rows = { ...toRows(PLACE), sources: [{ key: rowKey(), title: "기사", url: "", type: "" as const }] };
     expect(checkLists(rows, PLACE).errors).toEqual({
-      "sources[0].title": "제목을 입력해 주세요",
       "sources[0].url": "링크를 입력해 주세요",
       "sources[0].type": "종류를 골라 주세요",
     });
+  });
+
+  it("링크는 https만 받는다", () => {
+    const rows = { ...toRows(PLACE), sources: [{ key: rowKey(), title: "기사", url: "http://example.com/a", type: "article" as const }] };
+    expect(checkLists(rows, PLACE).errors).toEqual({ "sources[0].url": "https://로 시작하는 주소를 넣어 주세요" });
   });
 
   it("임베드 종류는 주소로 정하고, 영상·게시물 주소만 받는다", () => {
@@ -144,5 +148,35 @@ describe("임시저장 순서", () => {
   // 출처를 모두 빼며 머물러 본 달을 채우면, 기본 값이 먼저 들어가야 한다.
   it("출처를 모두 빼면 기본 값 다음에", () => {
     expect(saveOrder(true, { sources: [], embeds: [] })).toEqual(["edit", "sources", "embeds"]);
+  });
+});
+
+describe("빈 줄", () => {
+  const blankCredit = () => credit({ makerId: null, makerName: "", role: "", verified: false, sourceUrl: "" });
+  const blankSource = () => ({ key: rowKey(), title: "", url: "", type: "" as const });
+
+  it("아무것도 입력하지 않은 줄은 보내지 않고 변경도 아니다", () => {
+    const rows = toRows(PLACE);
+    const result = checkLists(
+      { ...rows, credits: [...rows.credits, blankCredit()], sources: [blankSource(), ...rows.sources], embeds: [...rows.embeds, { key: rowKey(), url: " " }] },
+      PLACE,
+    );
+    expect(result).toEqual({ changes: {}, dirty: { credits: false, sources: false, embeds: false }, errors: {} });
+  });
+
+  it("빈 줄을 빼도 오류는 화면의 줄 번호를 가리킨다", () => {
+    const rows = { ...toRows(PLACE), credits: [blankCredit(), credit(), credit({ makerId: null })] };
+    const result = checkLists(rows, PLACE);
+    expect(result.errors).toEqual({ "credits[2].makerId": "만든 사람을 골라 주세요" });
+  });
+
+  it("빈 줄 사이의 순서는 남은 줄 그대로 보낸다", () => {
+    const rows = { ...toRows(PLACE), credits: [credit({ makerId: 9 }), blankCredit(), credit({ makerId: 3 })] };
+    expect(checkLists(rows, PLACE).changes.credits?.map((c) => c.makerId)).toEqual([9, 3]);
+  });
+
+  it("공개 검증에도 빈 줄은 없는 것으로 본다", () => {
+    const rows = { ...toRows(PLACE), sources: [blankSource()] };
+    expect(withoutBlankRows(rows).sources).toEqual([]);
   });
 });

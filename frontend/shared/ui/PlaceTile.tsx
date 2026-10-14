@@ -22,6 +22,13 @@ export function PlaceTile({ place, sizes }: { place: GridPlace; sizes: string })
   );
 }
 
+// 칸 너비: inset은 좌우 여백 24px와 사이 4px를 뺀 1/3(375px에서 약 106px, 480px 셸에서 약 141px),
+// bleed는 화면의 1/3(480px 셸에서 160px).
+const TILE_SIZES = {
+  inset: "(max-width: 480px) 30vw, 142px",
+  bleed: "(max-width: 480px) 34vw, 160px",
+};
+
 // variant: inset = 본문 너비 안(상세 04, 사이 4px) · bleed = 화면 끝까지(프로필·둘러보기, 사이 1.5px)
 export function PlaceGrid({
   places,
@@ -34,7 +41,7 @@ export function PlaceGrid({
     <ul className={`${styles.grid} ${styles[variant]}`}>
       {places.map((place) => (
         <li key={place.id}>
-          <PlaceTile place={place} sizes="(max-width: 480px) 34vw, 160px" />
+          <PlaceTile place={place} sizes={TILE_SIZES[variant]} />
         </li>
       ))}
     </ul>

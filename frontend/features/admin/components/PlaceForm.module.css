@@ -1,13 +1,32 @@
-/* 관리자 공간 폼: 본문 안 왼쪽 정렬, 묶음 사이 48px, 항목 사이 24px. */
+/* 저장 안 한 내용 불러오기 */
+.restore {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-xl);
+  padding: var(--space-md) var(--space-lg);
+  border: var(--hairline) solid var(--color-line);
+  border-radius: var(--radius-sm);
+}
+
+.restore p {
+  margin: 0;
+}
+
+.restoreActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+/* 관리자 폼(공간·만든 사람): 본문 안 왼쪽 정렬, 묶음 사이 48px, 항목 사이 24px. */
 .form {
   display: flex;
   flex-direction: column;
   gap: var(--space-3xl);
   max-width: var(--admin-form-width);
-}
-
-.ai {
-  display: flex;
 }
 
 .group {
@@ -16,10 +35,11 @@
   gap: var(--space-xl);
 }
 
-/* 위도·경도, 감각 두 칸 */
+/* 두 칸 나란히(감각, 사진 출처·종류, 크레딧, 출처) */
 .pair {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* 선택 상자의 글자 폭에 끌려가지 않게 두 칸을 같은 너비로 */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-lg);
 }
 
@@ -45,10 +65,14 @@
   color: var(--color-ink-tertiary);
 }
 
-.none,
-.error {
+.none {
   margin: 0;
   color: var(--color-ink-secondary);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-error);
 }
 
 .facts {
@@ -243,32 +267,283 @@
   gap: var(--space-md);
 }
 
-/* 사진 줄: 왼쪽 미리보기, 오른쪽 대표·올리기 상태 */
+/* 사진 묶음: 파일을 끌어다 놓는 자리 */
+.photoDrop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  outline: var(--hairline) dashed transparent;
+  outline-offset: var(--space-sm);
+}
+
+.dropping {
+  outline-color: var(--color-ink);
+}
+
+.rejected {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+
+/* 사진 줄: 폼 너비 미리보기(3:2로 잘라 채움) 아래 대표·올리기 상태 */
 .photoHead {
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-lg);
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
 .thumb {
-  flex: none;
-  width: var(--admin-photo-thumb);
+  position: relative;
+  display: block;
+  width: 100%;
   aspect-ratio: 3 / 2;
+  padding: 0;
+  border: 0;
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--color-photo-placeholder);
+  cursor: zoom-in;
+}
+
+.thumb:disabled {
+  cursor: default;
 }
 
 .thumbImage {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .photoState {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: var(--space-xs);
+}
+
+/* 확대: 원본 비율 그대로 화면 안에 */
+.zoom {
+  max-width: 100vw;
+  max-height: 100dvh;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-out;
+}
+
+.zoom::backdrop {
+  background: var(--dim-sheet);
+}
+
+.zoomImage {
+  display: block;
+  max-width: calc(100vw - 2 * var(--page-gutter));
+  max-height: calc(100dvh - 2 * var(--page-gutter));
+  object-fit: contain;
+}
+
+/* 공간 폼의 구역: 제목(display-md) 아래 칸들. 둘째 구역부터 위에 선을 두어 제목이 입력칸처럼 보이지 않게 한다. */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.section + .section {
+  padding-top: var(--space-3xl);
+  border-top: var(--hairline) solid var(--color-line);
+}
+
+.sectionHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-weight: inherit;
+}
+
+.sectionNote {
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
+
+/* 더 적기: 펼친 채로 시작하는 접이식 구역 */
+.summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.moreBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  margin-top: var(--space-xl);
+}
+
+/* 머리: "← 공간 목록 · ADMIN · 공간" 한 줄 */
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.back {
+  color: var(--color-ink-secondary);
+}
+
+/* 사진이 없을 때 고르기·끌어다 놓기 자리 */
+.dropBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: calc(var(--touch-min) * 4);
+  padding: var(--space-xl);
+  border: var(--hairline) dashed var(--color-ink-tertiary);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+}
+
+/* 첫 사진 위 "대표 사진" */
+.photoTag {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: 1;
+  padding: var(--new-tag-padding);
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+/* 아래에 붙는 줄: 왼쪽 상태와 남은 칸, 오른쪽 ⋯ 와 큰 버튼 하나 */
+.saveBar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--space-lg) 0;
+  border-top: var(--hairline) solid var(--color-line);
+  background: var(--color-paper);
+}
+
+.saveState {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.saveState p {
+  margin: 0;
+}
+
+.saveLeft {
+  color: var(--color-ink);
+}
+
+.saveActions {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.moreButton {
+  width: var(--touch-min);
+  min-height: var(--touch-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink-secondary);
+  font-size: var(--input-font-size);
+  cursor: pointer;
+}
+
+/* ⋯ 메뉴: 버튼 위로 열린다 */
+.menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--space-sm));
+  min-width: calc(var(--touch-min) * 5);
+  margin: 0;
+  padding: var(--space-xs) 0;
+  border: var(--hairline) solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  list-style: none;
+}
+
+.menuItem {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-lg);
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuOff {
+  color: var(--color-ink-disabled);
+  cursor: default;
+}
+
+/* 새 공간: 이름 칸 오른쪽에 만들기. 버튼을 칸 이름(label-md 한 줄)만큼 내려 입력칸과 맞춘다. */
+.create {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  max-width: var(--admin-form-width);
+}
+
+.create > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.createButton {
+  margin-top: calc(1lh + var(--space-sm));
+}
+
+.made {
+  margin: var(--space-md) 0 0;
+  color: var(--color-ink-secondary);
+}
+
+.madeList {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--admin-form-width);
+  margin-top: var(--space-3xl);
+}
+
+.madeName {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-xs);
 }
