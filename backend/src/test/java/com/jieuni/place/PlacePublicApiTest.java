@@ -50,20 +50,22 @@ class PlacePublicApiTest extends IntegrationTest {
 		json.extractingPath("$.photos[0].license").isEqualTo("own");
 		json.extractingPath("$.sources[0].type").isEqualTo("article");
 		json.extractingPath("$.embeds").asArray().isEmpty();
-		json.extractingPath("$.mapLinks.kakao").asString()
-				.startsWith("https://map.kakao.com/link/map/quiet-hill%20%EC%9D%B4%EB%A6%84,37.5");
+		json.extractingPath("$.mapLinks.kakao").asString().startsWith("https://map.kakao.com/link/search/");
 		json.extractingPath("$.mapLinks.naver").asString().startsWith("https://map.naver.com/p/search/");
 	}
 
+	// 좌표가 있어도 두 지도 모두 "이름 지역" 검색이다.
 	@Test
-	void kakaoLinkEncodesCommaInName() {
+	void mapLinksSearchNameAndRegion() {
 		long place = data.place("comma", PlaceStatus.PUBLISHED, daysAgo(1));
-		data.jdbc().sql("update places set name = '카페, 정원', lat = 37.5, lng = 127.0 where id = :id")
+		data.jdbc().sql("update places set name = '카페, 정원', region = '양평', lat = 37.5, lng = 127.0 where id = :id")
 				.param("id", place).update();
 
-		assertThat(mvc.get().uri("/api/places/comma")).hasStatusOk().bodyJson()
-				.extractingPath("$.mapLinks.kakao")
-				.isEqualTo("https://map.kakao.com/link/map/%EC%B9%B4%ED%8E%98%2C%20%EC%A0%95%EC%9B%90,37.500000,127.000000");
+		var json = assertThat(mvc.get().uri("/api/places/comma")).hasStatusOk().bodyJson();
+		json.extractingPath("$.mapLinks.kakao")
+				.isEqualTo("https://map.kakao.com/link/search/%EC%B9%B4%ED%8E%98,%20%EC%A0%95%EC%9B%90%20%EC%96%91%ED%8F%89");
+		json.extractingPath("$.mapLinks.naver")
+				.isEqualTo("https://map.naver.com/p/search/%EC%B9%B4%ED%8E%98,%20%EC%A0%95%EC%9B%90%20%EC%96%91%ED%8F%89");
 	}
 
 	@Test

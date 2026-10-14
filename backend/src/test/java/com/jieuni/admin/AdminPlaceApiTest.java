@@ -56,7 +56,7 @@ class AdminPlaceApiTest extends IntegrationTest {
 	private static String editBody(String slug) {
 		return """
 				{"slug":%s,"name":"빛의 정원","kind":"garden","region":"경기 양평군","address":"양평읍 1",
-				 "lat":37.5,"lng":127.6,"access":"ticket","visitNote":"월요일 휴무","summary":"한 문장",
+				 "access":"ticket","visitNote":"월요일 휴무","summary":"한 문장",
 				 "impression":"감상","senses":{"light":"오후 빛","sound":null,"scent":"","touch":null},
 				 "essay":"# 에세이","visitedByEditorOn":"2026-05"}"""
 				.formatted(slug == null ? "null" : "\"" + slug + "\"");
@@ -154,9 +154,20 @@ class AdminPlaceApiTest extends IntegrationTest {
 		json.extractingPath("$.kind").isEqualTo("cafe");
 		json.extractingPath("$.summary").isEqualTo("다시 쓴 한 문장");
 		json.extractingPath("$.address").isNull();
-		json.extractingPath("$.lat").isNull();
 		json.extractingPath("$.senses.light").isNull();
 		json.extractingPath("$.visitedByEditorOn").isEqualTo("2026-05");
+	}
+
+	// 저장해도 DB에 있던 좌표(시드 등)를 지우지 않는다.
+	@Test
+	void patchKeepsCoordinates() {
+		// API로 만든 공간은 테스트 트랜잭션의 영속성 컨텍스트에 남아 SQL로 넣은 좌표를 덮으므로 SQL로 만든다.
+		long id = data.place("coords", PlaceStatus.DRAFT, null);
+		data.jdbc().sql("update places set lat = 37.5, lng = 127.0 where id = :id").param("id", id).update();
+
+		var json = assertThat(patch(id, editBody("coords"))).hasStatusOk().bodyJson();
+		json.extractingPath("$.lat").isEqualTo(37.5);
+		json.extractingPath("$.lng").isEqualTo(127.0);
 	}
 
 	@Test
@@ -166,7 +177,6 @@ class AdminPlaceApiTest extends IntegrationTest {
 		var json = assertThat(patch(id, editBody("light-garden"))).hasStatusOk().bodyJson();
 		json.extractingPath("$.slug").isEqualTo("light-garden");
 		json.extractingPath("$.access").isEqualTo("ticket");
-		json.extractingPath("$.lat").isEqualTo(37.5);
 		json.extractingPath("$.senses.light").isEqualTo("오후 빛");
 		json.extractingPath("$.senses.scent").isNull();
 		json.extractingPath("$.essay").isEqualTo("# 에세이");
@@ -180,10 +190,10 @@ class AdminPlaceApiTest extends IntegrationTest {
 		long id = createdId("처음 이름");
 
 		var json = assertThat(patch(id, """
-				{"slug":"Light Garden","name":" ","summary":"%s","lat":91,"senses":{"touch":"%s"}}"""
+				{"slug":"Light Garden","name":" ","summary":"%s","senses":{"touch":"%s"}}"""
 				.formatted("가".repeat(61), "가".repeat(61)))).hasStatus(HttpStatus.BAD_REQUEST).bodyJson();
 		json.extractingPath("$.fieldErrors").asMap()
-				.containsOnlyKeys("slug", "name", "summary", "lat", "senses.touch");
+				.containsOnlyKeys("slug", "name", "summary", "senses.touch");
 		json.extractingPath("$.fieldErrors.slug").isEqualTo("영문 소문자·숫자·하이픈만 쓸 수 있어요");
 
 		assertThat(patch(id, "{\"name\":\"이름\",\"kind\":\"castle\"}")).hasStatus(HttpStatus.BAD_REQUEST);

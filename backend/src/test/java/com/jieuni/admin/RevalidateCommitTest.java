@@ -66,7 +66,7 @@ class RevalidateCommitTest extends IntegrationTest {
 	private static String editBody(String slug, String name, String summary) {
 		return """
 				{"slug":"%s","name":"%s","kind":"garden","region":"서울 종로구","address":"서울 종로구 1",
-				 "lat":37.5,"lng":127.0,"access":"ticket","summary":%s,"impression":"감상","visitedByEditorOn":"2026-05"}"""
+				 "access":"ticket","summary":%s,"impression":"감상","visitedByEditorOn":"2026-05"}"""
 				.formatted(slug, name, summary == null ? "null" : "\"" + summary + "\"");
 	}
 

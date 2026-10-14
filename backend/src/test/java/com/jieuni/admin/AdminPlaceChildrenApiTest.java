@@ -119,11 +119,11 @@ class AdminPlaceChildrenApiTest extends IntegrationTest {
 		assertThat(fieldErrors(credits)).containsOnlyKeys("credits[1].makerId", "credits[1].role", "credits[1].sourceUrl");
 
 		MvcTestResult sources = put(place, "sources", """
-				[{"title":"","url":"ftp://example.com","type":null}]""");
+				[{"title":"","url":"http://example.com","type":null}]""");
 		assertThat(sources).hasStatus(HttpStatus.BAD_REQUEST);
 		assertThat(fieldErrors(sources)).containsExactlyInAnyOrderEntriesOf(Map.of(
 				"sources[0].title", "제목을 입력해 주세요",
-				"sources[0].url", "http로 시작하는 링크를 넣어 주세요",
+				"sources[0].url", "https://로 시작하는 주소를 넣어 주세요",
 				"sources[0].type", "종류를 골라 주세요"));
 
 		MvcTestResult embeds = put(place, "embeds", "[null]");

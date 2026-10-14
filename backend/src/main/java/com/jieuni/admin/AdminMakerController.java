@@ -18,7 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import static com.jieuni.admin.AdminPlaceController.HTTP_URL;
+import static com.jieuni.admin.AdminPlaceController.HTTPS_URL;
+import static com.jieuni.admin.AdminPlaceController.HTTPS_URL_MESSAGE;
 import static com.jieuni.admin.AdminPlaceController.SLUG;
 import static com.jieuni.admin.AdminPlaceController.clean;
 
@@ -39,7 +40,7 @@ class AdminMakerController {
 			@NotNull(message = "종류를 골라 주세요") MakerKind kind,
 			@Size(max = 50, message = "지역은 50자까지 쓸 수 있어요") String region,
 			@Size(max = 200, message = "소개는 200자까지 쓸 수 있어요") String intro,
-			@Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTP_URL, message = "http로 시작하는 링크를 넣어 주세요") String website,
+			@Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTPS_URL, message = HTTPS_URL_MESSAGE) String website,
 			// 공개 프로필이 https://www.instagram.com/{아이디}/로 링크한다.
 			@Pattern(regexp = "^[A-Za-z0-9._]{1,30}$", message = "인스타그램 아이디만 넣어 주세요") String instagram,
 			Long affiliationId) {

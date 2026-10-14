@@ -84,8 +84,6 @@ class AdminPlaceStatusApiTest extends IntegrationTest {
 		cases.put("kind = null", "kind");
 		cases.put("region = null", "region");
 		cases.put("address = null", "address");
-		cases.put("lat = null", "lat");
-		cases.put("lng = null", "lng");
 		cases.put("access = null", "access");
 		cases.put("summary = null", "summary");
 		cases.put("impression = null", "impression");
@@ -153,15 +151,24 @@ class AdminPlaceStatusApiTest extends IntegrationTest {
 				"photos[1].sourceUrl", "출처 링크를 입력해 주세요"));
 	}
 
+	// 좌표는 공개 조건이 아니다.
+	@Test
+	void publishesWithoutCoordinates() {
+		long id = publishable("no-coords", PlaceStatus.DRAFT);
+		sql("update places set lat = null, lng = null where id = :id", id);
+
+		assertThat(status(id, "published")).hasStatusOk().bodyJson().extractingPath("$.status").isEqualTo("published");
+	}
+
 	@Test
 	void manyErrorsComeTogetherInFormOrder() throws UnsupportedEncodingException {
 		long id = publishable("many", PlaceStatus.DRAFT);
-		sql("update places set address = null, lat = null where id = :id", id);
+		sql("update places set address = null where id = :id", id);
 		sql("update place_credits set verified = false, source_url = null where place_id = :id", id);
 
 		MvcTestResult result = status(id, "published");
 		assertThat(result).hasStatus(HttpStatus.BAD_REQUEST);
-		assertThat(new ArrayList<>(fieldErrors(result).keySet())).containsExactly("address", "lat", "credits");
+		assertThat(new ArrayList<>(fieldErrors(result).keySet())).containsExactly("address", "credits");
 	}
 
 	@Test
@@ -215,7 +222,7 @@ class AdminPlaceStatusApiTest extends IntegrationTest {
 		return mvc.patch().uri("/api/admin/places/" + id).cookie(admin).with(xsrf())
 				.contentType(MediaType.APPLICATION_JSON).content("""
 						{"slug":"%s","name":"%s 이름","kind":"garden","region":"서울 종로구","address":"",
-						 "lat":37.5,"lng":127.0,"access":"ticket","summary":"한 문장","impression":"감상",
+						 "access":"ticket","summary":"한 문장","impression":"감상",
 						 "visitedByEditorOn":"2026-05"}""".formatted(slug, slug))
 				.exchange();
 	}

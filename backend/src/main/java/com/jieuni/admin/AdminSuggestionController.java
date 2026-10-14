@@ -17,7 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static com.jieuni.admin.AdminPlaceController.HTTP_URL;
+import static com.jieuni.admin.AdminPlaceController.HTTPS_URL;
+import static com.jieuni.admin.AdminPlaceController.HTTPS_URL_MESSAGE;
 import static com.jieuni.admin.AdminPlaceController.clean;
 
 @RestController
@@ -37,7 +38,7 @@ class AdminSuggestionController {
 	record AcceptRequest(
 			@NotNull(message = "만든 사람을 골라 주세요") Long makerId,
 			boolean verified,
-			@Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTP_URL, message = "http로 시작하는 링크를 넣어 주세요") String sourceUrl) {
+			@Size(max = 500, message = "링크는 500자까지 쓸 수 있어요") @Pattern(regexp = HTTPS_URL, message = HTTPS_URL_MESSAGE) String sourceUrl) {
 
 		AcceptRequest {
 			sourceUrl = clean(sourceUrl);

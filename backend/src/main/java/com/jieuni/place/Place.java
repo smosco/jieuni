@@ -135,8 +135,6 @@ public class Place extends BaseTimeEntity {
 		this.kind = edit.kind();
 		this.region = edit.region();
 		this.address = edit.address();
-		this.lat = edit.lat();
-		this.lng = edit.lng();
 		this.access = edit.access();
 		this.visitNote = edit.visitNote();
 		this.summary = edit.summary();
