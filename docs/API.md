@@ -1,8 +1,9 @@
-# API 목록 (API v0.2 — 구현 전 초안)
+# API
 
-> 2026-10-06. 공개·사용자·관리자 API와 서비스 사이 내부 계약의 경로·요청·응답을 한 곳에 모았다. **SPEC에는 API가 없으므로 이 문서가 API의 기준**이다. 구현하다 모양을 바꿔야 하면 코드보다 이 문서를 먼저 고친다.
-> 필드 이름은 SPEC 2절 코드 이름을 따르고 JSON은 camelCase. 시각은 ISO-8601 UTC(`2026-10-07T23:00:00Z`), 날짜는 `YYYY-MM-DD`.
-> 아직 가정인 것은 **(가정)**으로 표시했다. 반대가 없으면 그대로 구현한다.
+이 문서는 백엔드 HTTP API의 경로, 요청·응답, 상태 코드, 그리고 서비스 사이의 호출 계약을 적습니다. API 설계를 볼 때, 프론트나 백엔드에서 API를 바꾸기 전에 읽습니다. API 모양이 바뀌면 이 문서를 함께 고칩니다.
+
+- 필드 이름은 [SPEC.md 3절](SPEC.md#3-용어)의 코드 이름을 따르고, JSON은 camelCase입니다.
+- 시각은 ISO-8601 UTC(`2026-10-07T23:00:00Z`), 날짜는 `YYYY-MM-DD`입니다.
 
 ## 0. 공통
 
@@ -12,10 +13,10 @@
 | --- | --- |
 | 세션 | Spring Session JDBC. 쿠키 `SESSION`, HttpOnly · SameSite=Lax · 운영 Secure. 유지 30일(마지막 요청 기준). 비로그인 요청은 세션을 만들지 않는다 |
 | CSRF | 켬(Spring Security 7 `csrf.spa()`). 서버가 모든 응답에 `XSRF-TOKEN` 쿠키(HttpOnly 아님, 없을 때만 새로)를 주고, 프론트는 GET 외 요청에 `X-XSRF-TOKEN` 헤더로 돌려보낸다. 없으면 403. 로그인·로그아웃 성공 시 쿠키가 지워지므로 그 뒤 `GET /api/me`로 다시 받는다 |
-| 같은 출처 | 브라우저는 백엔드를 직접 부르지 않는다. Next rewrites가 `/api/**`·`/oauth2/**`·`/login/oauth2/**`를 백엔드로 넘긴다. CORS 없음(DECISIONS 6절) |
-| 공개 | `/api/feed`, `/api/places/**`, `/api/makers/**`, `/api/sitemap` |
+| 같은 출처 | 브라우저는 Next를 거쳐 `/api/**`·`/oauth2/**`·`/login/oauth2/**`를 부른다. CORS 없음. 이유는 [DECISIONS.md 6절](DECISIONS.md#6-프론트엔드--nextjs-16-app-router--typescript) |
+| 공개 | `GET` `/api/feed`, `/api/places/**`, `/api/makers/**`, `/api/sitemap`, `/actuator/health` |
 | 로그인 필요 | `/api/me/**`, `/api/suggestions/**` → 비로그인 401 |
-| 관리자 | `/api/admin/**` → 비로그인 401, `role=admin` 아니면 403. 역할은 세션이 아니라 요청마다 DB의 `users.role`로 본다. 기동 때 `users.role`을 `ADMIN_EMAILS`에 맞춘다(목록에서 빠지면 다시 로그인하지 않아도 다음 요청부터 403) |
+| 관리자 | `/api/admin/**` → 비로그인 401, `role=admin` 아니면 403. 역할은 세션이 아니라 요청마다 DB의 `users.role`로 본다. 서버가 시작할 때와 로그인할 때 `users.role`을 `ADMIN_EMAILS`에 맞춘다(목록에서 빼고 서버를 다시 띄우면, 다시 로그인하지 않아도 다음 요청부터 403) |
 | 개발용 | `/api/dev/**` → `dev`·`test` 프로필에서만 빈이 존재 |
 
 ### 오류 본문
@@ -34,7 +35,6 @@
 | 404 | 없음, 공개되지 않은 slug, 일반 사용자의 `/admin` 화면 |
 | 409 | 전환표 밖 상태 전환, 공개 후 slug 변경, slug 중복, 중복 편성, 08:00 지난 오늘 칸 수정, 폐업 공간 저장, 같은 이름의 공개 공간 제보 |
 | 429 | 제보 하루 10건 초과 |
-| 504 | AI 초안 시간 초과(90초) |
 
 ### 커서 목록
 
@@ -48,7 +48,7 @@
 
 ```jsonc
 // PlaceTile — 격자·목록 한 칸. 둘러보기, 프로필 격자, 내 공간, 같은 만든 사람의 다른 공간
-{ "id": 1, "slug": "medongol-garden", "name": "메덩골정원", "region": "경기 양평군", "kind": "garden",
+{ "id": 1, "slug": "quiet-hill-garden", "name": "고요언덕 정원", "region": "경기 양평군", "kind": "garden",
   "status": "published",                 // published | paused | closed
   "photo": Photo | null,                 // 대표 사진(position 0). 없으면 null → 프론트가 placeholder 색
   "caption": "조경" }                    // 화면마다 다름: 프로필 격자=역할, 팔로잉=만든 사람 이름, 둘러보기=없음(null)
@@ -58,10 +58,10 @@
   "width": 1600, "height": 1067, "alt": "…", "credit": "○○",
   "license": "own" | "press" | "credited",     // own 직접 찍음 · press 언론·공식 배포용 · credited 공개된 사진을 출처 표기로 씀
   "sourceUrl": "https://…" | null }             // own이 아니면 필수. 화면은 "사진: {credit}"에 링크를 건다
-// url은 서버가 PHOTO_PUBLIC_BASE_URL + objectKey로 만든 완성된 URL (PLAN 확정 10)
+// url은 서버가 PHOTO_PUBLIC_BASE_URL + objectKey로 만든 완성된 URL
 
 // MakerSummary
-{ "id": 3, "slug": "iroje", "name": "이로재", "kind": "studio", "region": "서울 종로" | null, "photo": Photo | null }
+{ "id": 3, "slug": "garden-dal", "name": "정원 달", "kind": "studio", "region": "경기 양평군" | null, "photo": Photo | null }
 ```
 
 숫자(저장 수·팔로워 수·조회수)는 어떤 공개 응답에도 넣지 않는다.
@@ -75,7 +75,7 @@
 | `GET /api/feed` | 아래 | 이번 주 월~금 중 `pick_date 08:00 KST <= now`, 최신순. 월 08:00 전은 지난주. 편성 없는 날은 건너뜀 |
 | `GET /api/places?kind=garden,cafe&cursor=&size=` | `{ items: PlaceTile[], nextCursor }` | published·paused만, `published_at desc, id desc`. `kind`는 쉼표 다중 |
 | `GET /api/places/{slug}` | 아래 | published·paused·closed만, 나머지 404 |
-| `GET /api/makers?cursor=&size=` | `{ items: MakerSummary[], nextCursor }` | 공개(published·paused) 공간이 있는 사람만. 정렬: 가장 최근 공개된 공간의 `published_at desc` (가정) |
+| `GET /api/makers?cursor=&size=` | `{ items: MakerSummary[], nextCursor }` | 공개(published·paused) 공간이 있는 사람만. 정렬: 가장 최근 공개된 공간의 `published_at desc, id desc` |
 | `GET /api/makers/{slug}` | 아래 | 크레딧에 있는 공간 격자. 폐업 포함, draft·suggested 제외 |
 | `GET /api/sitemap` | `{ places: [{slug, updatedAt}], makers: [{slug, updatedAt}] }` | 공개 공간·공개 공간 있는 만든 사람 전부. `app/sitemap.ts`가 쓴다 |
 
@@ -86,10 +86,10 @@
     { "date": "2026-10-07", "weekday": "WED", "line": "에디터의 한 줄(40자)",
       "place": PlaceTile,                        // photo = 대표 사진, caption = null
       "firstMaker": { "id": 3, "slug": "…", "name": "…", "role": "architecture" } | null } ],
-  "openedCount": 3,                              // 이번 주 열린 카드 수(= picks 길이). 카드의 "03 / 05"는 이 값이 아니라 각 카드의 date(월 01~금 05)로 정한다(DESIGN 5절 01)
+  "openedCount": 3,                              // 이번 주 열린 카드 수(= picks 길이). 카드의 "03 / 05"는 이 값이 아니라 각 카드의 date(월 01~금 05)로 정한다
   "nextOpensAt": "2026-10-07T23:00:00Z",         // 다음 공개 시각(UTC). 금 08:00 뒤·주말은 다음 월 08:00. 다음 편성이 없어도 시각은 준다
   "nextWeekday": "THU" | "MON",                  // 마지막 화면 문구용. 프론트는 시간 계산을 하지 않는다
-  "nextRelative": "today" | "tomorrow" | "later" } // 다음 공개일이 오늘(평일 08:00 전) · 내일(일요일 포함) · 그 밖. SPEC 5절 문구 셋에 1:1
+  "nextRelative": "today" | "tomorrow" | "later" } // 다음 공개일이 오늘(평일 08:00 전) · 내일(일요일 포함) · 그 밖. SPEC 6절 피드 마지막 화면 문구 셋에 1:1
 
 // GET /api/places/{slug}
 { "id": 1, "slug": "…", "name": "…", "kind": "garden", "region": "경기 양평군",
@@ -109,13 +109,13 @@
   "relatedPlaces": [ PlaceTile ] }               // 같은 만든 사람의 다른 공간, 최대 6, caption = null
 
 // GET /api/makers/{slug}
-{ "id": 3, "slug": "…", "name": "…", "kind": "studio", "region": "서울 종로" | null, "intro": "…",
+{ "id": 3, "slug": "…", "name": "…", "kind": "studio", "region": "경기 양평군" | null, "intro": "…",
   "website": "…" | null, "instagram": "…" | null,
   "affiliation": { "id": 4, "slug": "…", "name": "…" } | null,
   "places": [ PlaceTile ] }                      // 최근 공개순, caption = 그 사람의 역할, 폐업 포함(status로 흐리게)
 ```
 
-**B4에서 정한 것**
+**공개 조회 세부 규칙**
 
 | 항목 | 규칙 |
 | --- | --- |
@@ -124,16 +124,16 @@
 | `relatedPlaces` | 이 공간의 크레딧에 있는 만든 사람 중 누구든 크레딧에 있는 다른 공간. 같은 공간은 한 번, `published_at desc, id desc`, 최대 6 |
 | 만든 사람 프로필 404 | slug가 없거나, 공개 페이지가 있는 공간의 크레딧에 한 번도 없으면 404 |
 | 프로필 격자 | 같은 공간에 크레딧이 둘 이상이면 한 칸, 캡션은 `position`이 가장 앞선 역할 |
-| `caption`(역할) | 한국어 이름. planning 기획 · branding 브랜딩 · architecture 건축 · interior 인테리어 · landscape 조경 · lighting 조명 · furniture 가구 · scent 향 · photography 사진 · owner 주인 · other 그 밖 (문구 가정) |
+| `caption`(역할) | 한국어 이름. planning 기획 · branding 브랜딩 · architecture 건축 · interior 인테리어 · landscape 조경 · lighting 조명 · furniture 가구 · scent 향 · photography 사진 · owner 주인 · other 그 밖 |
 | 만든 사람 목록의 `photo` | 사진이 있는 공간 중 가장 최근에 공개된 공간의 대표 사진. 없으면 null |
 | 사진 URL | `{PHOTO_PUBLIC_BASE_URL}/{objectKey}-1600.webp`, `-800.webp` |
 | `mapLinks.kakao` | `https://map.kakao.com/link/search/{이름 지역}`(지역이 없으면 이름만). 좌표는 관리자 폼에서 받지 않아 쓰지 않는다 ([카카오맵 API 가이드 "검색 결과 바로가기"](https://apis.map.kakao.com/web/guide/)) |
-| `mapLinks.naver` | `https://map.naver.com/p/search/{이름 지역}`. 네이버는 웹 URL 형식의 공식 문서가 없다(앱용 `nmap://`만 있음) **(가정)** |
+| `mapLinks.naver` | `https://map.naver.com/p/search/{이름 지역}`. 네이버는 웹 URL 형식의 공식 문서가 없다(앱용 `nmap://`만 있음) |
 | 목록 요청 오류 | 모르는 `kind`, 읽을 수 없는 `cursor`, 1~60 밖의 `size`는 400 |
 | sitemap 만든 사람 | 프로필이 404가 아닌 사람 |
 | slug가 null인 만든 사람 | `credits[].maker.slug`, `affiliation.slug`가 null이면 링크를 걸지 않는다(프로필이 없다) |
 
-피드의 `place`가 `paused`여도 그대로 보여준다. `closed`가 된 공간이 편성에 남아 있으면 카드에 "이제는 만날 수 없는 공간이에요" 띠(가정, 편성 뒤 폐업은 드물다).
+피드의 `place`가 `paused`여도 그대로 보여준다. 편성 뒤 `closed`가 된 공간은 카드에 "이제는 만날 수 없는 공간이에요"를 띄우고 저장 버튼을 숨긴다.
 
 ---
 
@@ -146,7 +146,7 @@
 | (같은 콜백, 실패·취소) | 302 → `redirect?login=error` | 구글에서 취소(`error=access_denied`)하거나 검증이 실패하면. 원인은 서버 로그에만 |
 | `GET /api/me` | `{ id, nickname, profileImageUrl, role, hasNewFromFollowing }` | 비로그인 401. 응답에 `XSRF-TOKEN` 쿠키가 실린다(프론트가 처음 부르는 요청) |
 | `PATCH /api/me` | `{ nickname }` → 200 `/api/me`와 같음 | 1~20자 |
-| `DELETE /api/me` | 204 | SPEC 3절 탈퇴 순서. 세션 무효화 |
+| `DELETE /api/me` | 204 | 세션을 지우고 `users` 행 삭제(저장·팔로우는 함께 지워지고 제보는 작성자만 비움, [SPEC.md 4절](SPEC.md#4-데이터)). 쿠키 만료 |
 | `POST /api/auth/logout` | 204 | 세션 삭제, 쿠키 만료. 비로그인도 204(멱등) |
 | `POST /api/dev/login` | `{ email }` → 200 `/api/me`와 같음 | **dev·test 프로필만.** 없으면 만들고(`provider=dev`, 닉네임은 이메일 앞부분) 세션 생성. 기존 세션이 있으면 세션 ID를 바꾼다 |
 
@@ -178,7 +178,7 @@
 | --- | --- | --- |
 | `POST /api/suggestions/places` | `{ name, region, link?, reason, makerHint? }` → 201 `{ id, status: "suggested" }` | 같은 이름(앞뒤 공백·대소문자 무시)의 공개 공간(공개·휴업·폐업)이 있으면 409 `{ message, slug }`. 이름 100자 · 지역 50자 · 이유 300자 · 만든 사람 100자. `link`는 http·https만(빈 값은 없음) |
 | `POST /api/suggestions/credits` | `{ placeId, role, makerName, sourceUrl?, isSelf? }` → 201 `{ id, status: "pending" }` | 공개 페이지가 없는 공간 404. `sourceUrl`은 http·https만. `isSelf`가 빠지면 false |
-| `GET /api/me/suggestions` | `{ places: [{ id, name, region, status, createdAt }], credits: [{ id, placeName, role, makerName, status }] }` | 내 것만. 화면 문구: suggested·pending=검토 중, published=소개됨, rejected·declined=보류 |
+| `GET /api/me/suggestions` | `{ places: [{ id, name, region, status, createdAt }], credits: [{ id, placeName, role, makerName, status }] }` | 내 것만. 화면 문구: suggested·draft·pending=검토 중, published·paused·closed·accepted=소개됨, rejected·declined=보류 |
 
 두 제보 합산 사용자당 하루(KST 자정 기준) 10건, 11번째 429 `{ message }`. 동시에 보내도 10건을 넘지 않는다(사용자 행을 잠근 뒤 센다).
 
@@ -195,7 +195,7 @@
 | `POST /api/admin/places` | `{ name, region? }` → 201 `AdminPlace` | `status=draft`. slug는 비워 두고 공개 전에 채운다 |
 | `GET /api/admin/places/{id}` | `AdminPlace` | 수정 폼·미리보기. 공개 상세와 같은 하위 목록을 전부 포함 |
 | `PATCH /api/admin/places/{id}` | `AdminPlace`의 스칼라 필드 전부 → 200 `AdminPlace` | 임시저장. 빠지거나 null·빈 문자열이면 비운다. `name`만 필수. 형식 검증만(길이·enum·slug 형식). 좌표(`lat`·`lng`)는 받지 않고 DB 값을 그대로 둔다. slug 중복 409. 공개 후 slug 변경 409(같은 값은 통과). 공개 페이지가 있는 상태(published·paused·closed)면 아래 공개 검증도 통과해야 한다(실패 400 `{ message: "공개된 공간이라 이 값은 비울 수 없어요", fieldErrors }`, 수정은 남지 않음) |
-| `POST /api/admin/places/{id}/status` | `{ to }` → 200 `AdminPlace` | SPEC 3절 전환표만, 밖이면(같은 상태로도) 409 `{ message: "공개 상태에서는 작성 중(으)로 바꿀 수 없어요" }`. `to=published`면 아래 공개 검증, 실패 400 `{ message: "공개할 수 없어요", fieldErrors }`. 처음 공개 때만 `published_at`(휴업 뒤 다시 공개해도 그대로). 모르는 `to` 400 |
+| `POST /api/admin/places/{id}/status` | `{ to }` → 200 `AdminPlace` | [SPEC.md 4절](SPEC.md#places) 전환표만, 밖이면(같은 상태로도) 409 `{ message: "공개 상태에서는 작성 중(으)로 바꿀 수 없어요" }`. `to=published`면 아래 공개 검증, 실패 400 `{ message: "공개할 수 없어요", fieldErrors }`. 처음 공개 때만 `published_at`(휴업 뒤 다시 공개해도 그대로). 모르는 `to` 400 |
 | `PUT /api/admin/places/{id}/credits` | `[{ makerId, role, verified, sourceUrl? }]` → 200 `AdminPlace` | 통째 교체, 배열 순서 = position. `verified`인데 `sourceUrl` 없으면 400(`credits[i].sourceUrl`), 없는 만든 사람 400(`credits[i].makerId`) |
 | `PUT /api/admin/places/{id}/sources` | `[{ title, url, type }]` → 200 `AdminPlace` | 통째 교체. `title` 200자 |
 | `PUT /api/admin/places/{id}/embeds` | `[{ type, url }]` → 200 `AdminPlace` | 통째 교체. 공개 화면이 그릴 수 있는 주소만: youtube는 `youtube.com`·`www.youtube.com`·`m.youtube.com`의 `watch?v={id}`·`/shorts/{id}`·`/embed/{id}` 또는 `youtu.be/{id}`, instagram은 `instagram.com`·`www.instagram.com`의 `/p/{code}`·`/reel/{code}`. 프로필·채널·홈 주소는 400 `embeds[i].url`("유튜브 영상 주소를 넣어 주세요" / "인스타그램 게시물 주소를 넣어 주세요") |
@@ -288,53 +288,22 @@
 | `POST /api/admin/suggestions/credits/{id}/accept` | `{ makerId, verified, sourceUrl? }` → 200 `AdminPlace` | 역할은 제보의 역할, `sourceUrl`이 없으면 제보의 출처. 크레딧 목록 교체와 같은 길로 맨 뒤에 추가(없는 만든 사람 400 `makerId`, 확인됨인데 출처 없음 400 `sourceUrl`, slug 잠금·공개 검증 그대로). `status=accepted`, `reviewed_at`. 대기 중이 아니면 409 "이미 검토한 제보예요" |
 | `POST /api/admin/suggestions/credits/{id}/decline` | → 204 | `status=declined`, `reviewed_at`. 같은 409 |
 
-### AI 초안·호출 기록
-
-| 메서드 · 경로 | 요청 → 응답 | 규칙 |
-| --- | --- | --- |
-| `POST /api/admin/drafts` | `{ name, region? }` → 200 AI 응답 그대로(6절) | 내부망으로 AI `POST /drafts`, 타임아웃 90초 → 504. 성공·실패 모두 `llm_calls` 한 행 |
-| `GET /api/admin/llm-calls/summary?from=&to=` | `{ calls, inputTokens, outputTokens, costUsd, avgLatencyMs, failureRate }` | 기간은 `created_at` 기준 |
-| `GET /api/admin/llm-calls?cursor=` | `{ items: [{ id, purpose, placeName, model, inputTokens, outputTokens, costUsd, latencyMs, retries, success, createdAt }], nextCursor }` | 최신순 |
-
 ---
 
 ## 6. 내부 계약 (서비스 사이)
-
-### Spring → AI 초안 서비스 `POST {AI_URL}/drafts`
-
-A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일이 생기면 여기부터 고친다.
-
-```jsonc
-// 요청. 헤더 X-Internal-Token: ${AI_INTERNAL_TOKEN} (없으면 401)
-{ "name": "메덩골정원", "region": "경기 양평군" | null }
-
-// 응답 200
-{ "draft": {                                   // Pydantic PlaceDraft. 모든 값은 { value, evidenceUrl } 쌍. 근거가 없으면 value: null
-    "name":    { "value": "…", "evidenceUrl": "…" },
-    "kind":    { "value": "garden", "evidenceUrl": "…" },
-    "region":  { … }, "address": { … }, "lat": { … }, "lng": { … },
-    "access":  { … }, "visitNote": { … },
-    "credits": [ { "makerName": "승효상", "makerKind": "person", "role": "architecture", "evidenceUrl": "…" } ],
-    "sources": [ { "title": "…", "url": "…", "type": "article" } ] },
-  "usage": { "model": "…", "inputTokens": 0, "outputTokens": 0, "costUsd": 0.0, "latencyMs": 0, "retries": 0, "success": true },
-  "incomplete": false }                        // 도구 호출 상한(8회)에 걸려 부분 결과면 true
-// 422: 빈 이름. 500: 모델·도구 실패(usage는 그래도 채운다 → Spring이 success=false로 기록)
-```
-
-`usage`의 키는 `llm_calls` 컬럼과 1:1이다(`purpose`·`place_id`는 Spring이 채운다). 서버는 `draft`에 `impression`·`sense_*`·`line`·`essay`가 들어 있으면 버린다.
 
 ### Spring → Next `POST {REVALIDATE_URL}/api/revalidate`
 
 ```jsonc
 // 헤더 X-Revalidate-Secret: ${REVALIDATE_SECRET} (없거나 다르면 401)
-{ "tags": ["place:medongol-garden", "maker:iroje", "browse"] }
+{ "tags": ["place:quiet-hill-garden", "maker:garden-dal", "browse"] }
 // 응답 200 { "revalidated": ["…"] }
-// 라우트는 태그마다 revalidateTag(tag, { expire: 0 }) — 다음 요청이 옛 페이지 없이 새로 만든다(DECISIONS 6절)
+// 라우트는 태그마다 revalidateTag(tag, { expire: 0 }) — 다음 요청이 옛 페이지 없이 새로 만든다
 ```
 
-| 태그 | 붙는 페이지 | 보내는 때(SPEC 6절 표) |
+| 태그 | 붙는 페이지 | 보내는 때 |
 | --- | --- | --- |
-| `feed` | `/` | 매일 월~금 08:00 KST 스케줄러, 편성 등록·삭제, 공간·만든 사람 변경(피드 카드가 이름·대표 사진·첫 만든 사람을 보여준다) |
+| `feed` | `/` | 월~금 08:00:05 KST 스케줄러(공개), 매일 00:00:05 KST 스케줄러(마지막 화면의 "내일"이 "오늘"로 바뀜), 편성 등록·삭제, 공간·만든 사람 변경(피드 카드가 이름·대표 사진·첫 만든 사람을 보여준다) |
 | `browse` | `/places`, `/makers` | 공간 공개·수정·상태 변경, 만든 사람 수정 |
 | `place:{slug}` | `/places/[slug]`, 그 OG 이미지 | 공간 공개·수정·상태 변경, 크레딧에 있는 만든 사람 수정 |
 | `maker:{slug}` | `/makers/[slug]`, 그 OG 이미지 | 만든 사람 수정(잠기기 전 slug를 바꿨으면 옛 slug도), 그 사람이 크레딧에 있거나 크레딧에서 빠진 공간의 공개·수정·상태 변경 |
@@ -342,27 +311,14 @@ A6에서 이 모양을 고정하고, B14가 그대로 구현한다. 바꿀 일�
 
 공간 변경은 바뀐 뒤 상태가 공개 페이지가 있는 상태(published·paused·closed)일 때만 보낸다. 수정·상태 전환·크레딧·출처·임베드 교체·사진 추가·수정·순서·삭제·크레딧 제보 수락이 모두 같은 규칙이다. 만든 사람 수정은 그 사람이 크레딧에 있는 공개 공간이 있을 때만 보낸다.
 
-호출은 트랜잭션 커밋 뒤에만(`AFTER_COMMIT`). 실패는 로그만, 재시도 없음. 모든 공개 페이지는 1시간 주기로도 다시 만든다.
+호출은 트랜잭션 커밋 뒤에만(`AFTER_COMMIT`). 실패는 로그만, 재시도 없음. 재생성 호출이 빠져도 서버가 공개 데이터를 1시간마다 다시 받는다(`serverFetch`의 `revalidate: 3600`).
 
 ### 헬스
 
-`backend`: `GET /actuator/health` · `frontend`: `GET /` 200 · `ai`: `GET /health`(AI 국면 A6에서 compose에 추가). compose healthcheck가 이것들을 본다.
+`backend`: `GET /actuator/health` · `frontend`: `GET /` 200. compose healthcheck가 이것들을 본다.
 
 ---
 
-## 7. 환경 변수 (이 문서가 전제하는 것)
+## 7. 환경 변수
 
-| 이름 | 어디 | 뜻 |
-| --- | --- | --- |
-| `FRONTEND_URL` | backend | 구글 `redirect_uri`의 바탕(브라우저가 보는 주소) |
-| `REVALIDATE_URL` | backend | 재생성 호출 대상. 비우면 `FRONTEND_URL`. compose는 `http://frontend:3000`으로 고정 |
-| `REVALIDATE_SECRET` | backend, frontend | 재생성 호출 비밀. prod는 이것과 재생성 주소(`REVALIDATE_URL` 또는 `FRONTEND_URL`)가 없으면 시작하지 않는다. dev·test는 비면 호출을 건너뛴다 |
-| `AI_URL`, `AI_INTERNAL_TOKEN` | backend, ai | 내부 호출 |
-| `ADMIN_EMAILS` | backend | 쉼표 구분 |
-| `FIXED_NOW` | backend(dev만) | 있으면 `Clock`을 이 시각(ISO-8601)으로 고정 |
-| `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | backend | R2. 개발은 개발용 버킷, 운영은 운영 버킷. 엔드포인트 `https://<account-id>.r2.cloudflarestorage.com`, region `auto` |
-| `PHOTO_PUBLIC_BASE_URL` | backend | 사진 URL 앞부분(개발: 개발 버킷의 r2.dev 주소 / 운영: R2 커스텀 도메인) |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | backend | OAuth(구글만) |
-| `API_URL` | frontend(서버) | 서버 컴포넌트와 rewrites가 부르는 백엔드 주소. rewrites 목적지는 빌드 때 굳으므로 빌드에도 필요 |
-| `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_NEWSLETTER_URL` | frontend | 메타데이터 기준 URL, 메일리 구독 폼 |
-| `TAVILY_API_KEY`, `KAKAO_REST_API_KEY`, LLM 키 | ai | 웹 검색 · 지오코딩 · 모델 |
+이름과 설명은 [.env.example](../.env.example)(개발)과 [deploy/.env.example](../deploy/.env.example)(운영), 운영 값을 넣는 순서는 [RUNBOOK.md](RUNBOOK.md)에 있습니다.
