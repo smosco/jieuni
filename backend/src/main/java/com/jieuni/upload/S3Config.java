@@ -25,7 +25,7 @@ class S3Config {
 				.endpointOverride(URI.create(props.endpoint()))
 				.region(Region.of(props.region()))
 				.credentialsProvider(credentials(props))
-				// SDK 기본인 청크 전송은 R2에서 서명 불일치(403)가 난다.
+				// R2 공식 Java 예제 설정을 따른다(path style, 청크 전송 끔).
 				.serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).chunkedEncodingEnabled(false).build())
 				// SDK 2.30부터 기본으로 붙는 CRC32 체크섬을 필요한 작업에만 쓴다(S3 호환 저장소용).
 				.requestChecksumCalculation(RequestChecksumCalculation.WHEN_REQUIRED)
